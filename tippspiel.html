@@ -336,6 +336,7 @@
     </div>
     <div id="headerUserInfo" style="display:none;align-items:center;gap:6px;flex-shrink:0">
       <span class="header-user-chip" id="headerUserName"></span>
+      <button id="playerSettingsBtn" class="header-logout-btn" style="display:none" onclick="openPlayerSettings()" title="Einstellungen">⚙️</button>
       <button class="header-logout-btn" onclick="doLogout()">Abmelden</button>
     </div>
   </div>
@@ -540,6 +541,39 @@
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
       <button class="btn btn-gold" onclick="closeWeek()">Woche abschließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER SETTINGS MODAL -->
+<div class="modal-overlay" id="playerSettingsModal">
+  <div class="modal" style="max-width:400px">
+    <h3>⚙️ Meine Einstellungen</h3>
+    <div class="form-group" style="margin-bottom:18px">
+      <label>Neuer Name <span style="color:var(--muted);font-size:0.78rem">(leer lassen = nicht ändern)</span></label>
+      <input type="text" id="ps_newName" placeholder="Neuer Name" autocomplete="off" />
+    </div>
+    <hr style="border-color:var(--border);margin:16px 0">
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Neues Passwort <span style="color:var(--muted);font-size:0.78rem">(leer lassen = nicht ändern)</span></label>
+      <input type="password" id="ps_newPass" placeholder="Neues Passwort" autocomplete="new-password"
+        oninput="document.getElementById('ps_passFields').style.display=this.value?'':'none'" />
+    </div>
+    <div id="ps_passFields" style="display:none">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Neues Passwort wiederholen</label>
+        <input type="password" id="ps_newPass2" placeholder="Passwort bestätigen" autocomplete="new-password" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Aktuelles Passwort <span style="color:#f87171;font-size:0.78rem">Pflichtfeld</span></label>
+        <input type="password" id="ps_currentPass" placeholder="Aktuelles Passwort" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')savePlayerSettings()" />
+      </div>
+    </div>
+    <div class="login-error" id="ps_error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closePlayerSettings()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="savePlayerSettings()">Speichern</button>
     </div>
   </div>
 </div>
@@ -1114,6 +1148,29 @@ function renderSpiele() {
 }
 
 // ===================== TIPS =====================
+function isMatchLocked(m) {
+  if (!m.date) return false;
+  return new Date(m.date) <= new Date();
+}
+
+function getCountdown(m) {
+  if (!m.date) return '';
+  const diff = new Date(m.date) - new Date();
+  if (diff <= 0) return null; // locked
+  const totalMins = Math.floor(diff / 60000);
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    return `${days}T ${hours % 24}Std`;
+  }
+  if (hours > 0) return `⏱ Noch ${hours}Std ${mins}Min`;
+  if (mins > 0) return `⚠️ Noch ${mins} Min!`;
+  return null;
+}
+
+let _tipRefreshTimer = null;
+
 function renderTipps() {
   const sel = document.getElementById('activeTipper');
   const el = document.getElementById('tippsContent');
@@ -1130,29 +1187,44 @@ function renderTipps() {
   if (!player) { el.innerHTML = '<div class="alert alert-info">👆 Wähle oben einen Spieler aus.</div>'; return; }
   const open = state.matches.filter(m=>m.resultHome==null).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if (!open.length) { el.innerHTML = '<div class="empty">✅ Alle Spiele haben ein Ergebnis.</div>'; return; }
+
+  // Auto-refresh every 30s so locks activate on time
+  if (_tipRefreshTimer) clearInterval(_tipRefreshTimer);
+  _tipRefreshTimer = setInterval(() => renderTipps(), 30000);
+
   el.innerHTML = open.map(m => {
     const tip = (state.tips[m.id]||{})[player]||{};
     const saved = tip.home!==undefined;
+    const locked = isMatchLocked(m);
+    const countdown = getCountdown(m);
     const d = m.date ? new Date(m.date).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
     const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
-    return `<div class="tip-match">
+
+    const urgentStyle = (!locked && countdown && countdown.includes('Min')) ? 'border-color:#f59e0b;' : '';
+    const lockedStyle = locked ? 'opacity:0.7;' : '';
+
+    return `<div class="tip-match" style="${urgentStyle}${lockedStyle}">
       <div class="tip-match-info">
         <div>
           <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
+          ${!locked && countdown ? `<div style="font-size:0.72rem;color:${countdown.includes('Min')? '#f59e0b':'#60a5fa'};margin-top:3px;font-weight:600">${countdown}</div>` : ''}
         </div>
-        ${saved?'<span class="tip-saved">✓ Gespeichert</span>':''}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${locked ? '<span style="font-size:0.8rem;color:#f87171;font-weight:600">🔒 Gesperrt</span>' : ''}
+          ${saved ? '<span class="tip-saved">✓ Gespeichert</span>' : ''}
+        </div>
       </div>
       <div class="tip-inputs">
         <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
         <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
           value="${tip.home!==undefined?tip.home:''}"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}" />
+          ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
         <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
         <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
           value="${tip.away!==undefined?tip.away:''}"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}" />
+          ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}"`} />
         <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
       </div>
     </div>`;
@@ -1160,6 +1232,8 @@ function renderTipps() {
 }
 
 function saveTip(matchId, player) {
+  const match = state.matches.find(m => m.id === matchId);
+  if (match && isMatchLocked(match)) { alert('⏰ Dieses Spiel hat bereits begonnen – Tipp gesperrt.'); return; }
   const h = document.getElementById('tip_h_'+matchId).value;
   const a = document.getElementById('tip_a_'+matchId).value;
   if (h===''||a==='') { alert('Tipp unvollständig.'); return; }
@@ -1180,6 +1254,7 @@ function saveAllTips() {
   const open = state.matches.filter(m => m.resultHome == null);
   let saved = 0, skipped = 0;
   open.forEach(m => {
+    if (isMatchLocked(m)) { skipped++; return; }
     const hEl = document.getElementById('tip_h_' + m.id);
     const aEl = document.getElementById('tip_a_' + m.id);
     if (!hEl || !aEl) return;
@@ -1679,10 +1754,80 @@ function applyAccessControl() {
 function updateHeaderUser() {
   const info = document.getElementById('headerUserInfo');
   const nameEl = document.getElementById('headerUserName');
+  const settingsBtn = document.getElementById('playerSettingsBtn');
   if (!info || !nameEl) return;
   if (!currentUser) { info.style.display = 'none'; return; }
   info.style.display = 'flex';
   nameEl.textContent = currentUser.isAdmin ? '⚙️ Admin' : '👤 ' + currentUser.name;
+  if (settingsBtn) settingsBtn.style.display = currentUser.isAdmin ? 'none' : '';
+}
+
+function openPlayerSettings() {
+  document.getElementById('ps_currentPass').value = '';
+  document.getElementById('ps_newName').value = '';
+  document.getElementById('ps_newPass').value = '';
+  document.getElementById('ps_newPass2').value = '';
+  document.getElementById('ps_error').textContent = '';
+  document.getElementById('ps_passFields').style.display = 'none';
+  document.getElementById('playerSettingsModal').classList.add('open');
+  setTimeout(() => document.getElementById('ps_newName').focus(), 100);
+}
+
+function closePlayerSettings() {
+  document.getElementById('playerSettingsModal').classList.remove('open');
+}
+
+function savePlayerSettings() {
+  const err = document.getElementById('ps_error');
+  err.textContent = '';
+  const newName = document.getElementById('ps_newName').value.trim();
+  const newPass = document.getElementById('ps_newPass').value;
+  const newPass2 = document.getElementById('ps_newPass2').value;
+  const currentPass = document.getElementById('ps_currentPass').value;
+
+  if (!currentUser || currentUser.isAdmin) return;
+  const name = currentUser.name;
+
+  if (!newName && !newPass) { err.textContent = 'Keine Änderungen eingegeben.'; return; }
+
+  // Validate new name
+  if (newName) {
+    if (newName.toLowerCase() === 'admin') { err.textContent = 'Dieser Name ist reserviert.'; return; }
+    if (newName !== name && state.players.find(p => p.toLowerCase() === newName.toLowerCase())) {
+      err.textContent = 'Dieser Name ist bereits vergeben.'; return;
+    }
+  }
+
+  // Validate + verify password change
+  if (newPass) {
+    if (newPass.length < 3) { err.textContent = 'Neues Passwort muss mindestens 3 Zeichen haben.'; return; }
+    if (newPass !== newPass2) { err.textContent = 'Neue Passwörter stimmen nicht überein.'; return; }
+    if (!currentPass) { err.textContent = 'Bitte aktuelles Passwort eingeben.'; return; }
+    if (state.passwords[name] !== currentPass) { err.textContent = 'Aktuelles Passwort ist falsch.'; return; }
+  }
+
+  // Apply name change
+  if (newName && newName !== name) {
+    const idx = state.players.indexOf(name);
+    if (idx !== -1) state.players[idx] = newName;
+    state.passwords[newName] = state.passwords[name];
+    delete state.passwords[name];
+    Object.keys(state.tips).forEach(mid => {
+      if (state.tips[mid][name] !== undefined) {
+        state.tips[mid][newName] = state.tips[mid][name];
+        delete state.tips[mid][name];
+      }
+    });
+    currentUser.name = newName;
+  }
+
+  // Apply password change
+  if (newPass) state.passwords[currentUser.name] = newPass;
+
+  save();
+  updateHeaderUser();
+  renderAll();
+  closePlayerSettings();
 }
 
 function renderPasswordList() {
