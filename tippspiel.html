@@ -126,8 +126,10 @@
 
   /* TIPPS */
   .tip-match { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; }
-  .tip-match-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .tip-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tip-match-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .tip-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+  .tip-team-label { font-size: 1rem; color: var(--muted); min-width: 0; }
+  .tip-save-btn { margin-top: 10px; width: 100%; }
   .tip-vs { color: var(--muted); }
   .tip-saved { color: var(--green-light); font-size: 0.8rem; }
 
@@ -269,9 +271,11 @@
     .cal-month-label { font-size: 0.9rem; }
 
     /* Tipps – bigger touch targets */
-    .tip-inputs { gap: 8px; }
-    .score-input { width: 52px !important; padding: 10px 4px; font-size: 1.1rem; }
+    .tip-inputs { gap: 10px; justify-content: center; }
+    .score-input { width: 56px !important; padding: 10px 4px; font-size: 1.2rem; }
     .tip-match { padding: 12px; }
+    .tip-team-label { font-size: 1.3rem; }
+    .tip-save-btn { display: block; width: 100%; margin-top: 10px; padding: 11px; font-size: 1rem; }
 
     /* Match cards */
     .match-card { padding: 12px; }
@@ -381,6 +385,9 @@
       <select id="activeTipper" onchange="renderTipps()">
         <option value="">— Spieler wählen —</option>
       </select>
+    </div>
+    <div style="margin-bottom:14px">
+      <button class="btn btn-primary" style="width:100%" onclick="saveAllTips()">💾 Alle Speichern</button>
     </div>
     <div id="tippsContent"></div>
   </div>
@@ -1093,25 +1100,26 @@ function renderTipps() {
     const tip = (state.tips[m.id]||{})[player]||{};
     const saved = tip.home!==undefined;
     const d = m.date ? new Date(m.date).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
+    const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
     return `<div class="tip-match">
       <div class="tip-match-info">
         <div>
-          <div style="font-weight:600">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
-          <div style="font-size:0.75rem;color:var(--muted)">${d}${m.competition?' · '+m.competition:''}</div>
+          <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
         </div>
         ${saved?'<span class="tip-saved">✓ Gespeichert</span>':''}
       </div>
       <div class="tip-inputs">
-        <span style="font-size:0.85rem;color:var(--muted)">${flagTeam(m.home)}</span>
+        <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
         <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
           value="${tip.home!==undefined?tip.home:''}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}" />
-        <span class="tip-vs">:</span>
+        <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
         <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
           value="${tip.away!==undefined?tip.away:''}"
           onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}" />
-        <span style="font-size:0.85rem;color:var(--muted)">${flagTeam(m.away)}</span>
-        <button class="btn btn-primary btn-sm" onclick="saveTip('${m.id}','${esc(player)}')">Speichern</button>
+        <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
       </div>
     </div>`;
   }).join('');
@@ -1124,6 +1132,32 @@ function saveTip(matchId, player) {
   if (!state.tips[matchId]) state.tips[matchId] = {};
   state.tips[matchId][player] = {home:parseInt(h), away:parseInt(a)};
   save(); renderTipps();
+}
+
+function saveAllTips() {
+  const sel = document.getElementById('activeTipper');
+  let player;
+  if (currentUser && !currentUser.isAdmin) {
+    player = currentUser.name;
+  } else {
+    player = sel ? sel.value : '';
+  }
+  if (!player) { alert('Kein Spieler ausgewählt.'); return; }
+  const open = state.matches.filter(m => m.resultHome == null);
+  let saved = 0, skipped = 0;
+  open.forEach(m => {
+    const hEl = document.getElementById('tip_h_' + m.id);
+    const aEl = document.getElementById('tip_a_' + m.id);
+    if (!hEl || !aEl) return;
+    const h = hEl.value, a = aEl.value;
+    if (h === '' || a === '') { skipped++; return; }
+    if (!state.tips[m.id]) state.tips[m.id] = {};
+    state.tips[m.id][player] = {home: parseInt(h), away: parseInt(a)};
+    saved++;
+  });
+  if (saved === 0) { alert('Keine Tipps zum Speichern (Felder leer?).'); return; }
+  save();
+  renderTipps();
 }
 
 // ===================== POINTS =====================
