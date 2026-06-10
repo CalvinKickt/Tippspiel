@@ -533,6 +533,18 @@
   </div>
 </div>
 
+<!-- SPIEL LÖSCHEN CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteMatchModal">
+  <div class="modal">
+    <h3>🗑️ Spiel löschen?</h3>
+    <p id="deleteMatchLabel" style="color:var(--muted);font-size:0.9rem"></p>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="document.getElementById('deleteMatchModal').classList.remove('open')">Abbrechen</button>
+      <button class="btn btn-danger" onclick="confirmDeleteMatch()">Löschen</button>
+    </div>
+  </div>
+</div>
+
 <!-- WOCHE ABSCHLIESSEN MODAL -->
 <div class="modal-overlay" id="closeWeekModal">
   <div class="modal">
@@ -647,7 +659,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v3';
+const APP_VERSION = 'v13';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -710,6 +722,57 @@ function applyDefaults() {
       }
     });
     if (added) save();
+  }
+  // Einmalige Bereinigung: falsche Spiele entfernen
+  const wrongMatches = [
+    {home:'USA', away:'Kanada', date:'2026-06-19T00:00'},
+    {home:'Mexiko', away:'Kamerun', date:'2026-06-19T03:00'},
+    {home:'Uruguay', away:'Kap Verde', date:'2026-06-19T19:00'},
+    {home:'Spanien', away:'Saudi-Arabien', date:'2026-06-19T22:00'},
+    {home:'Norwegen', away:'Frankreich', date:'2026-06-20T01:00'},
+    {home:'Senegal', away:'Irak', date:'2026-06-20T04:00'},
+    {home:'Deutschland', away:'Schottland', date:'2026-06-20T19:00'},
+    {home:'Curaçao', away:'Haiti', date:'2026-06-20T22:00'},
+    {home:'Portugal', away:'Österreich', date:'2026-06-21T00:00'},
+    {home:'Algerien', away:'Jordanien', date:'2026-06-21T03:00'},
+    {home:'Brasilien', away:'Mexiko', date:'2026-06-21T19:00'},
+    {home:'Kamerun', away:'Tschechien', date:'2026-06-21T22:00'},
+    {home:'Schweiz', away:'Südafrika', date:'2026-06-22T00:00'},
+    {home:'USA', away:'Bosnien-Herzegowina', date:'2026-06-22T03:00'},
+    {home:'Australien', away:'Deutschland', date:'2026-06-22T19:00'},
+    {home:'Niederlande', away:'Elfenbeinküste', date:'2026-06-22T22:00'},
+    {home:'Ecuador', away:'Japan', date:'2026-06-23T00:00'},
+    {home:'Schweden', away:'Schottland', date:'2026-06-23T03:00'},
+    {home:'Türkei', away:'Haiti', date:'2026-06-23T19:00'},
+    {home:'Marokko', away:'Curaçao', date:'2026-06-23T22:00'},
+    {home:'Tunesien', away:'Elfenbeinküste', date:'2026-06-24T00:00'},
+    {home:'Japan', away:'Niederlande', date:'2026-06-24T03:00'},
+    {home:'Argentinien', away:'Jordanien', date:'2026-06-24T19:00'},
+    {home:'Portugal', away:'Algerien', date:'2026-06-24T22:00'},
+    {home:'England', away:'Usbekistan', date:'2026-06-25T00:00'},
+    {home:'Panama', away:'Kroatien', date:'2026-06-25T03:00'},
+    {home:'Kolumbien', away:'DR Kongo', date:'2026-06-25T19:00'},
+    {home:'Ghana', away:'Portugal', date:'2026-06-25T22:00'},
+    {home:'Belgien', away:'Iran', date:'2026-06-26T00:00'},
+    {home:'Ägypten', away:'Neuseeland', date:'2026-06-26T03:00'},
+    {home:'Saudi-Arabien', away:'Belgien', date:'2026-06-26T19:00'},
+    {home:'Neuseeland', away:'Iran', date:'2026-06-26T22:00'},
+    {home:'Brasilien', away:'Tschechien', date:'2026-06-27T00:00'},
+    {home:'Schweiz', away:'Kanada', date:'2026-06-27T03:00'},
+    {home:'Senegal', away:'Norwegen', date:'2026-06-27T19:00'},
+    {home:'Frankreich', away:'Irak', date:'2026-06-27T22:00'},
+    {home:'Deutschland', away:'Türkei', date:'2026-06-28T00:00'},
+    {home:'Schottland', away:'Curaçao', date:'2026-06-28T03:00'},
+    {home:'Kroatien', away:'Usbekistan', date:'2026-06-28T19:00'},
+    {home:'England', away:'Panama', date:'2026-06-28T22:00'},
+  ];
+  const wrongIds = state.matches
+    .filter(m => wrongMatches.some(w => w.home===m.home && w.away===m.away && (m.date||'').startsWith(w.date.slice(0,16))))
+    .map(m => m.id);
+  if (wrongIds.length) {
+    state.matches = state.matches.filter(m => !wrongIds.includes(m.id));
+    wrongIds.forEach(id => delete state.tips[id]);
+    save();
   }
 }
 
@@ -912,6 +975,7 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedCalDate = null; // 'YYYY-MM-DD'
 let detailMatchId = null;
+let pendingDeleteMatchId = null;
 
 const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const DAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
@@ -987,7 +1051,7 @@ function renderCalendar() {
       onclick="selectCalDay('${dateStr}')">
       <div class="cal-day-num">${dayNum}</div>
       ${chips}
-      <button class="cal-add-btn" onclick="event.stopPropagation();openAddMatchModal('${dateStr}')" title="Spiel hinzufügen">+</button>
+      ${(currentUser && currentUser.isAdmin) ? `<button class="cal-add-btn" onclick="event.stopPropagation();openAddMatchModal('${dateStr}')" title="Spiel hinzufügen">+</button>` : ''}
     </div>`;
   }
 
@@ -1055,6 +1119,12 @@ function openMatchDetail(id) {
   document.getElementById('detail_a').value = haRes ? m.resultAway : '';
   document.getElementById('detailSaveBtn').textContent = haRes ? 'Ergebnis ändern' : 'Ergebnis speichern';
   document.getElementById('detailClearBtn').style.display = haRes ? '' : 'none';
+  // Admin-only controls
+  const isAdmin = currentUser && currentUser.isAdmin;
+  document.getElementById('detailResultSection').style.display = isAdmin ? '' : 'none';
+  document.getElementById('detailSaveBtn').style.display = isAdmin ? '' : 'none';
+  document.getElementById('detailClearBtn').style.display = (isAdmin && haRes) ? '' : 'none';
+  document.querySelector('#matchDetailModal .btn-danger').style.display = isAdmin ? '' : 'none';
   document.getElementById('matchDetailModal').classList.add('open');
 }
 
@@ -1082,10 +1152,19 @@ function clearResultFromDetail() {
 
 function deleteMatchFromDetail() {
   if (!detailMatchId) return;
-  if (!confirm('Spiel löschen?')) return;
-  state.matches = state.matches.filter(m=>m.id!==detailMatchId);
-  delete state.tips[detailMatchId];
-  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
+  const m = state.matches.find(m=>m.id===detailMatchId); if (!m) return;
+  pendingDeleteMatchId = detailMatchId;
+  document.getElementById('deleteMatchLabel').textContent = m.home + ' vs ' + m.away;
+  closeDetailModal();
+  document.getElementById('deleteMatchModal').classList.add('open');
+}
+function confirmDeleteMatch() {
+  if (!pendingDeleteMatchId) return;
+  document.getElementById('deleteMatchModal').classList.remove('open');
+  state.matches = state.matches.filter(m=>m.id!==pendingDeleteMatchId);
+  delete state.tips[pendingDeleteMatchId];
+  pendingDeleteMatchId = null;
+  save(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
 }
 
 // ===================== MATCHES =====================
@@ -1762,7 +1841,7 @@ function applyAccessControl() {
   // Nav visibility
   document.querySelectorAll('nav button[data-page]').forEach(b => {
     const page = b.getAttribute('data-page');
-    const adminOnly = page === 'spiele' || page === 'einstellungen';
+    const adminOnly = page === 'einstellungen';
     b.style.display = (!isAdmin && adminOnly) ? 'none' : '';
   });
   // Week close banner – admin only
@@ -1917,55 +1996,59 @@ const wmMatches = [
   {date:'2026-06-18T18:00', home:'Tschechien',       away:'Südafrika',       group:'A'},
   {date:'2026-06-18T21:00', home:'Schweiz',          away:'Bosnien-Herzegowina', group:'B'},
   // Freitag 19. Juni 2026
-  {date:'2026-06-19T00:00', home:'USA',              away:'Kanada',          group:'A'},
-  {date:'2026-06-19T03:00', home:'Mexiko',           away:'Kamerun',         group:'B'},
-  {date:'2026-06-19T19:00', home:'Uruguay',          away:'Kap Verde',       group:'H'},
-  {date:'2026-06-19T22:00', home:'Spanien',          away:'Saudi-Arabien',   group:'H'},
+  {date:'2026-06-19T21:00', home:'USA',              away:'Australien',          group:'D'},
   // Samstag 20. Juni 2026
-  {date:'2026-06-20T01:00', home:'Norwegen',         away:'Frankreich',      group:'I'},
-  {date:'2026-06-20T04:00', home:'Senegal',          away:'Irak',            group:'I'},
-  {date:'2026-06-20T19:00', home:'Deutschland',      away:'Schottland',      group:'E'},
-  {date:'2026-06-20T22:00', home:'Curaçao',          away:'Haiti',           group:'C'},
+  {date:'2026-06-20T00:00', home:'Schottland',       away:'Marokko',         group:'C'},
+  {date:'2026-06-20T02:30', home:'Brasilien',        away:'Haiti',           group:'C'},
+  {date:'2026-06-20T05:00', home:'Türkei',           away:'Paraguay',        group:'D'},
+  {date:'2026-06-20T19:00', home:'Niederlande',      away:'Schweden',        group:'F'},
+  {date:'2026-06-20T22:00', home:'Deutschland',      away:'Elfenbeinküste',  group:'E'},
   // Sonntag 21. Juni 2026
-  {date:'2026-06-21T00:00', home:'Portugal',         away:'Österreich',      group:'J'},
-  {date:'2026-06-21T03:00', home:'Algerien',         away:'Jordanien',       group:'J'},
-  {date:'2026-06-21T19:00', home:'Brasilien',        away:'Mexiko',          group:'B'},
-  {date:'2026-06-21T22:00', home:'Kamerun',          away:'Tschechien',      group:'B'},
+  {date:'2026-06-21T02:00', home:'Ecuador',          away:'Curaçao',         group:'E'},
+  {date:'2026-06-21T06:00', home:'Tunesien',         away:'Japan',           group:'F'},
+  {date:'2026-06-21T18:00', home:'Spanien',          away:'Saudi-Arabien',   group:'H'},
+  {date:'2026-06-21T21:00', home:'Belgien',          away:'Iran',            group:'G'},
   // Montag 22. Juni 2026
-  {date:'2026-06-22T00:00', home:'Schweiz',          away:'Südafrika',       group:'A'},
-  {date:'2026-06-22T03:00', home:'USA',              away:'Bosnien-Herzegowina', group:'A'},
-  {date:'2026-06-22T19:00', home:'Australien',       away:'Deutschland',     group:'E'},
-  {date:'2026-06-22T22:00', home:'Niederlande',      away:'Elfenbeinküste',  group:'F'},
+  {date:'2026-06-22T00:00', home:'Uruguay',          away:'Kap Verde',       group:'H'},
+  {date:'2026-06-22T03:00', home:'Neuseeland',       away:'Ägypten',         group:'G'},
+  {date:'2026-06-22T19:00', home:'Argentinien',      away:'Österreich',      group:'J'},
+  {date:'2026-06-22T23:00', home:'Frankreich',       away:'Irak',            group:'I'},
   // Dienstag 23. Juni 2026
-  {date:'2026-06-23T00:00', home:'Ecuador',          away:'Japan',           group:'F'},
-  {date:'2026-06-23T03:00', home:'Schweden',         away:'Schottland',      group:'E'},
-  {date:'2026-06-23T19:00', home:'Türkei',           away:'Haiti',           group:'C'},
-  {date:'2026-06-23T22:00', home:'Marokko',          away:'Curaçao',         group:'C'},
+  {date:'2026-06-23T02:00', home:'Norwegen',         away:'Senegal',         group:'I'},
+  {date:'2026-06-23T05:00', home:'Jordanien',        away:'Algerien',        group:'J'},
+  {date:'2026-06-23T19:00', home:'Portugal',         away:'Usbekistan',      group:'K'},
+  {date:'2026-06-23T22:00', home:'England',          away:'Ghana',           group:'L'},
   // Mittwoch 24. Juni 2026
-  {date:'2026-06-24T00:00', home:'Tunesien',         away:'Elfenbeinküste',  group:'F'},
-  {date:'2026-06-24T03:00', home:'Japan',            away:'Niederlande',     group:'F'},
-  {date:'2026-06-24T19:00', home:'Argentinien',      away:'Jordanien',       group:'J'},
-  {date:'2026-06-24T22:00', home:'Portugal',         away:'Algerien',        group:'J'},
+  {date:'2026-06-24T01:00', home:'Panama',              away:'Kroatien',            group:'L'},
+  {date:'2026-06-24T04:00', home:'Kolumbien',           away:'DR Kongo',            group:'K'},
+  {date:'2026-06-24T21:00', home:'Schweiz',             away:'Kanada',              group:'B'},
+  {date:'2026-06-24T21:00', home:'Bosnien-Herzegowina', away:'Katar',               group:'B'},
   // Donnerstag 25. Juni 2026
-  {date:'2026-06-25T00:00', home:'England',          away:'Usbekistan',      group:'L'},
-  {date:'2026-06-25T03:00', home:'Panama',           away:'Kroatien',        group:'L'},
-  {date:'2026-06-25T19:00', home:'Kolumbien',        away:'DR Kongo',        group:'K'},
-  {date:'2026-06-25T22:00', home:'Ghana',            away:'Portugal',        group:'K'},
+  {date:'2026-06-25T00:00', home:'Marokko',             away:'Haiti',               group:'C'},
+  {date:'2026-06-25T00:00', home:'Schottland',          away:'Brasilien',           group:'C'},
+  {date:'2026-06-25T03:00', home:'Südafrika',           away:'Südkorea',            group:'A'},
+  {date:'2026-06-25T03:00', home:'Tschechien',          away:'Mexiko',              group:'A'},
+  {date:'2026-06-25T22:00', home:'Curaçao',             away:'Elfenbeinküste',      group:'E'},
+  {date:'2026-06-25T22:00', home:'Ecuador',             away:'Deutschland',         group:'E'},
   // Freitag 26. Juni 2026
-  {date:'2026-06-26T00:00', home:'Belgien',          away:'Iran',            group:'G'},
-  {date:'2026-06-26T03:00', home:'Ägypten',          away:'Neuseeland',      group:'G'},
-  {date:'2026-06-26T19:00', home:'Saudi-Arabien',    away:'Belgien',         group:'G'},
-  {date:'2026-06-26T22:00', home:'Neuseeland',       away:'Iran',            group:'G'},
+  {date:'2026-06-26T01:00', home:'Tunesien',         away:'Niederlande',     group:'F'},
+  {date:'2026-06-26T01:00', home:'Japan',            away:'Schweden',        group:'F'},
+  {date:'2026-06-26T04:00', home:'Türkei',           away:'USA',             group:'D'},
+  {date:'2026-06-26T04:00', home:'Paraguay',         away:'Australien',      group:'D'},
+  {date:'2026-06-26T21:00', home:'Norwegen',         away:'Frankreich',      group:'I'},
+  {date:'2026-06-26T21:00', home:'Senegal',          away:'Irak',            group:'I'},
   // Samstag 27. Juni 2026
-  {date:'2026-06-27T00:00', home:'Brasilien',        away:'Tschechien',      group:'B'},
-  {date:'2026-06-27T03:00', home:'Schweiz',          away:'Kanada',          group:'A'},
-  {date:'2026-06-27T19:00', home:'Senegal',          away:'Norwegen',        group:'I'},
-  {date:'2026-06-27T22:00', home:'Frankreich',       away:'Irak',            group:'I'},
+  {date:'2026-06-27T02:00', home:'Kap Verde',        away:'Saudi-Arabien',   group:'H'},
+  {date:'2026-06-27T02:00', home:'Uruguay',          away:'Spanien',         group:'H'},
+  {date:'2026-06-27T05:00', home:'Neuseeland',       away:'Belgien',         group:'G'},
+  {date:'2026-06-27T05:00', home:'Ägypten',          away:'Iran',            group:'G'},
+  {date:'2026-06-27T23:00', home:'Panama',           away:'England',         group:'L'},
+  {date:'2026-06-27T23:00', home:'Kroatien',         away:'Ghana',           group:'L'},
   // Sonntag 28. Juni 2026
-  {date:'2026-06-28T00:00', home:'Deutschland',      away:'Türkei',          group:'E'},
-  {date:'2026-06-28T03:00', home:'Schottland',       away:'Curaçao',         group:'E'},
-  {date:'2026-06-28T19:00', home:'Kroatien',         away:'Usbekistan',      group:'L'},
-  {date:'2026-06-28T22:00', home:'England',          away:'Panama',          group:'L'},
+  {date:'2026-06-28T01:30', home:'Kolumbien',        away:'Portugal',        group:'K'},
+  {date:'2026-06-28T01:30', home:'DR Kongo',         away:'Usbekistan',      group:'K'},
+  {date:'2026-06-28T04:00', home:'Algerien',         away:'Österreich',      group:'J'},
+  {date:'2026-06-28T04:00', home:'Jordanien',        away:'Argentinien',     group:'J'},
 ];
 
 // ===================== FIREBASE =====================
