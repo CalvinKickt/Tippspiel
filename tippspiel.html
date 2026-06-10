@@ -308,8 +308,8 @@
   }
 
   /* LOGIN */
-  .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 100%; min-height: -webkit-fill-available; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); margin: auto; }
   .login-logo { font-size: 3rem; margin-bottom: 10px; }
   .login-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
   .login-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
@@ -343,11 +343,11 @@
 
 <div class="layout">
 <nav>
-  <button data-page="rangliste" class="active" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
+  <button data-page="meisterschaften" class="active" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
   <button data-page="tipps" onclick="showPage('tipps', this)">✏️ Tipps</button>
   <button data-page="spiele" onclick="showPage('spiele', this)">📅 Spiele</button>
   <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
-  <button data-page="meisterschaften" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
+  <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
   <button data-page="einstellungen" onclick="showPage('einstellungen', this)">⚙️ Einstellungen</button>
 </nav>
@@ -355,7 +355,7 @@
 <main>
 
   <!-- RANGLISTE -->
-  <div id="page-rangliste" class="page active">
+  <div id="page-rangliste" class="page">
     <div class="week-banner" id="weekBanner">
       <div class="week-banner-info">
         <h3 id="weekBannerTitle">Woche 1</h3>
@@ -422,7 +422,7 @@
   </div>
 
   <!-- MEISTERSCHAFTEN -->
-  <div id="page-meisterschaften" class="page">
+  <div id="page-meisterschaften" class="page active">
     <div id="meisterCompTabs" class="meister-comp-tabs"></div>
     <div id="meisterContent"></div>
   </div>
@@ -1407,10 +1407,7 @@ function renderMeisterschaften() {
     .map(([name, t]) => ({name, ...t}))
     .sort((a,b) => b.pts-a.pts || b.exact-a.exact || b.diff-a.diff);
 
-  if (sorted.every(s => s.played === 0)) {
-    contentEl.innerHTML = `<div class="card"><div class="empty">Noch keine Spiele mit Ergebnis für <strong>${selectedMeisterComp}</strong>.</div></div>`;
-    return;
-  }
+  const hasResults = sorted.some(s => s.played > 0);
 
   // Podium (top 3)
   const [p1, p2, p3] = sorted;
@@ -1439,20 +1436,23 @@ function renderMeisterschaften() {
 
   // Full table
   const tableHtml = `<table class="rank-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th>Differenz</th><th>Tendenz</th><th>Spiele</th></tr></thead>
-    <tbody>${sorted.map((s,i) => `
-      <tr class="rank-${i+1}">
+    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
+    <tbody>${sorted.map((s,i) => {
+      const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
+      return `
+      <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
         <td>
-          <strong>${s.name}</strong>
+          <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
           ${s.weekScores.length ? `<div class="meister-week-chips">${s.weekScores.map(w=>`<span class="meister-week-chip ${w.won?'won':''}" title="Woche ${w.week}">${w.won?'🏆':''}W${w.week}: ${w.pts}</span>`).join('')}</div>` : ''}
         </td>
-        <td class="pts">${s.pts}</td>
+        <td class="pts" style="font-size:1.4rem">${s.pts}</td>
         <td><span class="badge badge-exact">${s.exact}</span></td>
-        <td><span class="badge badge-diff">${s.diff}</span></td>
-        <td><span class="badge badge-tendency">${s.tendency}</span></td>
-        <td style="color:var(--muted);font-size:0.85rem">${s.played}</td>
-      </tr>`).join('')}
+        <td style="color:var(--muted);font-size:0.82rem">${s.diff}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.tendency}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.played}</td>
+      </tr>`;
+    }).join('')}
     </tbody></table>`;
 
   const comp = state.competitions.find(c => c.name === selectedMeisterComp);
@@ -1460,8 +1460,9 @@ function renderMeisterschaften() {
   contentEl.innerHTML = `
     <div class="card">
       <h2>${comp ? comp.icon : '🏆'} ${selectedMeisterComp} – Gesamttabelle</h2>
-      ${livePts > 0 ? '<div style="font-size:0.78rem;color:#60a5fa;margin-bottom:12px">🔴 Live – aktuelle Woche einberechnet</div>' : ''}
-      ${podiumHtml}
+      ${hasResults && livePts > 0 ? '<div style="font-size:0.78rem;color:#60a5fa;margin-bottom:12px">🔴 Live – aktuelle Woche einberechnet</div>' : ''}
+      ${!hasResults ? '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">⏳ Noch keine Ergebnisse – alle starten bei 0 Punkten.</div>' : ''}
+      ${hasResults ? podiumHtml : ''}
       ${tableHtml}
     </div>`;
 }
@@ -1552,6 +1553,7 @@ function initLogin() {
   updateLoginSelect();
   if (!currentUser) {
     document.getElementById('loginOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   }
 }
 
@@ -1590,6 +1592,7 @@ function doLogin() {
   }
   document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('loginPassword').value = '';
+  document.body.style.overflow = '';
   applyAccessControl();
   updateHeaderUser();
   renderAll();
@@ -1599,14 +1602,15 @@ function doLogout() {
   currentUser = null;
   // Go back to rangliste
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-rangliste').classList.add('active');
+  document.getElementById('page-meisterschaften').classList.add('active');
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  const rb = document.querySelector('[data-page="rangliste"]');
+  const rb = document.querySelector('[data-page="meisterschaften"]');
   if (rb) rb.classList.add('active');
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
   updateHeaderUser();
 }
 
@@ -1648,6 +1652,7 @@ function doRegister() {
   // Auto-login
   currentUser = { name: name, isAdmin: false };
   document.getElementById('loginOverlay').style.display = 'none';
+  document.body.style.overflow = '';
   document.getElementById('regName').value = '';
   document.getElementById('regPass').value = '';
   document.getElementById('regPass2').value = '';
