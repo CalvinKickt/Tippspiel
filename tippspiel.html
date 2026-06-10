@@ -11,24 +11,26 @@
     --green: #16a34a;
     --green-light: #22c55e;
     --green-dark: #14532d;
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface2: #334155;
-    --border: #475569;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
+    --bg: #070d18;
+    --surface: #0d1623;
+    --surface2: #16233a;
+    --border: #253348;
+    --text: #e8f0f8;
+    --muted: #617a99;
     --gold: #f59e0b;
     --silver: #94a3b8;
     --bronze: #b45309;
     --red: #ef4444;
     --blue: #3b82f6;
     --purple: #a78bfa;
-    --radius: 10px;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.45);
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.28);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  header { background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #F4C500 60%, #C8102E 100%); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  header { background: linear-gradient(135deg, #050d1a 0%, #0d1e36 35%, #132d55 65%, #1a3d70 100%); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 18px rgba(0,0,0,0.55); }
   header h1 { font-size: 1.4rem; font-weight: 700; }
   header .header-icon { font-size: 1.6rem; }
   .header-right { margin-left: auto; text-align: right; }
@@ -54,7 +56,7 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
   .card h2 { font-size: 1.05rem; margin-bottom: 16px; color: var(--green-light); display: flex; align-items: center; gap: 8px; }
 
   .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -65,7 +67,7 @@
   input::placeholder { color: var(--border); }
 
   .btn { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.15s; }
-  .btn-primary { background: var(--green); color: white; }
+  .btn-primary { background: var(--green); color: var(--btn-text, white); }
   .btn-primary:hover { background: var(--green-light); }
   .btn-danger { background: var(--red); color: white; }
   .btn-danger:hover { opacity: 0.85; }
@@ -115,7 +117,8 @@
   .overall-table tr:last-child td { border-bottom: none; }
 
   /* SPIELE */
-  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); transition: transform 0.15s, box-shadow 0.15s; }
+  .match-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
   .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .match-meta { font-size: 0.75rem; color: var(--muted); }
   .match-teams { display: flex; align-items: center; gap: 12px; font-size: 1.05rem; font-weight: 600; }
@@ -125,7 +128,7 @@
   .competition-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; }
 
   /* TIPPS */
-  .tip-match { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; }
+  .tip-match { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; box-shadow: var(--shadow-sm); }
   .tip-match-info { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .tip-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
   .tip-team-label { font-size: 1rem; color: var(--muted); min-width: 0; }
@@ -320,6 +323,33 @@
   .pw-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .pw-status-ok { color: var(--green-light); font-size: 0.8rem; }
   .pw-status-no { color: var(--red); font-size: 0.8rem; }
+
+  /* TIPPS PROGRESS + GROUPS */
+  .tipps-progress { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+  .tipps-progress-track { background: var(--surface2); border-radius: 20px; height: 8px; overflow: hidden; margin-top: 8px; }
+  .tipps-progress-fill { height: 100%; border-radius: 20px; transition: width 0.4s ease; }
+  .tipps-day-header { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 16px 4px 6px; }
+  .tipps-day-header:first-of-type { padding-top: 4px; }
+  .tipps-deadline-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 12px; color: #fcd34d; font-size: 0.875rem; display: flex; align-items: center; gap: 8px; }
+
+  /* STATISTIK PAGE */
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+  .stat-card h2 { font-size: 1rem; margin-bottom: 16px; color: var(--green-light); display: flex; align-items: center; gap: 8px; }
+  .stat-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .stat-bar-label { font-size: 0.82rem; width: 82px; flex-shrink: 0; color: var(--muted); }
+  .stat-bar-track { flex: 1; height: 10px; border-radius: 20px; overflow: hidden; background: var(--surface2); }
+  .stat-bar-fill { height: 100%; border-radius: 20px; transition: width 0.5s ease; }
+  .stat-bar-val { font-size: 0.82rem; font-weight: 700; min-width: 26px; text-align: right; }
+  .stat-bar-pct { font-size: 0.72rem; color: var(--muted); min-width: 36px; text-align: right; }
+  .stat-cmp-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid rgba(37,51,72,0.7); }
+  .stat-cmp-row:last-child { border-bottom: none; }
+  .stat-cmp-name { width: 80px; font-size: 0.88rem; flex-shrink: 0; }
+  .stat-cmp-bar { flex: 1; height: 8px; border-radius: 20px; overflow: hidden; background: var(--surface2); }
+  .stat-cmp-fill { height: 100%; border-radius: 20px; transition: width 0.5s ease; }
+  .stat-cmp-pts { font-size: 0.9rem; font-weight: 700; color: var(--green-light); min-width: 36px; text-align: right; }
+  .stat-cmp-sub { font-size: 0.75rem; color: var(--muted); min-width: 46px; text-align: right; }
+  .stat-team-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(37,51,72,0.5); font-size: 0.88rem; }
+  .stat-team-row:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -351,6 +381,7 @@
   <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
   <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
+  <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
   <button data-page="einstellungen" onclick="showPage('einstellungen', this)">⚙️ Einstellungen</button>
 </nav>
 
@@ -439,6 +470,11 @@
       <span class="section-title">Wochenarchiv</span>
     </div>
     <div id="geschichteContent"></div>
+  </div>
+
+  <!-- STATISTIK -->
+  <div id="page-statistik" class="page">
+    <div id="statistikContent"></div>
   </div>
 
   <!-- EINSTELLUNGEN -->
@@ -593,13 +629,13 @@
       </div>
       <div style="margin-bottom:8px;font-size:0.82rem;color:var(--muted)">Header-Verlauf:</div>
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
-        <input type="color" id="ps_h1" value="#0a0a0a" oninput="previewColors()"
+        <input type="color" id="ps_h1" value="#050d1a" oninput="previewColors()"
           style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
-        <input type="color" id="ps_h2" value="#F4C500" oninput="previewColors()"
+        <input type="color" id="ps_h2" value="#132d55" oninput="previewColors()"
           style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
-        <input type="color" id="ps_h3" value="#C8102E" oninput="previewColors()"
+        <input type="color" id="ps_h3" value="#1a3d70" oninput="previewColors()"
           style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
-        <div id="ps_headerPreview" style="flex:1;height:32px;border-radius:6px;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 25%,#F4C500 60%,#C8102E 100%)"></div>
+        <div id="ps_headerPreview" style="flex:1;height:32px;border-radius:6px;background:linear-gradient(135deg,#050d1a 0%,#0d1e36 35%,#132d55 65%,#1a3d70 100%)"></div>
       </div>
       <button class="btn btn-ghost" style="font-size:0.78rem;padding:4px 10px" onclick="resetColors()">Zurücksetzen</button>
     </div>
@@ -679,7 +715,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v15';
+const APP_VERSION = 'v17';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -820,6 +856,7 @@ function renderAll() {
   renderPasswordList();
   renderGeschichte();
   renderMeisterschaften();
+  renderStatistik();
   updateTipperSelect();
   const tn = document.getElementById('tournamentName');
   if (tn) tn.value = state.tournament || '';
@@ -1300,47 +1337,96 @@ function renderTipps() {
   const open = state.matches.filter(m=>m.resultHome==null).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if (!open.length) { el.innerHTML = '<div class="empty">✅ Alle Spiele haben ein Ergebnis.</div>'; return; }
 
-  // Auto-refresh every 30s so locks activate on time
   if (_tipRefreshTimer) clearInterval(_tipRefreshTimer);
   _tipRefreshTimer = setInterval(() => renderTipps(), 30000);
 
-  el.innerHTML = open.map(m => {
-    const tip = (state.tips[m.id]||{})[player]||{};
-    const saved = tip.home!==undefined;
-    const locked = isMatchLocked(m);
-    const countdown = getCountdown(m);
-    const d = m.date ? new Date(m.date).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
-    const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
+  // Progress bar
+  const tippedCount = open.filter(m => { const t=(state.tips[m.id]||{})[player]; return t&&t.home!==undefined; }).length;
+  const totalOpen = open.length;
+  const progressPct = totalOpen > 0 ? Math.round(tippedCount/totalOpen*100) : 0;
+  const progressColor = progressPct===100 ? '#22c55e' : progressPct>=50 ? '#60a5fa' : '#f59e0b';
 
-    const urgentStyle = (!locked && countdown && countdown.includes('Min')) ? 'border-color:#f59e0b;' : '';
-    const lockedStyle = locked ? 'opacity:0.7;' : '';
+  let html = `<div class="tipps-progress">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:0.85rem;font-weight:600;color:var(--muted)">Tipps abgegeben</span>
+      <span style="font-size:0.95rem;font-weight:700;color:${progressColor}">${tippedCount} / ${totalOpen}</span>
+    </div>
+    <div class="tipps-progress-track" style="margin-top:8px">
+      <div class="tipps-progress-fill" style="width:${progressPct}%;background:${progressColor}"></div>
+    </div>
+  </div>`;
 
-    return `<div class="tip-match" style="${urgentStyle}${lockedStyle}">
-      <div class="tip-match-info">
-        <div>
-          <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
-          ${!locked && countdown ? `<div style="font-size:0.72rem;color:${countdown.includes('Min')? '#f59e0b':'#60a5fa'};margin-top:3px;font-weight:600">${countdown}</div>` : ''}
+  // Deadline banner
+  const soonMissing = open.filter(m => {
+    const diff = new Date(m.date) - new Date();
+    if (diff <= 0 || diff > 30*60*1000) return false;
+    const t = (state.tips[m.id]||{})[player];
+    return !t || t.home===undefined;
+  });
+  if (soonMissing.length > 0) {
+    html += `<div class="tipps-deadline-banner">⚠️ ${soonMissing.length} Spiel${soonMissing.length>1?'e starten':'  startet'} in &lt;30 Min – noch ohne Tipp!</div>`;
+  }
+
+  // Group by date
+  const grouped = {};
+  open.forEach(m => {
+    const day = (m.date||'').substring(0,10);
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(m);
+  });
+
+  const todayStr = new Date().toISOString().substring(0,10);
+  const tomorrowD = new Date(); tomorrowD.setDate(tomorrowD.getDate()+1);
+  const tomorrowStr = tomorrowD.toISOString().substring(0,10);
+
+  Object.entries(grouped).forEach(([day, matches]) => {
+    let dayLabel = day;
+    if (day) {
+      if (day === todayStr) dayLabel = 'Heute';
+      else if (day === tomorrowStr) dayLabel = 'Morgen';
+      else dayLabel = new Date(day+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'});
+    }
+    html += `<div class="tipps-day-header">${dayLabel}</div>`;
+
+    matches.forEach(m => {
+      const tip = (state.tips[m.id]||{})[player]||{};
+      const saved = tip.home!==undefined;
+      const locked = isMatchLocked(m);
+      const countdown = getCountdown(m);
+      const d = m.date ? new Date(m.date).toLocaleString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+      const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()]||'';
+      const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()]||'';
+      const urgentStyle = (!locked && countdown && countdown.includes('Min')) ? 'border-color:#f59e0b;' : '';
+      const lockedStyle = locked ? 'opacity:0.7;' : '';
+
+      html += `<div class="tip-match" style="${urgentStyle}${lockedStyle}">
+        <div class="tip-match-info">
+          <div>
+            <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
+            ${!locked && countdown ? `<div style="font-size:0.72rem;color:${countdown.includes('Min')?'#f59e0b':'#60a5fa'};margin-top:3px;font-weight:600">${countdown}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            ${locked ? '<span style="font-size:0.8rem;color:#f87171;font-weight:600">🔒 Gesperrt</span>' : ''}
+            ${saved ? '<span class="tip-saved">✓ Gespeichert</span>' : ''}
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          ${locked ? '<span style="font-size:0.8rem;color:#f87171;font-weight:600">🔒 Gesperrt</span>' : ''}
-          ${saved ? '<span class="tip-saved">✓ Gespeichert</span>' : ''}
+        <div class="tip-inputs">
+          <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
+          <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
+            value="${tip.home!==undefined?tip.home:''}"
+            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
+          <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
+          <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
+            value="${tip.away!==undefined?tip.away:''}"
+            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}"`} />
+          <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
         </div>
-      </div>
-      <div class="tip-inputs">
-        <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
-        <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
-          value="${tip.home!==undefined?tip.home:''}"
-          ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
-        <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
-        <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
-          value="${tip.away!==undefined?tip.away:''}"
-          ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}"`} />
-        <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    });
+  });
+
+  el.innerHTML = html;
 }
 
 function saveTip(matchId, player) {
@@ -1797,6 +1883,7 @@ function doLogout() {
   // Reset colors to default on logout
   document.documentElement.style.removeProperty('--green');
   document.documentElement.style.removeProperty('--green-light');
+  document.documentElement.style.removeProperty('--btn-text');
   const hdr = document.querySelector('header');
   if (hdr) hdr.style.background = '';
   currentUser = null;
@@ -1893,6 +1980,11 @@ function applyUserColors(prefs) {
   if (prefs.accent) {
     root.style.setProperty('--green', prefs.accent);
     root.style.setProperty('--green-light', prefs.accent);
+    // Auto-contrast: dark text on light backgrounds, white on dark
+    const hex = prefs.accent.replace('#','');
+    const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+    root.style.setProperty('--btn-text', luminance > 0.55 ? '#0a0f1e' : 'white');
   }
   if (prefs.h1 && prefs.h2 && prefs.h3) {
     document.querySelector('header').style.background =
@@ -1902,9 +1994,9 @@ function applyUserColors(prefs) {
 
 function resetColors() {
   document.getElementById('ps_accent').value = '#22c55e';
-  document.getElementById('ps_h1').value = '#0a0a0a';
-  document.getElementById('ps_h2').value = '#F4C500';
-  document.getElementById('ps_h3').value = '#C8102E';
+  document.getElementById('ps_h1').value = '#050d1a';
+  document.getElementById('ps_h2').value = '#132d55';
+  document.getElementById('ps_h3').value = '#1a3d70';
   previewColors();
 }
 
@@ -1927,9 +2019,9 @@ function openPlayerSettings() {
   if (currentUser && !currentUser.isAdmin) {
     const prefs = (state.userPrefs || {})[currentUser.name] || {};
     document.getElementById('ps_accent').value = prefs.accent || '#22c55e';
-    document.getElementById('ps_h1').value = prefs.h1 || '#0a0a0a';
-    document.getElementById('ps_h2').value = prefs.h2 || '#F4C500';
-    document.getElementById('ps_h3').value = prefs.h3 || '#C8102E';
+    document.getElementById('ps_h1').value = prefs.h1 || '#050d1a';
+    document.getElementById('ps_h2').value = prefs.h2 || '#132d55';
+    document.getElementById('ps_h3').value = prefs.h3 || '#1a3d70';
     previewColors();
   }
   document.getElementById('playerSettingsModal').classList.add('open');
@@ -2033,6 +2125,118 @@ function setPassword(key, safeId) {
   state.passwords[key] = pass;
   save();
   renderPasswordList();
+}
+
+// ===================== STATISTIK =====================
+function renderStatistik() {
+  const el = document.getElementById('statistikContent'); if (!el) return;
+  if (!currentUser) { el.innerHTML = '<div class="empty">Bitte einloggen.</div>'; return; }
+
+  const isAdmin = currentUser.isAdmin;
+  let player = isAdmin
+    ? (document.getElementById('statistikPlayerSel') ? document.getElementById('statistikPlayerSel').value : (state.players[0]||''))
+    : currentUser.name;
+
+  if (!player && state.players.length) player = state.players[0];
+  if (!player) { el.innerHTML = '<div class="empty">Noch keine Spieler.</div>'; return; }
+
+  const doneMatches = state.matches.filter(m => m.resultHome != null);
+
+  // Own hit stats
+  let exact=0, diff=0, tendency=0, miss=0;
+  const teamStats = {};
+  doneMatches.forEach(m => {
+    const tip = (state.tips[m.id]||{})[player];
+    if (!tip) return;
+    const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+    if (pts===null) return;
+    if (pts===3) exact++; else if (pts===2) diff++; else if (pts===1) tendency++; else miss++;
+    [m.home, m.away].forEach(team => {
+      if (!teamStats[team]) teamStats[team] = {tipped:0, pts:0};
+      teamStats[team].tipped++;
+      teamStats[team].pts += pts;
+    });
+  });
+  const total = exact+diff+tendency+miss;
+  const pct = n => total>0 ? Math.round(n/total*100) : 0;
+
+  // Player selector (admin only)
+  const selectorHtml = isAdmin ? `
+    <div class="player-selector" style="margin-bottom:14px">
+      <label>Spieler:</label>
+      <select id="statistikPlayerSel" onchange="renderStatistik()" style="max-width:200px">
+        ${state.players.map(p=>`<option value="${esc(p)}" ${p===player?'selected':''}>${p}</option>`).join('')}
+      </select>
+    </div>` : `<div style="font-size:0.85rem;color:var(--muted);margin-bottom:14px">Meine Statistik – <strong style="color:var(--text)">${player}</strong></div>`;
+
+  // Trefferquote
+  const hitHtml = `<div class="stat-card">
+    <h2>📊 Trefferquote</h2>
+    ${total===0 ? '<div class="empty" style="padding:6px 0">Noch keine bewerteten Spiele.</div>' : `
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">${total} Spiel${total!==1?'e':''} bewertet</div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">🎯 Genau</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(exact)}%;background:#22c55e"></div></div>
+      <div class="stat-bar-val" style="color:#22c55e">${exact}</div>
+      <div class="stat-bar-pct">${pct(exact)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">✌️ Differenz</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(diff)}%;background:#a78bfa"></div></div>
+      <div class="stat-bar-val" style="color:#a78bfa">${diff}</div>
+      <div class="stat-bar-pct">${pct(diff)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">👍 Tendenz</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(tendency)}%;background:#60a5fa"></div></div>
+      <div class="stat-bar-val" style="color:#60a5fa">${tendency}</div>
+      <div class="stat-bar-pct">${pct(tendency)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">❌ Falsch</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(miss)}%;background:#f87171"></div></div>
+      <div class="stat-bar-val" style="color:#f87171">${miss}</div>
+      <div class="stat-bar-pct">${pct(miss)}%</div>
+    </div>
+    `}
+  </div>`;
+
+  // Comparison
+  const allStats = state.players.map(p=>({name:p,...getPlayerStats(p)})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+  const maxPts = Math.max(...allStats.map(s=>s.pts), 1);
+  const cmpHtml = `<div class="stat-card">
+    <h2>🆚 Vergleich</h2>
+    ${allStats.length===0 ? '<div class="empty" style="padding:6px 0">Keine Daten.</div>' :
+    allStats.map(s=>`
+      <div class="stat-cmp-row">
+        <div class="stat-cmp-name" style="${s.name===player?'color:var(--green-light);font-weight:700':'font-weight:600'}">${s.name===player?'👤 ':''}${s.name}</div>
+        <div class="stat-cmp-bar"><div class="stat-cmp-fill" style="width:${Math.round(s.pts/maxPts*100)}%;background:${s.name===player?'linear-gradient(90deg,var(--green),var(--green-light))':'#253348'}"></div></div>
+        <div class="stat-cmp-pts">${s.pts}</div>
+        <div class="stat-cmp-sub">${s.played>0?Math.round(s.pts/s.played*10)/10+' p/S':'—'}</div>
+      </div>`).join('')}
+  </div>`;
+
+  // Lieblingsmannschaft
+  const teamEntries = Object.entries(teamStats)
+    .filter(([,t])=>t.tipped>=2)
+    .map(([team,t])=>({team,tipped:t.tipped,pts:t.pts,avg:t.pts/t.tipped}))
+    .sort((a,b)=>b.avg-a.avg||b.tipped-a.tipped)
+    .slice(0,8);
+  const teamHtml = `<div class="stat-card">
+    <h2>⭐ Lieblingsmannschaften</h2>
+    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Ø Punkte pro Spiel (mind. 2 Spiele)</div>
+    ${teamEntries.length===0 ? '<div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div>' :
+    teamEntries.map((t,i)=>`
+      <div class="stat-team-row">
+        <div style="width:22px;font-size:0.9rem">${i<3?['🥇','🥈','🥉'][i]:''}</div>
+        <div style="width:28px;text-align:center">${(COUNTRY_FLAGS[(t.team||'').toLowerCase()]||'⚽')}</div>
+        <div style="flex:1;font-weight:${t.avg>=2?'700':'400'}">${t.team}</div>
+        <div style="font-size:0.82rem;font-weight:700;color:${t.avg>=2?'var(--green-light)':t.avg>=1?'#60a5fa':'var(--muted)'}">${t.avg.toFixed(2)}</div>
+        <div style="font-size:0.75rem;color:var(--muted);min-width:30px;text-align:right">${t.tipped}×</div>
+      </div>`).join('')}
+  </div>`;
+
+  el.innerHTML = selectorHtml + hitHtml + cmpHtml + teamHtml;
 }
 
 // ===================== UTILS =====================
