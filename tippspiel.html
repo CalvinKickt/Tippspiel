@@ -603,6 +603,27 @@ function applyDefaults() {
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
+  // Merge missing wmMatches into state (by home+away+date)
+  if (typeof wmMatches !== 'undefined') {
+    const existingKeys = new Set(state.matches.map(m => m.home + '|' + m.away + '|' + m.date));
+    const wmComp = state.competitions.find(c => c.name && c.name.toLowerCase().includes('wm')) || null;
+    const wmCompName = wmComp ? wmComp.name : (state.competitions.length > 0 ? state.competitions[0].name : 'WM 2026');
+    let added = false;
+    wmMatches.forEach(wm => {
+      const key = wm.home + '|' + wm.away + '|' + wm.date;
+      if (!existingKeys.has(key)) {
+        state.matches.push({
+          id: 'wm_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          home: wm.home, away: wm.away, date: wm.date,
+          competition: wmCompName, group: wm.group,
+          resultHome: null, resultAway: null
+        });
+        existingKeys.add(key);
+        added = true;
+      }
+    });
+    if (added) save();
+  }
 }
 
 // ===================== NAV =====================
@@ -1575,6 +1596,14 @@ function esc(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/
 
 // ===================== INIT =====================
 const wmMatches = [
+  // Donnerstag 11. Juni 2026
+  {date:'2026-06-11T21:00', home:'Mexiko',            away:'Südafrika',           group:'A'},
+  // Freitag 12. Juni 2026
+  {date:'2026-06-12T04:00', home:'Südkorea',          away:'Tschechien',          group:'A'},
+  {date:'2026-06-12T21:00', home:'Kanada',            away:'Bosnien-Herzegowina', group:'B'},
+  // Samstag 13. Juni 2026
+  {date:'2026-06-13T03:00', home:'USA',               away:'Paraguay',            group:'D'},
+  {date:'2026-06-13T21:00', home:'Katar',             away:'Schweiz',             group:'B'},
   // Sonntag 14. Juni 2026
   {date:'2026-06-14T00:00', home:'Brasilien',       away:'Marokko',    group:'C'},
   {date:'2026-06-14T03:00', home:'Haiti',            away:'Schottland', group:'C'},
