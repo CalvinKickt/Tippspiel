@@ -598,10 +598,11 @@
       <div style="font-size:0.7rem;color:rgba(255,255,255,0.25);margin-top:4px" id="loginVersion"></div>
       <div class="form-group" style="text-align:left;margin-bottom:12px">
         <label>Name</label>
-        <input type="text" id="loginUser" placeholder="Name eingeben"
-          list="loginPlayerList" autocomplete="off"
+        <input type="text" id="login_nm_field" placeholder="Name eingeben"
+          autocomplete="off" name="tippspiel_name_x7q"
+          readonly
+          onfocus="this.removeAttribute('readonly')"
           onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()" />
-        <datalist id="loginPlayerList"></datalist>
       </div>
       <div class="form-group" style="text-align:left;margin-bottom:18px">
         <label>Passwort</label>
@@ -646,7 +647,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v1';
+const APP_VERSION = 'v3';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1342,9 +1343,16 @@ function renderUebersicht() {
     <th class="left">Spieler</th>
     ${sorted.map(m=>`<th title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
     <th>Pkt.</th></tr>`;
+  const isAdmin = currentUser && currentUser.isAdmin;
+  const myName = currentUser && !currentUser.isAdmin ? currentUser.name : null;
   const rows = state.players.map(p=>{
     const cells = sorted.map(m=>{
       const tip = (state.tips[m.id]||{})[p];
+      // Non-admin sees full details only for own tips; others: just ✓ or —
+      if (myName && p !== myName) {
+        if (!tip) return `<td><span class="tip-pending">—</span></td>`;
+        return `<td><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
+      }
       if (!tip) return `<td><span class="tip-pending">—</span></td>`;
       const ts = `${tip.home}:${tip.away}`;
       if (m.resultHome==null) return `<td><span class="tip-noresult">${ts}</span></td>`;
@@ -1649,7 +1657,7 @@ function updateLoginSelect() {
 }
 
 function doLogin() {
-  const name = document.getElementById('loginUser').value.trim();
+  const name = document.getElementById('login_nm_field').value.trim();
   const pass = document.getElementById('loginPassword').value;
   const err = document.getElementById('loginError');
   err.textContent = '';
@@ -1692,7 +1700,7 @@ function doLogout() {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   const rb = document.querySelector('[data-page="meisterschaften"]');
   if (rb) rb.classList.add('active');
-  document.getElementById('loginUser').value = '';
+  document.getElementById('login_nm_field').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginOverlay').style.display = 'flex';
@@ -1710,7 +1718,7 @@ function showRegister() {
 function showLogin() {
   document.getElementById('registerForm').style.display = 'none';
   document.getElementById('loginForm').style.display = '';
-  document.getElementById('loginUser').focus();
+  document.getElementById('login_nm_field').focus();
   document.getElementById('loginError').textContent = '';
 }
 
