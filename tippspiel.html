@@ -556,21 +556,55 @@
   <div class="login-box">
     <div class="login-logo">⚽</div>
     <div class="login-title" id="loginAppTitle">Tippspiel</div>
-    <div class="login-sub">Melde dich an, um zu tippen</div>
-    <div class="form-group" style="text-align:left;margin-bottom:12px">
-      <label>Name</label>
-      <input type="text" id="loginUser" placeholder="Name eingeben"
-        list="loginPlayerList" autocomplete="off"
-        onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()" />
-      <datalist id="loginPlayerList"></datalist>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="login-sub">Melde dich an, um zu tippen</div>
+      <div class="form-group" style="text-align:left;margin-bottom:12px">
+        <label>Name</label>
+        <input type="text" id="loginUser" placeholder="Name eingeben"
+          list="loginPlayerList" autocomplete="off"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()" />
+        <datalist id="loginPlayerList"></datalist>
+      </div>
+      <div class="form-group" style="text-align:left;margin-bottom:18px">
+        <label>Passwort</label>
+        <input type="password" id="loginPassword" placeholder="Passwort eingeben"
+          onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem" onclick="doLogin()">Einloggen</button>
+      <div class="login-error" id="loginError"></div>
+      <div style="margin-top:16px;font-size:0.85rem;color:var(--muted)">
+        Noch kein Konto?
+        <a href="#" style="color:var(--green-light);text-decoration:none;font-weight:600" onclick="showRegister();return false">Registrieren</a>
+      </div>
     </div>
-    <div class="form-group" style="text-align:left;margin-bottom:18px">
-      <label>Passwort</label>
-      <input type="password" id="loginPassword" placeholder="Passwort eingeben"
-        onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" />
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" style="display:none">
+      <div class="login-sub">Neues Konto erstellen</div>
+      <div class="form-group" style="text-align:left;margin-bottom:12px">
+        <label>Name</label>
+        <input type="text" id="regName" placeholder="Dein Name"
+          onkeydown="if(event.key==='Enter')document.getElementById('regPass').focus()" autocomplete="off" />
+      </div>
+      <div class="form-group" style="text-align:left;margin-bottom:12px">
+        <label>Passwort</label>
+        <input type="password" id="regPass" placeholder="Passwort wählen"
+          onkeydown="if(event.key==='Enter')document.getElementById('regPass2').focus()" />
+      </div>
+      <div class="form-group" style="text-align:left;margin-bottom:18px">
+        <label>Passwort wiederholen</label>
+        <input type="password" id="regPass2" placeholder="Passwort bestätigen"
+          onkeydown="if(event.key==='Enter')doRegister()" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem" onclick="doRegister()">Registrieren</button>
+      <div class="login-error" id="registerError"></div>
+      <div style="margin-top:16px;font-size:0.85rem;color:var(--muted)">
+        Bereits registriert?
+        <a href="#" style="color:var(--green-light);text-decoration:none;font-weight:600" onclick="showLogin();return false">Einloggen</a>
+      </div>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem" onclick="doLogin()">Einloggen</button>
-    <div class="login-error" id="loginError"></div>
   </div>
 </div>
 
@@ -1574,6 +1608,53 @@ function doLogout() {
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginOverlay').style.display = 'flex';
   updateHeaderUser();
+}
+
+function showRegister() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = '';
+  document.getElementById('regName').focus();
+  document.getElementById('registerError').textContent = '';
+}
+
+function showLogin() {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = '';
+  document.getElementById('loginUser').focus();
+  document.getElementById('loginError').textContent = '';
+}
+
+function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const pass = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  const err = document.getElementById('registerError');
+  err.textContent = '';
+
+  if (!name) { err.textContent = 'Bitte einen Namen eingeben.'; return; }
+  if (name.toLowerCase() === 'admin') { err.textContent = 'Dieser Name ist reserviert.'; return; }
+  if (state.players.find(p => p.toLowerCase() === name.toLowerCase())) {
+    err.textContent = 'Dieser Name ist bereits vergeben.'; return;
+  }
+  if (!pass) { err.textContent = 'Bitte ein Passwort wählen.'; return; }
+  if (pass.length < 3) { err.textContent = 'Passwort muss mindestens 3 Zeichen haben.'; return; }
+  if (pass !== pass2) { err.textContent = 'Passwörter stimmen nicht überein.'; return; }
+
+  // Add player and password
+  state.players.push(name);
+  state.passwords[name] = pass;
+  save();
+
+  // Auto-login
+  currentUser = { name: name, isAdmin: false };
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('regName').value = '';
+  document.getElementById('regPass').value = '';
+  document.getElementById('regPass2').value = '';
+  showLogin();
+  applyAccessControl();
+  updateHeaderUser();
+  renderAll();
 }
 
 function applyAccessControl() {
