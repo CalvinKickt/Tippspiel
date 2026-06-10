@@ -333,6 +333,7 @@
     <div style="text-align:right">
       <div class="header-week" id="headerWeek">Woche 1</div>
       <div class="header-tournament" id="headerSub">Kein Turnier</div>
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.35);text-align:right;margin-top:1px" id="appVersion"></div>
     </div>
     <div id="headerUserInfo" style="display:none;align-items:center;gap:6px;flex-shrink:0">
       <span class="header-user-chip" id="headerUserName"></span>
@@ -594,6 +595,7 @@
     <!-- LOGIN FORM -->
     <div id="loginForm">
       <div class="login-sub">Melde dich an, um zu tippen</div>
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.25);margin-top:4px" id="loginVersion"></div>
       <div class="form-group" style="text-align:left;margin-bottom:12px">
         <label>Name</label>
         <input type="text" id="loginUser" placeholder="Name eingeben"
@@ -643,6 +645,15 @@
 </div>
 
 <script>
+// ===================== VERSION =====================
+const APP_VERSION = 'v1';
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('appVersion');
+  if (el) el.textContent = APP_VERSION;
+  const lv = document.getElementById('loginVersion');
+  if (lv) lv.textContent = APP_VERSION;
+});
+
 // ===================== STATE =====================
 let state = {
   players: [],
