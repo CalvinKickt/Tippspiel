@@ -560,7 +560,7 @@
 
 <!-- PLAYER SETTINGS MODAL -->
 <div class="modal-overlay" id="playerSettingsModal">
-  <div class="modal" style="max-width:400px">
+  <div class="modal" style="max-width:420px;max-height:90vh;overflow-y:auto">
     <h3>⚙️ Meine Einstellungen</h3>
     <div class="form-group" style="margin-bottom:18px">
       <label>Neuer Name <span style="color:var(--muted);font-size:0.78rem">(leer lassen = nicht ändern)</span></label>
@@ -582,6 +582,26 @@
         <input type="password" id="ps_currentPass" placeholder="Aktuelles Passwort" autocomplete="current-password"
           onkeydown="if(event.key==='Enter')savePlayerSettings()" />
       </div>
+    </div>
+    <hr style="border-color:var(--border);margin:16px 0">
+    <div style="margin-bottom:14px">
+      <label style="display:block;margin-bottom:10px;font-weight:600;font-size:0.88rem">🎨 Farben anpassen</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <input type="color" id="ps_accent" value="#22c55e" oninput="previewColors()"
+          style="width:40px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
+        <label style="font-size:0.85rem;color:var(--muted)">Akzentfarbe (Rahmen, Buttons)</label>
+      </div>
+      <div style="margin-bottom:8px;font-size:0.82rem;color:var(--muted)">Header-Verlauf:</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+        <input type="color" id="ps_h1" value="#0a0a0a" oninput="previewColors()"
+          style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
+        <input type="color" id="ps_h2" value="#F4C500" oninput="previewColors()"
+          style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
+        <input type="color" id="ps_h3" value="#C8102E" oninput="previewColors()"
+          style="width:36px;height:32px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0" />
+        <div id="ps_headerPreview" style="flex:1;height:32px;border-radius:6px;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 25%,#F4C500 60%,#C8102E 100%)"></div>
+      </div>
+      <button class="btn btn-ghost" style="font-size:0.78rem;padding:4px 10px" onclick="resetColors()">Zurücksetzen</button>
     </div>
     <div class="login-error" id="ps_error"></div>
     <div class="modal-btns">
@@ -659,7 +679,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v13';
+const APP_VERSION = 'v15';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -699,6 +719,7 @@ function applyDefaults() {
   state.weekHistory = Array.isArray(state.weekHistory) ? state.weekHistory : Object.values(state.weekHistory || {});
   state.competitions = Array.isArray(state.competitions) ? state.competitions : Object.values(state.competitions || {});
   state.passwords = state.passwords || {};
+  state.userPrefs = state.userPrefs || {};
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
@@ -1759,6 +1780,7 @@ function doLogin() {
     if (!playerPass) { err.textContent = 'Kein Passwort gesetzt. Bitte Admin kontaktieren.'; return; }
     if (pass !== playerPass) { err.textContent = 'Falsches Passwort.'; return; }
     currentUser = { name: matchedPlayer, isAdmin: false };
+    applyUserColors((state.userPrefs || {})[matchedPlayer]);
   } else {
     err.textContent = 'Spieler nicht gefunden.';
     return;
@@ -1772,6 +1794,11 @@ function doLogin() {
 }
 
 function doLogout() {
+  // Reset colors to default on logout
+  document.documentElement.style.removeProperty('--green');
+  document.documentElement.style.removeProperty('--green-light');
+  const hdr = document.querySelector('header');
+  if (hdr) hdr.style.background = '';
   currentUser = null;
   // Go back to rangliste
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1860,6 +1887,35 @@ function updateHeaderUser() {
   if (settingsBtn) settingsBtn.style.display = currentUser.isAdmin ? 'none' : '';
 }
 
+function applyUserColors(prefs) {
+  if (!prefs) return;
+  const root = document.documentElement;
+  if (prefs.accent) {
+    root.style.setProperty('--green', prefs.accent);
+    root.style.setProperty('--green-light', prefs.accent);
+  }
+  if (prefs.h1 && prefs.h2 && prefs.h3) {
+    document.querySelector('header').style.background =
+      `linear-gradient(135deg, ${prefs.h1} 0%, ${prefs.h1} 25%, ${prefs.h2} 60%, ${prefs.h3} 100%)`;
+  }
+}
+
+function resetColors() {
+  document.getElementById('ps_accent').value = '#22c55e';
+  document.getElementById('ps_h1').value = '#0a0a0a';
+  document.getElementById('ps_h2').value = '#F4C500';
+  document.getElementById('ps_h3').value = '#C8102E';
+  previewColors();
+}
+
+function previewColors() {
+  const h1 = document.getElementById('ps_h1').value;
+  const h2 = document.getElementById('ps_h2').value;
+  const h3 = document.getElementById('ps_h3').value;
+  document.getElementById('ps_headerPreview').style.background =
+    `linear-gradient(135deg, ${h1} 0%, ${h1} 25%, ${h2} 60%, ${h3} 100%)`;
+}
+
 function openPlayerSettings() {
   document.getElementById('ps_currentPass').value = '';
   document.getElementById('ps_newName').value = '';
@@ -1867,6 +1923,15 @@ function openPlayerSettings() {
   document.getElementById('ps_newPass2').value = '';
   document.getElementById('ps_error').textContent = '';
   document.getElementById('ps_passFields').style.display = 'none';
+  // Load current user's color prefs
+  if (currentUser && !currentUser.isAdmin) {
+    const prefs = (state.userPrefs || {})[currentUser.name] || {};
+    document.getElementById('ps_accent').value = prefs.accent || '#22c55e';
+    document.getElementById('ps_h1').value = prefs.h1 || '#0a0a0a';
+    document.getElementById('ps_h2').value = prefs.h2 || '#F4C500';
+    document.getElementById('ps_h3').value = prefs.h3 || '#C8102E';
+    previewColors();
+  }
   document.getElementById('playerSettingsModal').classList.add('open');
   setTimeout(() => document.getElementById('ps_newName').focus(), 100);
 }
@@ -1886,7 +1951,11 @@ function savePlayerSettings() {
   if (!currentUser || currentUser.isAdmin) return;
   const name = currentUser.name;
 
-  if (!newName && !newPass) { err.textContent = 'Keine Änderungen eingegeben.'; return; }
+  const colorChanged = document.getElementById('ps_accent').value !== ((state.userPrefs||{})[currentUser.name]?.accent || '#22c55e')
+    || document.getElementById('ps_h1').value !== ((state.userPrefs||{})[currentUser.name]?.h1 || '#0a0a0a')
+    || document.getElementById('ps_h2').value !== ((state.userPrefs||{})[currentUser.name]?.h2 || '#F4C500')
+    || document.getElementById('ps_h3').value !== ((state.userPrefs||{})[currentUser.name]?.h3 || '#C8102E');
+  if (!newName && !newPass && !colorChanged) { err.textContent = 'Keine Änderungen eingegeben.'; return; }
 
   // Validate new name
   if (newName) {
@@ -1921,6 +1990,16 @@ function savePlayerSettings() {
 
   // Apply password change
   if (newPass) state.passwords[currentUser.name] = newPass;
+
+  // Save color prefs
+  if (!state.userPrefs) state.userPrefs = {};
+  state.userPrefs[currentUser.name] = {
+    accent: document.getElementById('ps_accent').value,
+    h1: document.getElementById('ps_h1').value,
+    h2: document.getElementById('ps_h2').value,
+    h3: document.getElementById('ps_h3').value,
+  };
+  applyUserColors(state.userPrefs[currentUser.name]);
 
   save();
   updateHeaderUser();
