@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Tippspiel</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --green: #16a34a;
+    --green-light: #22c55e;
+    --green-dark: #14532d;
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --gold: #f59e0b;
+    --silver: #94a3b8;
+    --bronze: #b45309;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a78bfa;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header { background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #F4C500 60%, #C8102E 100%); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header .header-icon { font-size: 1.6rem; }
+  .header-right { margin-left: auto; text-align: right; }
+  .header-tournament { font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+  .header-week { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
+
+  .layout { display: flex; min-height: calc(100vh - 56px); }
+  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 190px; flex-shrink: 0; padding: 12px 0; }
+  nav button { background: none; border: none; color: var(--muted); padding: 11px 20px; cursor: pointer; font-size: 0.88rem; white-space: nowrap; border-left: 3px solid transparent; text-align: left; transition: all 0.2s; }
+  nav button:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  nav button.active { color: var(--green-light); border-left-color: var(--green-light); background: rgba(22,163,74,0.07); font-weight: 600; }
+
+  main { padding: 24px; flex: 1; min-width: 0; }
+  main > * { max-width: 860px; margin-left: auto; margin-right: auto; }
+
+  @media (max-width: 700px) {
+    .layout { flex-direction: column; }
+    nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 0; border-right: none; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+    nav::-webkit-scrollbar { display: none; }
+    nav button { border-left: none; border-bottom: 3px solid transparent; padding: 12px 14px; white-space: nowrap; }
+    nav button.active { border-left-color: transparent; border-bottom-color: var(--green-light); background: rgba(22,163,74,0.07); }
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 1.05rem; margin-bottom: 16px; color: var(--green-light); display: flex; align-items: center; gap: 8px; }
+
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 120px; }
+  label { font-size: 0.8rem; color: var(--muted); }
+  input, select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 6px; font-size: 0.9rem; width: 100%; }
+  input:focus, select:focus { outline: 2px solid var(--green); border-color: transparent; }
+  input::placeholder { color: var(--border); }
+
+  .btn { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-gold { background: linear-gradient(135deg, #d97706, #f59e0b); color: white; }
+  .btn-gold:hover { opacity: 0.9; }
+  .btn-sm { padding: 5px 11px; font-size: 0.8rem; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+  /* WEEK CLOSE BANNER */
+  .week-banner { background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); border: 1px solid #3b82f6; border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .week-banner-info h3 { font-size: 1rem; margin-bottom: 4px; }
+  .week-banner-info p { font-size: 0.8rem; color: var(--muted); }
+
+  /* RANGLISTE */
+  .rank-table { width: 100%; border-collapse: collapse; }
+  .rank-table th { text-align: left; padding: 10px 12px; font-size: 0.78rem; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+  .rank-table td { padding: 12px; border-bottom: 1px solid rgba(71,85,105,0.4); }
+  .rank-table tr:last-child td { border-bottom: none; }
+  .rank-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .rank-num { font-weight: 700; font-size: 1.1rem; width: 40px; }
+  .rank-1 td { background: rgba(245,158,11,0.05); }
+  .rank-2 td { background: rgba(148,163,184,0.04); }
+  .rank-3 td { background: rgba(180,83,9,0.04); }
+  .pts { font-weight: 700; color: var(--green-light); font-size: 1.1rem; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge-exact { background: rgba(22,163,74,0.25); color: var(--green-light); }
+  .badge-diff { background: rgba(167,139,250,0.25); color: #c4b5fd; }
+  .badge-tendency { background: rgba(59,130,246,0.25); color: #60a5fa; }
+  .badge-miss { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .badge-wins { background: rgba(245,158,11,0.2); color: var(--gold); }
+
+  /* WEEK HISTORY */
+  .week-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .week-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .week-title { font-weight: 700; font-size: 1rem; }
+  .week-date { font-size: 0.75rem; color: var(--muted); }
+  .week-winner { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+  .week-scores { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .week-score-item { background: var(--surface2); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: flex; gap: 6px; align-items: center; }
+  .week-score-item.winner { border: 1px solid var(--gold); background: rgba(245,158,11,0.1); }
+
+  /* GESAMTWERTUNG */
+  .overall-table { width: 100%; border-collapse: collapse; }
+  .overall-table th { text-align: left; padding: 10px 12px; font-size: 0.78rem; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+  .overall-table td { padding: 12px; border-bottom: 1px solid rgba(71,85,105,0.4); }
+  .overall-table tr:last-child td { border-bottom: none; }
+
+  /* SPIELE */
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .match-meta { font-size: 0.75rem; color: var(--muted); }
+  .match-teams { display: flex; align-items: center; gap: 12px; font-size: 1.05rem; font-weight: 600; }
+  .match-vs { color: var(--muted); font-size: 0.85rem; }
+  .score-input { width: 52px; text-align: center; padding: 6px; }
+  .match-actions { display: flex; gap: 6px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  .competition-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; }
+
+  /* TIPPS */
+  .tip-match { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; }
+  .tip-match-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .tip-inputs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tip-vs { color: var(--muted); }
+  .tip-saved { color: var(--green-light); font-size: 0.8rem; }
+
+  /* ÜBERSICHT */
+  .overview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .overview-table th { padding: 8px 10px; text-align: center; font-size: 0.75rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .overview-table th.left { text-align: left; }
+  .overview-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid rgba(71,85,105,0.3); }
+  .overview-table td.left { text-align: left; font-weight: 500; }
+  .tip-exact { background: rgba(22,163,74,0.2); color: var(--green-light); border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+  .tip-diff { background: rgba(167,139,250,0.2); color: #c4b5fd; border-radius: 4px; padding: 2px 6px; font-weight: 700; }
+  .tip-tendency { background: rgba(59,130,246,0.15); color: #93c5fd; border-radius: 4px; padding: 2px 6px; }
+  .tip-miss { background: rgba(239,68,68,0.1); color: #fca5a5; border-radius: 4px; padding: 2px 6px; }
+  .tip-pending { color: var(--border); }
+  .tip-noresult { background: rgba(255,255,255,0.05); border-radius: 4px; padding: 2px 6px; }
+
+  .player-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .player-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); padding: 10px 14px; border-radius: 8px; }
+  .player-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; margin-right: 10px; }
+  .player-row { display: flex; align-items: center; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.9rem; }
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 0.875rem; margin-bottom: 12px; }
+  .alert-info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+
+  .player-selector { background: var(--surface); border: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; border-radius: var(--radius); margin-bottom: 20px; }
+  .player-selector label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+  .player-selector select { max-width: 220px; }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-title { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+  .tab-group { display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: 8px; width: fit-content; }
+  .tab-btn { background: none; border: none; color: var(--muted); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.15s; }
+  .tab-btn.active { background: var(--surface); color: var(--text); font-weight: 600; }
+
+  .rule-box { background: var(--surface2); border-radius: 8px; padding: 14px; }
+  .rule-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .rule-row:last-child { margin-bottom: 0; }
+  .rule-pts { font-weight: 700; font-size: 1.1rem; min-width: 28px; text-align: center; }
+
+  /* COMPETITION PICKER */
+  .comp-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .comp-chip { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 6px 14px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; }
+  .comp-chip:hover { border-color: var(--border); }
+  .comp-chip.selected { border-color: var(--green); background: rgba(22,163,74,0.15); color: var(--green-light); font-weight: 600; }
+  .comp-chip.none { color: var(--muted); border-style: dashed; }
+  .comp-list { display: flex; flex-direction: column; gap: 8px; }
+  .comp-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); padding: 10px 14px; border-radius: 8px; }
+
+  /* CONFIRM MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; max-width: 420px; width: 90%; }
+  .modal h3 { font-size: 1.1rem; margin-bottom: 8px; }
+  .modal p { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-preview { background: var(--surface2); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.85rem; }
+  .modal-preview .winner-line { font-weight: 700; color: var(--gold); font-size: 1rem; margin-bottom: 8px; }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* CALENDAR */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-month-label { font-size: 1.1rem; font-weight: 700; }
+  .cal-nav { background: var(--surface2); border: none; color: var(--text); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .cal-nav:hover { background: var(--border); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 4px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-day { min-height: 80px; background: var(--surface2); border-radius: 8px; padding: 6px; cursor: pointer; transition: background 0.15s; border: 2px solid transparent; position: relative; }
+  .cal-day:hover { background: var(--border); }
+  .cal-day.today { border-color: var(--green); }
+  .cal-day.other-month { opacity: 0.35; }
+  .cal-day.selected { border-color: var(--blue); background: rgba(59,130,246,0.1); }
+  .cal-day-num { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+  .cal-day.today .cal-day-num { color: var(--green-light); }
+  .cal-match-chip { font-size: 0.68rem; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .cal-match-chip.has-result { background: rgba(22,163,74,0.25); color: var(--green-light); }
+  .cal-match-chip.no-result { background: rgba(59,130,246,0.2); color: #93c5fd; }
+  .cal-match-chip:hover { opacity: 0.8; }
+  .cal-add-btn { position: absolute; bottom: 5px; right: 5px; background: none; border: none; color: var(--border); font-size: 1rem; cursor: pointer; line-height: 1; padding: 2px; border-radius: 4px; }
+  .cal-day:hover .cal-add-btn { color: var(--muted); }
+
+  /* MEISTERSCHAFTEN */
+  .meister-comp-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .meister-comp-tab { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
+  .meister-comp-tab:hover { border-color: var(--border); }
+  .meister-comp-tab.active { border-color: var(--green); background: rgba(22,163,74,0.12); color: var(--green-light); font-weight: 600; }
+  .meister-podium { display: flex; justify-content: center; align-items: flex-end; gap: 12px; margin: 24px 0 32px; }
+  .meister-podium-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .meister-podium-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; }
+  .meister-podium-avatar.p1 { background: linear-gradient(135deg,#b45309,#f59e0b); width:68px; height:68px; font-size:1.6rem; }
+  .meister-podium-avatar.p2 { background: linear-gradient(135deg,#475569,#94a3b8); }
+  .meister-podium-avatar.p3 { background: linear-gradient(135deg,#78350f,#b45309); }
+  .meister-podium-name { font-size: 0.85rem; font-weight: 600; }
+  .meister-podium-pts { font-size: 0.78rem; color: var(--muted); }
+  .meister-podium-bar { border-radius: 6px 6px 0 0; width: 60px; }
+  .meister-podium-bar.p1 { background: linear-gradient(180deg,#f59e0b,#d97706); height: 80px; width: 72px; }
+  .meister-podium-bar.p2 { background: linear-gradient(180deg,#94a3b8,#64748b); height: 56px; }
+  .meister-podium-bar.p3 { background: linear-gradient(180deg,#b45309,#78350f); height: 40px; }
+  .meister-week-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .meister-week-chip { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; color: var(--muted); }
+  .meister-week-chip.won { background: rgba(245,158,11,0.15); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* ADD MATCH MODAL */
+  .modal-wide { max-width: 500px; }
+  .modal-day-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; }
+
+  /* MATCH DETAIL MODAL */
+  .detail-teams { font-size: 1.3rem; font-weight: 700; text-align: center; margin: 12px 0; }
+  .detail-result { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+
+  @media (max-width: 600px) {
+    header { padding: 11px 14px; gap: 8px; }
+    header h1 { font-size: 1.1rem; }
+    .header-icon { font-size: 1.2rem; }
+    .header-week { font-size: 0.78rem; }
+    .header-tournament { font-size: 0.7rem; }
+    .header-user-chip { font-size: 0.73rem; padding: 3px 8px; }
+    .header-logout-btn { font-size: 0.7rem; padding: 3px 8px; }
+
+    main { padding: 12px; }
+    .card { padding: 14px; }
+    .match-teams { font-size: 0.95rem; }
+    .form-row { flex-direction: column; }
+    .week-banner { flex-direction: column; align-items: flex-start; padding: 14px; }
+    .week-banner-info h3 { font-size: 0.92rem; }
+    .week-banner-info p { font-size: 0.75rem; }
+
+    /* Rangliste – hide less important columns on mobile */
+    .rank-table th:nth-child(5), .rank-table th:nth-child(6), .rank-table th:nth-child(7),
+    .rank-table td:nth-child(5), .rank-table td:nth-child(6), .rank-table td:nth-child(7) { display: none; }
+    .pts { font-size: 1.1rem !important; }
+
+    /* Calendar */
+    .cal-day { min-height: 46px; padding: 3px; }
+    .cal-day-num { font-size: 0.68rem; }
+    .cal-match-chip { display: none; }
+    .cal-day.has-matches::after { content: '⚽'; font-size: 0.65rem; display: block; text-align: center; }
+    .cal-nav { width: 30px; height: 30px; font-size: 0.9rem; }
+    .cal-month-label { font-size: 0.9rem; }
+
+    /* Tipps – bigger touch targets */
+    .tip-inputs { gap: 8px; }
+    .score-input { width: 52px !important; padding: 10px 4px; font-size: 1.1rem; }
+    .tip-match { padding: 12px; }
+
+    /* Match cards */
+    .match-card { padding: 12px; }
+    .match-header { flex-wrap: wrap; gap: 4px; }
+
+    /* Login – full comfortable layout */
+    .login-box { padding: 28px 20px; border-radius: 12px; margin: 0 12px; }
+    .login-logo { font-size: 2.4rem; }
+    .login-title { font-size: 1.25rem; }
+
+    /* Inputs – larger tap area */
+    input, select { font-size: 1rem; padding: 11px 12px; }
+    .btn { padding: 11px 16px; }
+    .btn-sm { padding: 9px 12px; font-size: 0.84rem; }
+
+    /* Übersicht – horizontal scroll */
+    .overview-table { font-size: 0.76rem; }
+    .overview-table th, .overview-table td { padding: 5px 6px; }
+
+    /* Meisterschaften podium */
+    .meister-podium { gap: 8px; margin: 14px 0 18px; }
+    .meister-podium-avatar { width: 44px !important; height: 44px !important; font-size: 1.1rem !important; }
+    .meister-podium-avatar.p1 { width: 54px !important; height: 54px !important; font-size: 1.3rem !important; }
+    .meister-podium-name { font-size: 0.78rem; }
+    .meister-podium-pts { font-size: 0.7rem; }
+    .meister-podium-bar.p1 { width: 56px !important; height: 60px !important; }
+    .meister-podium-bar.p2 { height: 40px !important; }
+    .meister-podium-bar.p3 { height: 28px !important; }
+    .meister-comp-tab { padding: 5px 12px; font-size: 0.82rem; }
+  }
+
+  /* LOGIN */
+  .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .login-logo { font-size: 3rem; margin-bottom: 10px; }
+  .login-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .login-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+  .login-error { color: var(--red); font-size: 0.85rem; margin-top: 10px; min-height: 20px; }
+  .header-user-chip { font-size: 0.82rem; font-weight: 600; background: rgba(255,255,255,0.15); padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+  .header-logout-btn { background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.85); padding: 4px 11px; border-radius: 20px; cursor: pointer; font-size: 0.78rem; white-space: nowrap; transition: background 0.15s; }
+  .header-logout-btn:hover { background: rgba(255,255,255,0.2); }
+  .pw-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pw-status-ok { color: var(--green-light); font-size: 0.8rem; }
+  .pw-status-no { color: var(--red); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="header-icon">⚽</span>
+  <div>
+    <h1>Tippspiel</h1>
+  </div>
+  <div class="header-right" style="display:flex;align-items:center;gap:10px">
+    <div style="text-align:right">
+      <div class="header-week" id="headerWeek">Woche 1</div>
+      <div class="header-tournament" id="headerSub">Kein Turnier</div>
+    </div>
+    <div id="headerUserInfo" style="display:none;align-items:center;gap:6px;flex-shrink:0">
+      <span class="header-user-chip" id="headerUserName"></span>
+      <button class="header-logout-btn" onclick="doLogout()">Abmelden</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+<nav>
+  <button data-page="rangliste" class="active" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
+  <button data-page="tipps" onclick="showPage('tipps', this)">✏️ Tipps</button>
+  <button data-page="spiele" onclick="showPage('spiele', this)">📅 Spiele</button>
+  <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
+  <button data-page="meisterschaften" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
+  <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
+  <button data-page="einstellungen" onclick="showPage('einstellungen', this)">⚙️ Einstellungen</button>
+</nav>
+
+<main>
+
+  <!-- RANGLISTE -->
+  <div id="page-rangliste" class="page active">
+    <div class="week-banner" id="weekBanner">
+      <div class="week-banner-info">
+        <h3 id="weekBannerTitle">Woche 1</h3>
+        <p id="weekBannerSub">Wenn alle Spiele beendet sind, kannst du die Woche abschließen.</p>
+      </div>
+      <button class="btn btn-gold" onclick="openCloseWeekModal()">🏁 Woche abschließen</button>
+    </div>
+    <div class="card">
+      <h2>🏆 Aktuelle Wochenwertung</h2>
+      <div id="ranglisteContent"></div>
+    </div>
+    <div class="card">
+      <h2>📋 Punkteregeln</h2>
+      <div class="rule-box">
+        <div class="rule-row"><span class="rule-pts" style="color:var(--green-light)">3</span><span>Korrektes Ergebnis (z.B. 2:1 → 2:1)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:var(--purple)">2</span><span>Korrekte Differenz (z.B. 2:1 → 3:2, beide +1)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:#60a5fa">1</span><span>Richtiger Sieger (Tendenz stimmt)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:var(--muted)">0</span><span>Falsch</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPPS -->
+  <div id="page-tipps" class="page">
+    <div class="player-selector">
+      <label>Wer tippt gerade?</label>
+      <select id="activeTipper" onchange="renderTipps()">
+        <option value="">— Spieler wählen —</option>
+      </select>
+    </div>
+    <div id="tippsContent"></div>
+  </div>
+
+  <!-- SPIELE -->
+  <div id="page-spiele" class="page">
+    <div class="card">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calPrev()">‹</button>
+        <span class="cal-month-label" id="calMonthLabel"></span>
+        <button class="cal-nav" onclick="calNext()">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="section-header">
+      <span class="section-title" id="spieleListTitle">Alle Spiele</span>
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="filterMatches('all', this)">Alle</button>
+        <button class="tab-btn" onclick="filterMatches('open', this)">Offen</button>
+        <button class="tab-btn" onclick="filterMatches('done', this)">Beendet</button>
+      </div>
+    </div>
+    <div id="spieleContent"></div>
+  </div>
+
+  <!-- ÜBERSICHT -->
+  <div id="page-uebersicht" class="page">
+    <div class="card">
+      <h2>📊 Tipp-Übersicht – <span id="uebersichtWeekLabel"></span></h2>
+      <div id="uebersichtContent" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+  <!-- MEISTERSCHAFTEN -->
+  <div id="page-meisterschaften" class="page">
+    <div id="meisterCompTabs" class="meister-comp-tabs"></div>
+    <div id="meisterContent"></div>
+  </div>
+
+  <!-- GESCHICHTE -->
+  <div id="page-geschichte" class="page">
+    <div class="card">
+      <h2>🥇 Gesamtwertung – Wochensiege</h2>
+      <div id="gesamtContent"></div>
+    </div>
+    <div class="section-header" style="margin-top:8px">
+      <span class="section-title">Wochenarchiv</span>
+    </div>
+    <div id="geschichteContent"></div>
+  </div>
+
+  <!-- EINSTELLUNGEN -->
+  <div id="page-einstellungen" class="page">
+    <div class="card">
+      <h2>👥 Spieler verwalten</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input id="newPlayerName" placeholder="Name eingeben" onkeydown="if(event.key==='Enter')addPlayer()" /></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="addPlayer()">Hinzufügen</button></div>
+      </div>
+      <div id="playerList" class="player-list"></div>
+    </div>
+    <div class="card">
+      <h2>🏆 Wettbewerbe verwalten</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 72px;min-width:unset">
+          <label>Icon</label>
+          <input id="newCompIcon" placeholder="🏆" style="text-align:center;font-size:1.3rem;padding:6px" maxlength="4" title="Emoji einfügen, z.B. 🇩🇪 oder 💙" />
+        </div>
+        <div class="form-group"><label>Name</label><input id="newCompName" placeholder="z.B. Bundesliga, Champions League" onkeydown="if(event.key==='Enter')addCompetition()" /></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="addCompetition()">Hinzufügen</button></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Tipp: Bekannte Ligen bekommen automatisch das richtige Icon.</div>
+      <div id="compList" class="comp-list"></div>
+    </div>
+    <div class="card">
+      <h2>🏷️ Tippspiel-Name</h2>
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input id="tournamentName" placeholder="z.B. Bundesliga 24/25" /></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="saveTournament()">Speichern</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🔐 Passwörter verwalten</h2>
+      <div id="passwordList"></div>
+    </div>
+    <div class="card">
+      <h2>🗑️ Zurücksetzen</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-danger" onclick="resetWeek()">Aktuelle Woche löschen</button>
+        <button class="btn btn-danger" onclick="resetAll()">Alles zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- SPIEL HINZUFÜGEN MODAL -->
+<div class="modal-overlay" id="addMatchModal">
+  <div class="modal modal-wide">
+    <h3>⚽ Spiel hinzufügen</h3>
+    <div class="modal-day-label" id="addMatchDayLabel"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Heimteam</label><input id="heimteam" placeholder="z.B. Bayern München" /></div>
+      <div class="form-group"><label>Auswärtsteam</label><input id="auswarts" placeholder="z.B. Dortmund" /></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;margin-bottom:8px">Wettbewerb / Turnier</label>
+      <div class="comp-picker" id="compPicker"></div>
+      <div id="compNoneHint" style="font-size:0.78rem;color:var(--muted);margin-top:6px;display:none">Erstelle zuerst Wettbewerbe unter ⚙️ Einstellungen.</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeAddMatchModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="addMatch()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPIEL DETAIL MODAL -->
+<div class="modal-overlay" id="matchDetailModal">
+  <div class="modal modal-wide">
+    <h3 id="detailTitle">Spieldetails</h3>
+    <div class="detail-teams" id="detailTeams"></div>
+    <div style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px" id="detailMeta"></div>
+    <div id="detailResultSection">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;text-align:center">Ergebnis eintragen</div>
+      <div class="detail-result">
+        <span id="detailHome" style="font-size:0.9rem;color:var(--muted)"></span>
+        <input class="score-input" id="detail_h" type="number" min="0" max="99" placeholder="0" style="width:60px" />
+        <span style="color:var(--muted);font-weight:700">:</span>
+        <input class="score-input" id="detail_a" type="number" min="0" max="99" placeholder="0" style="width:60px" />
+        <span id="detailAway" style="font-size:0.9rem;color:var(--muted)"></span>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-danger btn-sm" onclick="deleteMatchFromDetail()">Löschen</button>
+      <button class="btn btn-ghost" id="detailClearBtn" onclick="clearResultFromDetail()" style="display:none">Ergebnis zurücksetzen</button>
+      <button class="btn btn-ghost" onclick="closeDetailModal()">Schließen</button>
+      <button class="btn btn-primary" id="detailSaveBtn" onclick="saveResultFromDetail()">Ergebnis speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- WOCHE ABSCHLIESSEN MODAL -->
+<div class="modal-overlay" id="closeWeekModal">
+  <div class="modal">
+    <h3>🏁 Woche abschließen?</h3>
+    <p>Die aktuelle Woche wird archiviert und ein neuer Spieltag beginnt. Tipps und Spiele der aktuellen Woche werden gelöscht.</p>
+    <div class="modal-preview" id="modalPreview"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-gold" onclick="closeWeek()">Woche abschließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="font-size:3.5rem">⚽</div>
+  <div style="font-size:1.1rem;font-weight:700">Verbinde mit Datenbank...</div>
+  <div style="font-size:0.85rem;color:var(--muted)">Einen Moment bitte</div>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="login-overlay" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">⚽</div>
+    <div class="login-title" id="loginAppTitle">Tippspiel</div>
+    <div class="login-sub">Melde dich an, um zu tippen</div>
+    <div class="form-group" style="text-align:left;margin-bottom:12px">
+      <label>Name</label>
+      <input type="text" id="loginUser" placeholder="Name eingeben"
+        list="loginPlayerList" autocomplete="off"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()" />
+      <datalist id="loginPlayerList"></datalist>
+    </div>
+    <div class="form-group" style="text-align:left;margin-bottom:18px">
+      <label>Passwort</label>
+      <input type="password" id="loginPassword" placeholder="Passwort eingeben"
+        onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:1rem" onclick="doLogin()">Einloggen</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<script>
+// ===================== STATE =====================
+let state = {
+  players: [],
+  matches: [],
+  tips: {},
+  tournament: 'Tippspiel',
+  currentWeek: 1,
+  weekHistory: [],
+  competitions: [],
+  passwords: {}
+  // weekHistory[]: { week, label, date, scores: [{name, pts, exact, diff, tendency, miss}] }
+};
+
+function save() {
+  if (window._fbDb) {
+    _fbSaving = true;
+    window._fbDb.ref('tippspiel').set(JSON.parse(JSON.stringify(state)))
+      .catch(e => { console.error('Firebase Fehler:', e); _fbSaving = false; });
+  }
+}
+
+function load() {} // replaced by Firebase
+
+function applyDefaults() {
+  state.tips = state.tips || {};
+  state.players = Array.isArray(state.players) ? state.players : Object.values(state.players || {});
+  state.matches = Array.isArray(state.matches) ? state.matches : Object.values(state.matches || {});
+  state.tournament = state.tournament || 'Tippspiel';
+  state.currentWeek = state.currentWeek || 1;
+  state.weekHistory = Array.isArray(state.weekHistory) ? state.weekHistory : Object.values(state.weekHistory || {});
+  state.competitions = Array.isArray(state.competitions) ? state.competitions : Object.values(state.competitions || {});
+  state.passwords = state.passwords || {};
+  state.competitions = state.competitions.map(c =>
+    typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
+  );
+}
+
+// ===================== NAV =====================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  renderAll();
+}
+
+function renderAll() {
+  updateHeader();
+  applyAccessControl();
+  updateHeaderUser();
+  renderRangliste();
+  renderCalendar();
+  renderSpiele();
+  renderTipps();
+  renderUebersicht();
+  renderPlayers();
+  renderCompetitions();
+  renderPasswordList();
+  renderGeschichte();
+  renderMeisterschaften();
+  updateTipperSelect();
+  const tn = document.getElementById('tournamentName');
+  if (tn) tn.value = state.tournament || '';
+}
+
+function updateHeader() {
+  document.getElementById('headerSub').textContent = state.tournament || 'Kein Turnier';
+  document.getElementById('headerWeek').textContent = 'Woche ' + state.currentWeek;
+  const wb = document.getElementById('weekBannerTitle');
+  const ws = document.getElementById('weekBannerSub');
+  if (wb) wb.textContent = 'Woche ' + state.currentWeek;
+  const open = state.matches.filter(m => m.resultHome === null).length;
+  if (ws) ws.textContent = open > 0
+    ? `Noch ${open} Spiel${open > 1 ? 'e' : ''} ohne Ergebnis.`
+    : 'Alle Spiele haben ein Ergebnis – Woche kann abgeschlossen werden!';
+  const wl = document.getElementById('uebersichtWeekLabel');
+  if (wl) wl.textContent = 'Woche ' + state.currentWeek;
+}
+
+// ===================== PLAYERS =====================
+function addPlayer() {
+  const name = document.getElementById('newPlayerName').value.trim();
+  if (!name) return;
+  if (state.players.includes(name)) { alert('Name existiert bereits.'); return; }
+  state.players.push(name); save();
+  document.getElementById('newPlayerName').value = '';
+  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList();
+}
+
+function removePlayer(name) {
+  if (!confirm(`"${name}" wirklich löschen?`)) return;
+  state.players = state.players.filter(p => p !== name);
+  delete state.passwords[name];
+  save();
+  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('playerList'); if (!el) return;
+  if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler.</div>'; return; }
+  el.innerHTML = state.players.map(p => `
+    <div class="player-item">
+      <div class="player-row">
+        <div class="player-icon">${p[0].toUpperCase()}</div>
+        <span>${p}</span>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removePlayer('${esc(p)}')">Entfernen</button>
+    </div>`).join('');
+}
+
+function updateTipperSelect() {
+  const sel = document.getElementById('activeTipper'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Spieler wählen —</option>' +
+    state.players.map(p => `<option value="${esc(p)}" ${cur===p?'selected':''}>${p}</option>`).join('');
+}
+
+// ===================== COMPETITIONS =====================
+const COMP_ICON_MAP = {
+  'bundesliga': '🇩🇪', '2. bundesliga': '🇩🇪',
+  'premier league': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'laliga': '🇪🇸', 'la liga': '🇪🇸',
+  'champions league': '💙', 'ucl': '💙',
+  'europa league': '🧡', 'uel': '🧡',
+  'wm': '🌍', 'em': '🌍',
+  'serie a': '🇮🇹', 'ligue 1': '🇫🇷',
+};
+
+// ===================== COUNTRY FLAGS =====================
+const COUNTRY_FLAGS = {
+  'ägypten':'🇪🇬','albanien':'🇦🇱','algerien':'🇩🇿','andorra':'🇦🇩',
+  'angola':'🇦🇴','argentinien':'🇦🇷','armenien':'🇦🇲','australien':'🇦🇺',
+  'österreich':'🇦🇹','aserbaidschan':'🇦🇿','bahrain':'🇧🇭','belgien':'🇧🇪',
+  'bolivien':'🇧🇴','bosnien':'🇧🇦','bosnien-herzegowina':'🇧🇦','brasilien':'🇧🇷',
+  'bulgarien':'🇧🇬','burkina faso':'🇧🇫','kamerun':'🇨🇲','kanada':'🇨🇦',
+  'kap verde':'🇨🇻','chile':'🇨🇱','china':'🇨🇳','kolumbien':'🇨🇴',
+  'costa rica':'🇨🇷','kroatien':'🇭🇷','kuba':'🇨🇺','curaçao':'🇨🇼',
+  'tschechien':'🇨🇿','dänemark':'🇩🇰','deutschland':'🇩🇪','dr kongo':'🇨🇩',
+  'ecuador':'🇪🇨','elfenbeinküste':'🇨🇮','el salvador':'🇸🇻','england':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'eritrea':'🇪🇷','estland':'🇪🇪','äthiopien':'🇪🇹','finnland':'🇫🇮',
+  'frankreich':'🇫🇷','gabun':'🇬🇦','georgien':'🇬🇪','ghana':'🇬🇭',
+  'griechenland':'🇬🇷','guatemala':'🇬🇹','guinea':'🇬🇳','haiti':'🇭🇹',
+  'honduras':'🇭🇳','ungarn':'🇭🇺','island':'🇮🇸','indien':'🇮🇳',
+  'indonesien':'🇮🇩','iran':'🇮🇷','irak':'🇮🇶','irland':'🇮🇪',
+  'israel':'🇮🇱','italien':'🇮🇹','jamaika':'🇯🇲','japan':'🇯🇵',
+  'jordanien':'🇯🇴','kasachstan':'🇰🇿','kenia':'🇰🇪','nordkorea':'🇰🇵',
+  'südkorea':'🇰🇷','kosovo':'🇽🇰','kuwait':'🇰🇼','lettland':'🇱🇻',
+  'libanon':'🇱🇧','liechtenstein':'🇱🇮','litauen':'🇱🇹','luxemburg':'🇱🇺',
+  'mali':'🇲🇱','malta':'🇲🇹','marokko':'🇲🇦','mexiko':'🇲🇽',
+  'moldau':'🇲🇩','montenegro':'🇲🇪','nordmazedonien':'🇲🇰','mosambik':'🇲🇿',
+  'namibia':'🇳🇦','niederlande':'🇳🇱','neuseeland':'🇳🇿','nicaragua':'🇳🇮',
+  'niger':'🇳🇪','nigeria':'🇳🇬','norwegen':'🇳🇴','oman':'🇴🇲',
+  'pakistan':'🇵🇰','panama':'🇵🇦','paraguay':'🇵🇾','peru':'🇵🇪',
+  'philippinen':'🇵🇭','polen':'🇵🇱','portugal':'🇵🇹','katar':'🇶🇦',
+  'rumänien':'🇷🇴','russland':'🇷🇺','saudi-arabien':'🇸🇦','schottland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'senegal':'🇸🇳','serbien':'🇷🇸','sierra leone':'🇸🇱','slowakei':'🇸🇰',
+  'slowenien':'🇸🇮','somalia':'🇸🇴','spanien':'🇪🇸','sri lanka':'🇱🇰',
+  'schweden':'🇸🇪','schweiz':'🇨🇭','syrien':'🇸🇾','tansania':'🇹🇿',
+  'thailand':'🇹🇭','tunesien':'🇹🇳','türkei':'🇹🇷','ukraine':'🇺🇦',
+  'uruguay':'🇺🇾','usa':'🇺🇸','usbekistan':'🇺🇿','venezuela':'🇻🇪',
+  'vietnam':'🇻🇳','wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','jemen':'🇾🇪','sambia':'🇿🇲','simbabwe':'🇿🇼',
+  // Ergänzungen & häufige Kurzformen
+  'südafrika':'🇿🇦','south africa':'🇿🇦',
+  'bosnien':'🇧🇦','mexico':'🇲🇽',
+  'vereinigte staaten':'🇺🇸','vereinigte arabische emirate':'🇦🇪','vae':'🇦🇪',
+  'nordirland':'🏴󠁧󠁢󠁮󠁩󠁲󠁿','elfenbeinküste':'🇨🇮','côte d\'ivoire':'🇨🇮',
+  'kongo':'🇨🇬','republik kongo':'🇨🇬','demokratische republik kongo':'🇨🇩',
+  'nordafrika':'🌍','zentralafrika':'🌍',
+  'trinidad':'🇹🇹','trinidad und tobago':'🇹🇹',
+  'venezuela':'🇻🇪','bolivien':'🇧🇴',
+  'fidschi':'🇫🇯','papua-neuguinea':'🇵🇬','salomoninseln':'🇸🇧',
+  'antigua':'🇦🇬','barbados':'🇧🇧','jamaika':'🇯🇲','kuba':'🇨🇺',
+  'dominikanische republik':'🇩🇴','haiti':'🇭🇹',
+  'tschad':'🇹🇩','kongo-brazzaville':'🇨🇬','ruanda':'🇷🇼',
+  'mosambik':'🇲🇿','madagaskar':'🇲🇬','mauritius':'🇲🇺',
+  'liberia':'🇱🇷','guinea-bissau':'🇬🇼','äquatorialguinea':'🇬🇶',
+  'sao tomé und príncipe':'🇸🇹','kapverden':'🇨🇻',
+  'panama':'🇵🇦','belize':'🇧🇿','guatemala':'🇬🇹','honduras':'🇭🇳',
+  'nordmazedonien':'🇲🇰','mazedonien':'🇲🇰',
+};
+
+function flagTeam(name) {
+  const flag = COUNTRY_FLAGS[name.toLowerCase()];
+  return flag ? flag + ' ' + name : name;
+}
+function flagShort(name, len) {
+  const flag = COUNTRY_FLAGS[name.toLowerCase()];
+  return flag ? flag + name.substring(0, len) : name.substring(0, len);
+}
+
+function defaultCompIcon(name) {
+  return COMP_ICON_MAP[name.toLowerCase()] || '🏆';
+}
+
+function getCompIcon(name) {
+  const c = state.competitions.find(c => c.name === name);
+  return c ? c.icon : '🏆';
+}
+
+function addCompetition() {
+  const name = document.getElementById('newCompName').value.trim();
+  const icon = document.getElementById('newCompIcon').value.trim() || defaultCompIcon(name);
+  if (!name) return;
+  if (state.competitions.find(c => c.name === name)) { alert('Wettbewerb existiert bereits.'); return; }
+  state.competitions.push({name, icon});
+  save();
+  document.getElementById('newCompName').value = '';
+  document.getElementById('newCompIcon').value = '';
+  renderCompetitions();
+}
+
+function removeCompetition(name) {
+  if (!confirm(`"${name}" löschen?`)) return;
+  state.competitions = state.competitions.filter(c => c.name !== name);
+  save();
+  renderCompetitions();
+}
+
+function renderCompetitions() {
+  const el = document.getElementById('compList'); if (!el) return;
+  if (!state.competitions.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:8px 0">Noch keine Wettbewerbe erstellt.</div>';
+    return;
+  }
+  el.innerHTML = state.competitions.map(c => `
+    <div class="comp-item">
+      <span style="font-size:1.1rem">${c.icon} <span style="margin-left:4px">${c.name}</span></span>
+      <button class="btn btn-danger btn-sm" onclick="removeCompetition('${esc(c.name)}')">Entfernen</button>
+    </div>`).join('');
+}
+
+// ===================== CALENDAR =====================
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedCalDate = null; // 'YYYY-MM-DD'
+let detailMatchId = null;
+
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const DAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+function calPrev() { calMonth--; if (calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNext() { calMonth++; if (calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+function renderCalendar() {
+  const label = document.getElementById('calMonthLabel'); if (!label) return;
+  label.textContent = MONTHS_DE[calMonth] + ' ' + calYear;
+
+  const grid = document.getElementById('calGrid'); if (!grid) return;
+
+  // Day-of-week headers
+  let html = DAYS_DE.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1);
+  // Monday = 0 offset
+  let startOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Build a map: dateStr -> matches
+  const matchMap = {};
+  state.matches.forEach(m => {
+    if (!m.date) return;
+    const ds = m.date.substring(0,10);
+    if (!matchMap[ds]) matchMap[ds] = [];
+    matchMap[ds].push(m);
+  });
+
+  let cells = '';
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    let dayNum, dateStr, isOther = false;
+    if (i < startOffset) {
+      dayNum = daysInPrev - startOffset + 1 + i;
+      const prevMonth = calMonth === 0 ? 11 : calMonth-1;
+      const prevYear = calMonth === 0 ? calYear-1 : calYear;
+      dateStr = `${prevYear}-${String(prevMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      isOther = true;
+    } else if (i >= startOffset + daysInMonth) {
+      dayNum = i - startOffset - daysInMonth + 1;
+      const nextMonth = calMonth === 11 ? 0 : calMonth+1;
+      const nextYear = calMonth === 11 ? calYear+1 : calYear;
+      dateStr = `${nextYear}-${String(nextMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      isOther = true;
+    } else {
+      dayNum = i - startOffset + 1;
+      dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+    }
+
+    const cellDate = new Date(dateStr+'T00:00:00');
+    const isToday = cellDate.getTime() === today.getTime();
+    const isSel = dateStr === selectedCalDate;
+    const dayMatches = matchMap[dateStr] || [];
+    const hasMatches = dayMatches.length > 0;
+
+    let chips = dayMatches.slice(0,3).map(m => {
+      const cls = m.resultHome!==null ? 'has-result' : 'no-result';
+      const hasHomeFlag = !!COUNTRY_FLAGS[m.home.toLowerCase()];
+      const hasAwayFlag = !!COUNTRY_FLAGS[m.away.toLowerCase()];
+      // Wettbewerbs-Icon nur zeigen wenn kein Land eine Flagge hat
+      const icon = (!hasHomeFlag && !hasAwayFlag && m.competition) ? getCompIcon(m.competition) + ' ' : '';
+      const label = flagShort(m.home, 4) + '–' + flagShort(m.away, 4);
+      return `<div class="cal-match-chip ${cls}" onclick="event.stopPropagation();openMatchDetail('${m.id}')" title="${m.home} vs ${m.away}">${icon}${label}</div>`;
+    }).join('');
+    if (dayMatches.length > 3) chips += `<div style="font-size:0.65rem;color:var(--muted)">+${dayMatches.length-3} weitere</div>`;
+
+    cells += `<div class="cal-day${isOther?' other-month':''}${isToday?' today':''}${isSel?' selected':''}${hasMatches?' has-matches':''}"
+      onclick="selectCalDay('${dateStr}')">
+      <div class="cal-day-num">${dayNum}</div>
+      ${chips}
+      <button class="cal-add-btn" onclick="event.stopPropagation();openAddMatchModal('${dateStr}')" title="Spiel hinzufügen">+</button>
+    </div>`;
+  }
+
+  grid.innerHTML = html + cells;
+}
+
+function selectCalDay(dateStr) {
+  selectedCalDate = selectedCalDate === dateStr ? null : dateStr;
+  renderCalendar();
+  renderSpiele();
+}
+
+// ===================== ADD MATCH MODAL =====================
+let selectedCompetition = null;
+
+function openAddMatchModal(dateStr) {
+  selectedCalDate = dateStr;
+  selectedCompetition = null;
+  const d = new Date(dateStr+'T00:00:00');
+  const label = d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  document.getElementById('addMatchDayLabel').textContent = '📅 ' + label;
+  document.getElementById('heimteam').value = '';
+  document.getElementById('auswarts').value = '';
+  renderCompPicker();
+  document.getElementById('addMatchModal').classList.add('open');
+  setTimeout(() => document.getElementById('heimteam').focus(), 50);
+}
+
+function renderCompPicker() {
+  const picker = document.getElementById('compPicker'); if (!picker) return;
+  const hint = document.getElementById('compNoneHint');
+  if (!state.competitions.length) {
+    picker.innerHTML = '';
+    if (hint) hint.style.display = '';
+    return;
+  }
+  if (hint) hint.style.display = 'none';
+  picker.innerHTML = [`<div class="comp-chip none ${selectedCompetition===null?'selected':''}" onclick="selectComp(null)">— Kein Wettbewerb</div>`]
+    .concat(state.competitions.map(c =>
+      `<div class="comp-chip ${selectedCompetition===c.name?'selected':''}" onclick="selectComp('${esc(c.name)}')">${c.icon} ${c.name}</div>`
+    )).join('');
+}
+
+function selectComp(name) {
+  selectedCompetition = name;
+  renderCompPicker();
+}
+
+function closeAddMatchModal() {
+  document.getElementById('addMatchModal').classList.remove('open');
+}
+
+// ===================== MATCH DETAIL MODAL =====================
+function openMatchDetail(id) {
+  const m = state.matches.find(m=>m.id===id); if (!m) return;
+  detailMatchId = id;
+  document.getElementById('detailTitle').textContent = m.competition || 'Spieldetails';
+  document.getElementById('detailTeams').textContent = flagTeam(m.home) + ' vs ' + flagTeam(m.away);
+  document.getElementById('detailHome').textContent = flagTeam(m.home);
+  document.getElementById('detailAway').textContent = flagTeam(m.away);
+  const d = m.date ? new Date(m.date).toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('detailMeta').textContent = d;
+  const haRes = m.resultHome !== null;
+  document.getElementById('detail_h').value = haRes ? m.resultHome : '';
+  document.getElementById('detail_a').value = haRes ? m.resultAway : '';
+  document.getElementById('detailSaveBtn').textContent = haRes ? 'Ergebnis ändern' : 'Ergebnis speichern';
+  document.getElementById('detailClearBtn').style.display = haRes ? '' : 'none';
+  document.getElementById('matchDetailModal').classList.add('open');
+}
+
+function closeDetailModal() {
+  document.getElementById('matchDetailModal').classList.remove('open');
+  detailMatchId = null;
+}
+
+function saveResultFromDetail() {
+  if (!detailMatchId) return;
+  const h = document.getElementById('detail_h').value;
+  const a = document.getElementById('detail_a').value;
+  if (h===''||a==='') { alert('Bitte beide Werte eingeben.'); return; }
+  const m = state.matches.find(m=>m.id===detailMatchId); if (!m) return;
+  m.resultHome = parseInt(h); m.resultAway = parseInt(a);
+  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function clearResultFromDetail() {
+  if (!detailMatchId) return;
+  const m = state.matches.find(m=>m.id===detailMatchId); if (!m) return;
+  m.resultHome = null; m.resultAway = null;
+  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function deleteMatchFromDetail() {
+  if (!detailMatchId) return;
+  if (!confirm('Spiel löschen?')) return;
+  state.matches = state.matches.filter(m=>m.id!==detailMatchId);
+  delete state.tips[detailMatchId];
+  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
+}
+
+// ===================== MATCHES =====================
+let matchFilter = 'all';
+
+function addMatch() {
+  const home = document.getElementById('heimteam').value.trim();
+  const away = document.getElementById('auswarts').value.trim();
+  if (!home || !away) { alert('Bitte beide Teams eingeben.'); return; }
+  const dateStr = selectedCalDate || new Date().toISOString().substring(0,10);
+  state.matches.push({
+    id: Date.now().toString(),
+    home, away,
+    date: dateStr,
+    competition: selectedCompetition || '',
+    resultHome: null, resultAway: null
+  });
+  save();
+  closeAddMatchModal();
+  renderCalendar(); renderSpiele(); updateHeader();
+}
+
+function filterMatches(f, btn) {
+  matchFilter = f;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSpiele();
+}
+
+function renderSpiele() {
+  const el = document.getElementById('spieleContent'); if (!el) return;
+  let ms = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if (matchFilter==='open') ms = ms.filter(m=>m.resultHome===null);
+  if (matchFilter==='done') ms = ms.filter(m=>m.resultHome!==null);
+  // filter by selected day
+  if (selectedCalDate) ms = ms.filter(m => m.date && m.date.startsWith(selectedCalDate));
+
+  const title = document.getElementById('spieleListTitle');
+  if (title) {
+    if (selectedCalDate) {
+      const d = new Date(selectedCalDate+'T00:00:00');
+      title.textContent = d.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'});
+    } else {
+      title.textContent = 'Alle Spiele';
+    }
+  }
+
+  if (!ms.length) {
+    el.innerHTML = selectedCalDate
+      ? `<div class="empty">Kein Spiel an diesem Tag. <button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="openAddMatchModal('${selectedCalDate}')">+ Spiel hinzufügen</button></div>`
+      : '<div class="empty">⚽ Noch keine Spiele. Klicke auf einen Kalendertag um ein Spiel hinzuzufügen.</div>';
+    return;
+  }
+
+  el.innerHTML = ms.map(m => {
+    const done = m.resultHome!==null;
+    const d = m.date ? new Date(m.date).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer">
+      <div class="match-header">
+        <span class="match-meta">${d}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}</span>` : ''}
+          ${done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
+        </div>
+      </div>
+      <div class="match-teams">
+        <span>${flagTeam(m.home)}</span><span class="match-vs">vs</span><span>${flagTeam(m.away)}</span>
+        ${done ? `<span style="margin-left:auto;color:var(--green-light);font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== TIPS =====================
+function renderTipps() {
+  const sel = document.getElementById('activeTipper');
+  const el = document.getElementById('tippsContent');
+  if (!el || !sel) return;
+  const psSel = document.querySelector('.player-selector');
+  let player;
+  if (currentUser && !currentUser.isAdmin) {
+    player = currentUser.name;
+    if (psSel) psSel.style.display = 'none';
+  } else {
+    if (psSel) psSel.style.display = '';
+    player = sel.value;
+  }
+  if (!player) { el.innerHTML = '<div class="alert alert-info">👆 Wähle oben einen Spieler aus.</div>'; return; }
+  const open = state.matches.filter(m=>m.resultHome===null).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if (!open.length) { el.innerHTML = '<div class="empty">✅ Alle Spiele haben ein Ergebnis.</div>'; return; }
+  el.innerHTML = open.map(m => {
+    const tip = (state.tips[m.id]||{})[player]||{};
+    const saved = tip.home!==undefined;
+    const d = m.date ? new Date(m.date).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="tip-match">
+      <div class="tip-match-info">
+        <div>
+          <div style="font-weight:600">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
+          <div style="font-size:0.75rem;color:var(--muted)">${d}${m.competition?' · '+m.competition:''}</div>
+        </div>
+        ${saved?'<span class="tip-saved">✓ Gespeichert</span>':''}
+      </div>
+      <div class="tip-inputs">
+        <span style="font-size:0.85rem;color:var(--muted)">${flagTeam(m.home)}</span>
+        <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
+          value="${tip.home!==undefined?tip.home:''}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}" />
+        <span class="tip-vs">:</span>
+        <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
+          value="${tip.away!==undefined?tip.away:''}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}" />
+        <span style="font-size:0.85rem;color:var(--muted)">${flagTeam(m.away)}</span>
+        <button class="btn btn-primary btn-sm" onclick="saveTip('${m.id}','${esc(player)}')">Speichern</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveTip(matchId, player) {
+  const h = document.getElementById('tip_h_'+matchId).value;
+  const a = document.getElementById('tip_a_'+matchId).value;
+  if (h===''||a==='') { alert('Tipp unvollständig.'); return; }
+  if (!state.tips[matchId]) state.tips[matchId] = {};
+  state.tips[matchId][player] = {home:parseInt(h), away:parseInt(a)};
+  save(); renderTipps();
+}
+
+// ===================== POINTS =====================
+function calcPoints(tipH, tipA, resH, resA) {
+  if (tipH===undefined||resH===null) return null;
+  if (tipH===resH && tipA===resA) return 3;
+  if ((tipH-tipA)===(resH-resA)) return 2;
+  if (Math.sign(tipH-tipA)===Math.sign(resH-resA)) return 1;
+  return 0;
+}
+
+function getPlayerStats(player) {
+  let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
+  state.matches.forEach(m => {
+    if (m.resultHome===null) return;
+    const tip = (state.tips[m.id]||{})[player];
+    if (!tip) return;
+    const p = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+    if (p===null) return;
+    played++; pts+=p;
+    if (p===3) exact++;
+    else if (p===2) diff++;
+    else if (p===1) tendency++;
+    else miss++;
+  });
+  return {pts, exact, diff, tendency, miss, played};
+}
+
+// ===================== RANGLISTE =====================
+function renderRangliste() {
+  const el = document.getElementById('ranglisteContent'); if (!el) return;
+  if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler. Gehe zu ⚙️ Einstellungen.</div>'; return; }
+  const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
+    .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.diff-a.diff);
+  el.innerHTML = `<table class="rank-table">
+    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
+    <tbody>${stats.map((s,i)=>{
+      const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
+      return `
+      <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
+        <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td>
+          <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
+        </td>
+        <td class="pts" style="font-size:1.4rem">${s.pts}</td>
+        <td><span class="badge badge-exact">${s.exact}</span></td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.diff}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.tendency}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.miss}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${s.played}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+}
+
+// ===================== ÜBERSICHT =====================
+function renderUebersicht() {
+  const el = document.getElementById('uebersichtContent'); if (!el) return;
+  if (!state.players.length||!state.matches.length) { el.innerHTML = '<div class="empty">Keine Daten vorhanden.</div>'; return; }
+  const sorted = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const header = `<tr>
+    <th class="left">Spieler</th>
+    ${sorted.map(m=>`<th title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!==null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
+    <th>Pkt.</th></tr>`;
+  const rows = state.players.map(p=>{
+    const cells = sorted.map(m=>{
+      const tip = (state.tips[m.id]||{})[p];
+      if (!tip) return `<td><span class="tip-pending">—</span></td>`;
+      const ts = `${tip.home}:${tip.away}`;
+      if (m.resultHome===null) return `<td><span class="tip-noresult">${ts}</span></td>`;
+      const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
+      if (pts===3) return `<td><span class="tip-exact">${ts}</span></td>`;
+      if (pts===2) return `<td><span class="tip-diff">${ts}</span></td>`;
+      if (pts===1) return `<td><span class="tip-tendency">${ts}</span></td>`;
+      return `<td><span class="tip-miss">${ts}</span></td>`;
+    }).join('');
+    const s = getPlayerStats(p);
+    return `<tr><td class="left">${p}</td>${cells}<td><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
+  }).join('');
+  el.innerHTML = `<div style="margin-bottom:10px;font-size:0.78rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap">
+    <span class="tip-exact">3 Pkt Ergebnis</span>
+    <span class="tip-diff">2 Pkt Differenz</span>
+    <span class="tip-tendency">1 Pkt Sieger</span>
+    <span class="tip-miss">0 Pkt</span>
+    <span class="tip-noresult">Offen</span>
+  </div>
+  <table class="overview-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+}
+
+// ===================== GESCHICHTE =====================
+function renderGeschichte() {
+  renderGesamtwertung();
+  const el = document.getElementById('geschichteContent'); if (!el) return;
+  if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
+  const weeks = [...state.weekHistory].reverse();
+  el.innerHTML = weeks.map(w => {
+    const sorted = [...w.scores].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+    const winner = sorted[0];
+    return `<div class="week-card">
+      <div class="week-card-header">
+        <div>
+          <div class="week-title">📅 Woche ${w.week}${w.label?' – '+w.label:''}</div>
+          <div class="week-date">${w.date}</div>
+        </div>
+        <div class="week-winner">🏆 <strong style="color:var(--gold)">${winner?winner.name:'—'}</strong> <span style="color:var(--muted);font-size:0.85rem">${winner?winner.pts+' Pkt':''}</span></div>
+      </div>
+      <div class="week-scores">
+        ${sorted.map((s,i)=>`
+          <div class="week-score-item ${i===0?'winner':''}">
+            ${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}
+            <span>${s.name}</span>
+            <strong>${s.pts}</strong>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderGesamtwertung() {
+  const el = document.getElementById('gesamtContent'); if (!el) return;
+  if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Daten.</div>'; return; }
+
+  const overall = {};
+  state.players.forEach(p => { overall[p] = {wins:0, top3:0, totalPts:0, weeks:0}; });
+
+  state.weekHistory.forEach(w => {
+    const sorted = [...w.scores].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+    sorted.forEach((s,i) => {
+      if (!overall[s.name]) overall[s.name] = {wins:0, top3:0, totalPts:0, weeks:0};
+      overall[s.name].totalPts += s.pts;
+      overall[s.name].weeks++;
+      if (i===0) overall[s.name].wins++;
+      if (i<3) overall[s.name].top3++;
+    });
+  });
+
+  const rows = Object.entries(overall)
+    .map(([name,o])=>({name,...o}))
+    .sort((a,b)=>b.wins-a.wins||b.top3-a.top3||b.totalPts-a.totalPts);
+
+  if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
+
+  el.innerHTML = `<table class="overall-table">
+    <thead><tr><th>#</th><th>Spieler</th><th>🏆 Wochensiege</th><th>Top 3</th><th>Gesamtpunkte</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`
+      <tr>
+        <td style="font-weight:700;width:40px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td><strong>${r.name}</strong></td>
+        <td><span class="badge badge-wins">${r.wins}</span></td>
+        <td style="color:var(--muted)">${r.top3}</td>
+        <td class="pts">${r.totalPts}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ===================== MEISTERSCHAFTEN =====================
+let selectedMeisterComp = null;
+
+function renderMeisterschaften() {
+  const tabsEl = document.getElementById('meisterCompTabs');
+  const contentEl = document.getElementById('meisterContent');
+  if (!tabsEl || !contentEl) return;
+
+  if (!state.competitions.length) {
+    tabsEl.innerHTML = '';
+    contentEl.innerHTML = '<div class="empty">Noch keine Wettbewerbe erstellt. Gehe zu ⚙️ Einstellungen.</div>';
+    return;
+  }
+
+  // Auto-select first if none selected or selected doesn't exist
+  if (!selectedMeisterComp || !state.competitions.find(c => c.name === selectedMeisterComp)) {
+    selectedMeisterComp = state.competitions[0].name;
+  }
+
+  // Tabs
+  tabsEl.innerHTML = state.competitions.map(c =>
+    `<button class="meister-comp-tab ${selectedMeisterComp===c.name?'active':''}" onclick="selectMeisterComp('${esc(c.name)}')">${c.icon} ${c.name}</button>`
+  ).join('');
+
+  // Aggregate scores for selected competition across all closed weeks + current live
+  const totals = {};
+  state.players.forEach(p => { totals[p] = {pts:0, played:0, exact:0, diff:0, tendency:0, weekWins:0, weekScores:[]}; });
+
+  // From archived weeks
+  state.weekHistory.forEach(w => {
+    const cs = w.competitionScores && w.competitionScores[selectedMeisterComp];
+    if (!cs) return;
+    const sorted = [...cs].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+    cs.forEach(s => {
+      if (!totals[s.name]) totals[s.name] = {pts:0, played:0, exact:0, diff:0, tendency:0, weekWins:0, weekScores:[]};
+      totals[s.name].pts += s.pts;
+      totals[s.name].played += s.played;
+      totals[s.name].exact += s.exact;
+      totals[s.name].diff += (s.diff||0);
+      totals[s.name].tendency += s.tendency;
+      if (sorted[0] && sorted[0].name === s.name && s.pts > 0) totals[s.name].weekWins++;
+      if (s.played > 0) totals[s.name].weekScores.push({week: w.week, pts: s.pts, won: sorted[0]&&sorted[0].name===s.name&&s.pts>0});
+    });
+  });
+
+  // From current (live) week
+  const liveStats = getCompetitionStats(selectedMeisterComp);
+  liveStats.forEach(s => {
+    if (!totals[s.name]) totals[s.name] = {pts:0, played:0, exact:0, diff:0, tendency:0, weekWins:0, weekScores:[]};
+    totals[s.name].pts += s.pts;
+    totals[s.name].played += s.played;
+    totals[s.name].exact += s.exact;
+    totals[s.name].diff += (s.diff||0);
+    totals[s.name].tendency += s.tendency;
+  });
+
+  const sorted = Object.entries(totals)
+    .map(([name, t]) => ({name, ...t}))
+    .sort((a,b) => b.pts-a.pts || b.exact-a.exact || b.diff-a.diff);
+
+  if (sorted.every(s => s.played === 0)) {
+    contentEl.innerHTML = `<div class="card"><div class="empty">Noch keine Spiele mit Ergebnis für <strong>${selectedMeisterComp}</strong>.</div></div>`;
+    return;
+  }
+
+  // Podium (top 3)
+  const [p1, p2, p3] = sorted;
+  const initials = n => n ? n[0].toUpperCase() : '?';
+  const podiumHtml = `
+    <div class="meister-podium">
+      ${p2 ? `<div class="meister-podium-item">
+        <div class="meister-podium-avatar p2">${initials(p2.name)}</div>
+        <div class="meister-podium-name">${p2.name}</div>
+        <div class="meister-podium-pts">${p2.pts} Pkt</div>
+        <div class="meister-podium-bar p2"></div>
+      </div>` : ''}
+      ${p1 ? `<div class="meister-podium-item">
+        <div class="meister-podium-avatar p1">${initials(p1.name)}</div>
+        <div class="meister-podium-name" style="font-size:1rem">${p1.name}</div>
+        <div class="meister-podium-pts">${p1.pts} Pkt</div>
+        <div class="meister-podium-bar p1"></div>
+      </div>` : ''}
+      ${p3 ? `<div class="meister-podium-item">
+        <div class="meister-podium-avatar p3">${initials(p3.name)}</div>
+        <div class="meister-podium-name">${p3.name}</div>
+        <div class="meister-podium-pts">${p3.pts} Pkt</div>
+        <div class="meister-podium-bar p3"></div>
+      </div>` : ''}
+    </div>`;
+
+  // Full table
+  const tableHtml = `<table class="rank-table">
+    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th>Differenz</th><th>Tendenz</th><th>Spiele</th></tr></thead>
+    <tbody>${sorted.map((s,i) => `
+      <tr class="rank-${i+1}">
+        <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td>
+          <strong>${s.name}</strong>
+          ${s.weekScores.length ? `<div class="meister-week-chips">${s.weekScores.map(w=>`<span class="meister-week-chip ${w.won?'won':''}" title="Woche ${w.week}">${w.won?'🏆':''}W${w.week}: ${w.pts}</span>`).join('')}</div>` : ''}
+        </td>
+        <td class="pts">${s.pts}</td>
+        <td><span class="badge badge-exact">${s.exact}</span></td>
+        <td><span class="badge badge-diff">${s.diff}</span></td>
+        <td><span class="badge badge-tendency">${s.tendency}</span></td>
+        <td style="color:var(--muted);font-size:0.85rem">${s.played}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+
+  const comp = state.competitions.find(c => c.name === selectedMeisterComp);
+  const livePts = liveStats.reduce((s,p)=>s+p.pts,0);
+  contentEl.innerHTML = `
+    <div class="card">
+      <h2>${comp ? comp.icon : '🏆'} ${selectedMeisterComp} – Gesamttabelle</h2>
+      ${livePts > 0 ? '<div style="font-size:0.78rem;color:#60a5fa;margin-bottom:12px">🔴 Live – aktuelle Woche einberechnet</div>' : ''}
+      ${podiumHtml}
+      ${tableHtml}
+    </div>`;
+}
+
+function selectMeisterComp(name) {
+  selectedMeisterComp = name;
+  renderMeisterschaften();
+}
+
+// ===================== WEEK CLOSE =====================
+function openCloseWeekModal() {
+  const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
+    .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+  const winner = stats[0];
+  const preview = document.getElementById('modalPreview');
+  preview.innerHTML = `<div class="winner-line">🏆 Wochenmeister: ${winner ? winner.name + ' ('+winner.pts+' Pkt)' : '—'}</div>` +
+    stats.map((s,i)=>`<div style="margin-bottom:4px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '} ${s.name}: ${s.pts} Pkt</div>`).join('');
+  document.getElementById('closeWeekModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('closeWeekModal').classList.remove('open');
+}
+
+function getCompetitionStats(compName) {
+  // Points per player for matches belonging to a specific competition (current week only)
+  return state.players.map(p => {
+    let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
+    state.matches.filter(m => m.competition === compName && m.resultHome !== null).forEach(m => {
+      const tip = (state.tips[m.id]||{})[p];
+      if (!tip) return;
+      const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      if (pt === null) return;
+      played++; pts += pt;
+      if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+    });
+    return {name:p, pts, exact, diff, tendency, miss, played};
+  });
+}
+
+function closeWeek() {
+  const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
+    .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+  const now = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // Build per-competition scores snapshot
+  const competitionScores = {};
+  state.competitions.forEach(c => {
+    competitionScores[c.name] = getCompetitionStats(c.name);
+  });
+
+  state.weekHistory.push({
+    week: state.currentWeek,
+    label: state.tournament,
+    date: now,
+    scores: stats.map(s=>({name:s.name, pts:s.pts, exact:s.exact, diff:s.diff, tendency:s.tendency, miss:s.miss, played:s.played})),
+    competitionScores
+  });
+  state.currentWeek++;
+  state.matches = [];
+  state.tips = {};
+  save();
+  closeModal();
+  renderAll();
+}
+
+// ===================== RESET =====================
+function resetWeek() {
+  if (!confirm('Aktuelle Woche (Spiele + Tipps) löschen?')) return;
+  state.matches = []; state.tips = {}; save(); renderAll();
+}
+
+function resetAll() {
+  if (!confirm('ALLES löschen inkl. Geschichte?')) return;
+  state = {players: state.players, matches:[], tips:{}, tournament: state.tournament, currentWeek:1, weekHistory:[]};
+  save(); renderAll();
+}
+
+function saveTournament() {
+  state.tournament = document.getElementById('tournamentName').value.trim() || 'Tippspiel';
+  save(); updateHeader();
+}
+
+// ===================== AUTH =====================
+let currentUser = null; // { name: string, isAdmin: boolean }
+
+function initLogin() {
+  updateLoginSelect();
+  document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+function updateLoginSelect() {
+  const dl = document.getElementById('loginPlayerList'); if (!dl) return;
+  dl.innerHTML = ['Admin', ...state.players].map(p => `<option value="${esc(p)}">`).join('');
+}
+
+function doLogin() {
+  const name = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  if (!name) { err.textContent = 'Bitte Namen eingeben.'; return; }
+  // Case-insensitive match for players
+  const matchedPlayer = state.players.find(p => p.toLowerCase() === name.toLowerCase());
+  const isAdminName = name.toLowerCase() === 'admin';
+  if (isAdminName) {
+    const adminPass = state.passwords['__admin__'] || '';
+    if (adminPass !== '' && pass !== adminPass) { err.textContent = 'Falsches Passwort.'; return; }
+    currentUser = { name: 'Admin', isAdmin: true };
+    if (adminPass === '') {
+      setTimeout(() => {
+        showPage('einstellungen', document.querySelector('[data-page="einstellungen"]'));
+        alert('Willkommen! Bitte setze jetzt ein Admin-Passwort unter 🔐 Passwörter verwalten.');
+      }, 300);
+    }
+  } else if (matchedPlayer) {
+    const playerPass = state.passwords[matchedPlayer];
+    if (!playerPass) { err.textContent = 'Kein Passwort gesetzt. Bitte Admin kontaktieren.'; return; }
+    if (pass !== playerPass) { err.textContent = 'Falsches Passwort.'; return; }
+    currentUser = { name: matchedPlayer, isAdmin: false };
+  } else {
+    err.textContent = 'Spieler nicht gefunden.';
+    return;
+  }
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('loginPassword').value = '';
+  applyAccessControl();
+  updateHeaderUser();
+  renderAll();
+}
+
+function doLogout() {
+  currentUser = null;
+  // Go back to rangliste
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-rangliste').classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  const rb = document.querySelector('[data-page="rangliste"]');
+  if (rb) rb.classList.add('active');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginOverlay').style.display = 'flex';
+  updateHeaderUser();
+}
+
+function applyAccessControl() {
+  if (!currentUser) return;
+  const isAdmin = currentUser.isAdmin;
+  // Nav visibility
+  document.querySelectorAll('nav button[data-page]').forEach(b => {
+    const page = b.getAttribute('data-page');
+    const adminOnly = page === 'spiele' || page === 'einstellungen';
+    b.style.display = (!isAdmin && adminOnly) ? 'none' : '';
+  });
+  // Week close banner – admin only
+  const wb = document.getElementById('weekBanner');
+  if (wb) wb.style.display = isAdmin ? '' : 'none';
+}
+
+function updateHeaderUser() {
+  const info = document.getElementById('headerUserInfo');
+  const nameEl = document.getElementById('headerUserName');
+  if (!info || !nameEl) return;
+  if (!currentUser) { info.style.display = 'none'; return; }
+  info.style.display = 'flex';
+  nameEl.textContent = currentUser.isAdmin ? '⚙️ Admin' : '👤 ' + currentUser.name;
+}
+
+function renderPasswordList() {
+  const el = document.getElementById('passwordList'); if (!el) return;
+  const items = [
+    { key: '__admin__', safeId: 'ADMIN', label: '⚙️ Admin' },
+    ...state.players.map(p => ({ key: p, safeId: p.replace(/[^a-zA-Z0-9]/g, '_'), label: p }))
+  ];
+  el.innerHTML = `<p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">Passwörter für alle Spieler setzen. Ohne gesetztes Passwort kann sich ein Spieler nicht einloggen.</p>` +
+    items.map(item => `
+    <div class="pw-row">
+      <div style="width:120px;font-size:0.9rem;font-weight:600;flex-shrink:0">${item.label}</div>
+      <input type="text" id="pw_${item.safeId}" placeholder="Passwort"
+        value="${esc(state.passwords[item.key] || '')}"
+        style="flex:1;min-width:140px;max-width:200px"
+        onkeydown="if(event.key==='Enter')setPassword('${esc(item.key)}','${item.safeId}')" />
+      <button class="btn btn-primary btn-sm" onclick="setPassword('${esc(item.key)}','${item.safeId}')">Setzen</button>
+      <span class="${state.passwords[item.key] ? 'pw-status-ok' : 'pw-status-no'}">${state.passwords[item.key] ? '✓ Gesetzt' : '✗ Fehlt'}</span>
+    </div>`).join('');
+}
+
+function setPassword(key, safeId) {
+  const input = document.getElementById('pw_' + safeId); if (!input) return;
+  const pass = input.value.trim();
+  if (!pass) { alert('Passwort darf nicht leer sein.'); return; }
+  state.passwords[key] = pass;
+  save();
+  renderPasswordList();
+}
+
+// ===================== UTILS =====================
+function esc(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ===================== INIT =====================
+const wmMatches = [
+  // Sonntag 14. Juni 2026
+  {date:'2026-06-14T00:00', home:'Brasilien',       away:'Marokko',    group:'C'},
+  {date:'2026-06-14T03:00', home:'Haiti',            away:'Schottland', group:'C'},
+  {date:'2026-06-14T06:00', home:'Australien',       away:'Türkei',     group:'D'},
+  {date:'2026-06-14T19:00', home:'Deutschland',      away:'Curaçao',    group:'E'},
+  {date:'2026-06-14T22:00', home:'Niederlande',      away:'Japan',      group:'F'},
+  // Montag 15. Juni 2026
+  {date:'2026-06-15T01:00', home:'Elfenbeinküste',   away:'Ecuador',    group:'E'},
+  {date:'2026-06-15T04:00', home:'Schweden',         away:'Tunesien',   group:'F'},
+  {date:'2026-06-15T18:00', home:'Spanien',          away:'Kap Verde',  group:'H'},
+  {date:'2026-06-15T21:00', home:'Belgien',          away:'Ägypten',    group:'G'},
+  // Dienstag 16. Juni 2026
+  {date:'2026-06-16T00:00', home:'Saudi-Arabien',    away:'Uruguay',    group:'H'},
+  {date:'2026-06-16T03:00', home:'Iran',             away:'Neuseeland', group:'G'},
+  {date:'2026-06-16T21:00', home:'Frankreich',       away:'Senegal',    group:'I'},
+  // Mittwoch 17. Juni 2026
+  {date:'2026-06-17T00:00', home:'Irak',             away:'Norwegen',   group:'I'},
+  {date:'2026-06-17T03:00', home:'Argentinien',      away:'Algerien',   group:'J'},
+  {date:'2026-06-17T06:00', home:'Österreich',       away:'Jordanien',  group:'J'},
+  {date:'2026-06-17T19:00', home:'Portugal',         away:'DR Kongo',        group:'K'},
+  {date:'2026-06-17T22:00', home:'England',          away:'Kroatien',        group:'L'},
+  // Donnerstag 18. Juni 2026
+  {date:'2026-06-18T01:00', home:'Ghana',            away:'Panama',          group:'L'},
+  {date:'2026-06-18T04:00', home:'Usbekistan',       away:'Kolumbien',       group:'K'},
+  {date:'2026-06-18T18:00', home:'Tschechien',       away:'Südafrika',       group:'A'},
+  {date:'2026-06-18T21:00', home:'Schweiz',          away:'Bosnien-Herzegowina', group:'B'},
+  // Freitag 19. Juni 2026
+  {date:'2026-06-19T00:00', home:'Kanada',           away:'Katar',           group:'B'},
+  {date:'2026-06-19T03:00', home:'Mexiko',           away:'Südkorea',        group:'A'},
+  {date:'2026-06-19T21:00', home:'USA',              away:'Australien',      group:'D'},
+  // Samstag 20. Juni 2026
+  {date:'2026-06-20T00:00', home:'Schottland',      away:'Marokko',         group:'C'},
+  {date:'2026-06-20T02:30', home:'Brasilien',        away:'Haiti',           group:'C'},
+  {date:'2026-06-20T05:00', home:'Türkei',           away:'Paraguay',        group:'D'},
+  {date:'2026-06-20T19:00', home:'Niederlande',      away:'Schweden',        group:'F'},
+  {date:'2026-06-20T22:00', home:'Deutschland',      away:'Elfenbeinküste',  group:'E'},
+  // Sonntag 21. Juni 2026
+  {date:'2026-06-21T02:00', home:'Ecuador',          away:'Curaçao',         group:'E'},
+  {date:'2026-06-21T06:00', home:'Tunesien',         away:'Japan',           group:'F'},
+  {date:'2026-06-21T18:00', home:'Spanien',          away:'Saudi-Arabien',   group:'H'},
+  {date:'2026-06-21T21:00', home:'Belgien',          away:'Iran',            group:'G'},
+  // Montag 22. Juni 2026
+  {date:'2026-06-22T00:00', home:'Uruguay',          away:'Kap Verde',       group:'H'},
+  {date:'2026-06-22T03:00', home:'Neuseeland',       away:'Ägypten',         group:'G'},
+  {date:'2026-06-22T19:00', home:'Argentinien',      away:'Österreich',      group:'J'},
+  {date:'2026-06-22T23:00', home:'Frankreich',       away:'Irak',            group:'I'},
+  // Dienstag 23. Juni 2026
+  {date:'2026-06-23T02:00', home:'Norwegen',         away:'Senegal',         group:'I'},
+  {date:'2026-06-23T05:00', home:'Jordanien',        away:'Algerien',        group:'J'},
+  {date:'2026-06-23T19:00', home:'Portugal',         away:'Usbekistan',      group:'K'},
+  {date:'2026-06-23T22:00', home:'England',          away:'Ghana',           group:'L'},
+  // Mittwoch 24. Juni 2026
+  {date:'2026-06-24T01:00', home:'Panama',           away:'Kroatien',        group:'L'},
+  {date:'2026-06-24T04:00', home:'Kolumbien',        away:'DR Kongo',        group:'K'},
+  {date:'2026-06-24T21:00', home:'Schweiz',          away:'Kanada',          group:'B'},
+  {date:'2026-06-24T21:00', home:'Bosnien-Herzegowina', away:'Katar',        group:'B'},
+  // Donnerstag 25. Juni 2026
+  {date:'2026-06-25T00:00', home:'Marokko',          away:'Haiti',           group:'C'},
+  {date:'2026-06-25T00:00', home:'Schottland',       away:'Brasilien',       group:'C'},
+  {date:'2026-06-25T03:00', home:'Südafrika',        away:'Südkorea',        group:'A'},
+  {date:'2026-06-25T03:00', home:'Tschechien',       away:'Mexiko',          group:'A'},
+  {date:'2026-06-25T22:00', home:'Curaçao',          away:'Elfenbeinküste',  group:'E'},
+  {date:'2026-06-25T22:00', home:'Ecuador',          away:'Deutschland',     group:'E'},
+  // Freitag 26. Juni 2026
+  {date:'2026-06-26T01:00', home:'Tunesien',         away:'Niederlande',     group:'F'},
+  {date:'2026-06-26T01:00', home:'Japan',            away:'Schweden',        group:'F'},
+  {date:'2026-06-26T04:00', home:'Türkei',           away:'USA',             group:'D'},
+  {date:'2026-06-26T04:00', home:'Paraguay',         away:'Australien',      group:'D'},
+  {date:'2026-06-26T21:00', home:'Norwegen',         away:'Frankreich',      group:'I'},
+  {date:'2026-06-26T21:00', home:'Senegal',          away:'Irak',            group:'I'},
+  // Samstag 27. Juni 2026
+  {date:'2026-06-27T02:00', home:'Kap Verde',        away:'Saudi-Arabien',   group:'H'},
+  {date:'2026-06-27T02:00', home:'Uruguay',          away:'Spanien',         group:'H'},
+  {date:'2026-06-27T05:00', home:'Neuseeland',       away:'Belgien',         group:'G'},
+  {date:'2026-06-27T05:00', home:'Ägypten',          away:'Iran',            group:'G'},
+  {date:'2026-06-27T23:00', home:'Panama',           away:'England',         group:'L'},
+  {date:'2026-06-27T23:00', home:'Kroatien',         away:'Ghana',           group:'L'},
+  // Sonntag 28. Juni 2026
+  {date:'2026-06-28T01:30', home:'Kolumbien',        away:'Portugal',        group:'K'},
+  {date:'2026-06-28T01:30', home:'DR Kongo',         away:'Usbekistan',      group:'K'},
+  {date:'2026-06-28T04:00', home:'Algerien',         away:'Österreich',      group:'J'},
+  {date:'2026-06-28T04:00', home:'Jordanien',        away:'Argentinien',     group:'J'},
+];
+// ===================== FIREBASE =====================
+const _fbConfig = {
+  apiKey: "AIzaSyDm1Yko6cfkZQVglFZ-KbzYRybusrrxMQo",
+  authDomain: "tippspiel-cda04.firebaseapp.com",
+  databaseURL: "https://tippspiel-cda04-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "tippspiel-cda04",
+  storageBucket: "tippspiel-cda04.firebasestorage.app",
+  messagingSenderId: "106338348759",
+  appId: "1:106338348759:web:c7ae34b423275da8374a92"
+};
+
+firebase.initializeApp(_fbConfig);
+window._fbDb = firebase.database();
+let _fbFirstLoad = true;
+let _fbSaving = false;
+
+// Show loading screen
+const _lo = document.getElementById('loadingOverlay');
+if (_lo) _lo.style.display = 'flex';
+
+window._fbDb.ref('tippspiel').on('value', snapshot => {
+  const data = snapshot.val();
+  if (data) { state = data; }
+  applyDefaults();
+
+  if (_fbFirstLoad) {
+    _fbFirstLoad = false;
+    // Set defaults on first ever run
+    if (!state.players.length) {
+      state.players = ['Calvin', 'Anton', 'Logan', 'Maxim', 'Raphti'];
+    }
+    if (!state.competitions.find(c => c.name === 'WM')) {
+      state.competitions.push({name: 'WM', icon: '🌍'});
+    }
+    // Add WM matches if missing
+    wmMatches.forEach(m => {
+      const exists = state.matches.some(s => s.home === m.home && s.away === m.away && s.date === m.date);
+      if (!exists) {
+        state.matches.push({
+          id: Date.now().toString() + Math.random().toString(36).slice(2),
+          home: m.home, away: m.away,
+          date: m.date, competition: 'WM', group: m.group,
+          resultHome: null, resultAway: null
+        });
+      }
+    });
+    calYear = 2026; calMonth = 5;
+    if (!data) save(); // Only save to Firebase if database was empty
+    if (_lo) _lo.style.display = 'none';
+    initLogin();
+  } else {
+    // Real-time update from another client
+    if (currentUser && !_fbSaving) {
+      renderAll();
+    }
+    _fbSaving = false;
+  }
+});
+</script>
+</body>
+</html>
