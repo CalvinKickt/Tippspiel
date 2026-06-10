@@ -647,6 +647,17 @@
   </div>
 </div>
 
+<!-- PLAYER STATS MODAL -->
+<div class="modal-overlay" id="playerStatsModal">
+  <div class="modal" style="max-width:480px;max-height:88vh;overflow-y:auto">
+    <h3 id="playerStatsTitle" style="font-size:1.15rem;margin-bottom:16px"></h3>
+    <div id="playerStatsContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('playerStatsModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-size:3.5rem">⚽</div>
@@ -715,7 +726,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1506,8 +1517,9 @@ function renderRangliste() {
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td>
+        <td onclick="openPlayerStats('${esc(s.name)}')" style="cursor:pointer">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
+          <span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>
         </td>
         <td class="pts" style="font-size:1.4rem">${s.pts}</td>
         <td><span class="badge badge-exact">${s.exact}</span></td>
@@ -1722,8 +1734,9 @@ function renderMeisterschaften() {
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td>
+        <td onclick="openPlayerStats('${esc(s.name)}')" style="cursor:pointer">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
+          <span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>
           ${s.weekScores.length ? `<div class="meister-week-chips">${s.weekScores.map(w=>`<span class="meister-week-chip ${w.won?'won':''}" title="Woche ${w.week}">${w.won?'🏆':''}W${w.week}: ${w.pts}</span>`).join('')}</div>` : ''}
         </td>
         <td class="pts" style="font-size:1.4rem">${s.pts}</td>
@@ -2125,6 +2138,83 @@ function setPassword(key, safeId) {
   state.passwords[key] = pass;
   save();
   renderPasswordList();
+}
+
+// ===================== PLAYER STATS POPUP =====================
+function openPlayerStats(name) {
+  const doneMatches = state.matches.filter(m => m.resultHome != null);
+  let exact=0, diff=0, tendency=0, miss=0;
+  const teamStats = {};
+
+  doneMatches.forEach(m => {
+    const tip = (state.tips[m.id]||{})[name];
+    if (!tip) return;
+    const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+    if (pts===null) return;
+    if (pts===3) exact++; else if (pts===2) diff++; else if (pts===1) tendency++; else miss++;
+    [m.home, m.away].forEach(team => {
+      if (!teamStats[team]) teamStats[team] = {tipped:0, pts:0};
+      teamStats[team].tipped++;
+      teamStats[team].pts += pts;
+    });
+  });
+
+  const total = exact+diff+tendency+miss;
+  const pct = n => total>0 ? Math.round(n/total*100) : 0;
+  const s = getPlayerStats(name);
+
+  // Trefferquote
+  const hitHtml = total===0
+    ? `<div style="color:var(--muted);font-size:0.88rem;padding:4px 0 12px">Noch keine bewerteten Spiele.</div>`
+    : `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">${total} Spiel${total!==1?'e':''} bewertet · <strong style="color:var(--green-light)">${s.pts} Punkte</strong></div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">🎯 Genau</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(exact)}%;background:#22c55e"></div></div>
+      <div class="stat-bar-val" style="color:#22c55e">${exact}</div>
+      <div class="stat-bar-pct">${pct(exact)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">✌️ Differenz</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(diff)}%;background:#a78bfa"></div></div>
+      <div class="stat-bar-val" style="color:#a78bfa">${diff}</div>
+      <div class="stat-bar-pct">${pct(diff)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">👍 Tendenz</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(tendency)}%;background:#60a5fa"></div></div>
+      <div class="stat-bar-val" style="color:#60a5fa">${tendency}</div>
+      <div class="stat-bar-pct">${pct(tendency)}%</div>
+    </div>
+    <div class="stat-bar-row">
+      <div class="stat-bar-label">❌ Falsch</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(miss)}%;background:#f87171"></div></div>
+      <div class="stat-bar-val" style="color:#f87171">${miss}</div>
+      <div class="stat-bar-pct">${pct(miss)}%</div>
+    </div>`;
+
+  // Lieblingsmannschaft (mind. 1 Spiel)
+  const teamEntries = Object.entries(teamStats)
+    .filter(([,t])=>t.tipped>=1)
+    .map(([team,t])=>({team,tipped:t.tipped,avg:t.pts/t.tipped}))
+    .sort((a,b)=>b.avg-a.avg||b.tipped-a.tipped)
+    .slice(0,6);
+
+  const teamHtml = teamEntries.length===0 ? '' : `
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">⭐ Beste Teams</div>
+      ${teamEntries.map((t,i)=>`
+        <div class="stat-team-row">
+          <div style="width:20px;font-size:0.85rem">${i<3?['🥇','🥈','🥉'][i]:''}</div>
+          <div style="width:26px;text-align:center">${(COUNTRY_FLAGS[(t.team||'').toLowerCase()]||'⚽')}</div>
+          <div style="flex:1">${t.team}</div>
+          <div style="font-weight:700;color:${t.avg>=2?'var(--green-light)':t.avg>=1?'#60a5fa':'var(--muted)'}">${t.avg.toFixed(2)}</div>
+          <div style="font-size:0.75rem;color:var(--muted);min-width:28px;text-align:right">${t.tipped}×</div>
+        </div>`).join('')}
+    </div>`;
+
+  document.getElementById('playerStatsTitle').textContent = '📈 ' + name;
+  document.getElementById('playerStatsContent').innerHTML = hitHtml + teamHtml;
+  document.getElementById('playerStatsModal').classList.add('open');
 }
 
 // ===================== STATISTIK =====================
