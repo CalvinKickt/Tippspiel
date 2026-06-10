@@ -1482,7 +1482,9 @@ let currentUser = null; // { name: string, isAdmin: boolean }
 
 function initLogin() {
   updateLoginSelect();
-  document.getElementById('loginOverlay').style.display = 'flex';
+  if (!currentUser) {
+    document.getElementById('loginOverlay').style.display = 'flex';
+  }
 }
 
 function updateLoginSelect() {
