@@ -726,7 +726,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1360,10 +1360,10 @@ function renderTipps() {
   let html = `<div class="tipps-progress">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:0.85rem;font-weight:600;color:var(--muted)">Tipps abgegeben</span>
-      <span style="font-size:0.95rem;font-weight:700;color:${progressColor}">${tippedCount} / ${totalOpen}</span>
+      <span id="tipps-progress-count" style="font-size:0.95rem;font-weight:700;color:${progressColor}">${tippedCount} / ${totalOpen}</span>
     </div>
     <div class="tipps-progress-track" style="margin-top:8px">
-      <div class="tipps-progress-fill" style="width:${progressPct}%;background:${progressColor}"></div>
+      <div id="tipps-progress-fill" class="tipps-progress-fill" style="width:${progressPct}%;background:${progressColor}"></div>
     </div>
   </div>`;
 
@@ -1417,7 +1417,7 @@ function renderTipps() {
             <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
             ${!locked && countdown ? `<div style="font-size:0.72rem;color:${countdown.includes('Min')?'#f59e0b':'#60a5fa'};margin-top:3px;font-weight:600">${countdown}</div>` : ''}
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div id="tip_status_${m.id}" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             ${locked ? '<span style="font-size:0.8rem;color:#f87171;font-weight:600">🔒 Gesperrt</span>' : ''}
             ${saved ? '<span class="tip-saved">✓ Gespeichert</span>' : ''}
           </div>
@@ -1426,11 +1426,11 @@ function renderTipps() {
           <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
           <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
             value="${tip.home!==undefined?tip.home:''}"
-            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
+            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onchange="autoSaveTip('${m.id}','${esc(player)}')" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
           <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
           <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
             value="${tip.away!==undefined?tip.away:''}"
-            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onkeydown="if(event.key==='Enter'){event.preventDefault();saveTip('${m.id}','${esc(player)}');}"`} />
+            ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onchange="autoSaveTip('${m.id}','${esc(player)}')" onkeydown="if(event.key==='Enter'){event.preventDefault();autoSaveTip('${m.id}','${esc(player)}');}"`} />
           <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
         </div>
       </div>`;
@@ -1449,6 +1449,30 @@ function saveTip(matchId, player) {
   if (!state.tips[matchId]) state.tips[matchId] = {};
   state.tips[matchId][player] = {home:parseInt(h), away:parseInt(a)};
   save(); renderTipps();
+}
+
+function autoSaveTip(matchId, player) {
+  const hEl = document.getElementById('tip_h_' + matchId);
+  const aEl = document.getElementById('tip_a_' + matchId);
+  if (!hEl || !aEl || hEl.value === '' || aEl.value === '') return;
+  const match = state.matches.find(m => m.id === matchId);
+  if (match && isMatchLocked(match)) return;
+  if (!state.tips[matchId]) state.tips[matchId] = {};
+  state.tips[matchId][player] = {home: parseInt(hEl.value), away: parseInt(aEl.value)};
+  save();
+  // Update saved indicator for this match
+  const statusEl = document.getElementById('tip_status_' + matchId);
+  if (statusEl) statusEl.innerHTML = '<span class="tip-saved">✓ Gespeichert</span>';
+  // Update progress bar without full re-render
+  const open = state.matches.filter(m => m.resultHome == null);
+  const tippedCount = open.filter(m => { const t=(state.tips[m.id]||{})[player]; return t&&t.home!==undefined; }).length;
+  const totalOpen = open.length;
+  const progressPct = totalOpen > 0 ? Math.round(tippedCount/totalOpen*100) : 0;
+  const progressColor = progressPct===100 ? '#22c55e' : progressPct>=50 ? '#60a5fa' : '#f59e0b';
+  const fillEl = document.getElementById('tipps-progress-fill');
+  if (fillEl) { fillEl.style.width = progressPct + '%'; fillEl.style.background = progressColor; }
+  const countEl = document.getElementById('tipps-progress-count');
+  if (countEl) { countEl.textContent = tippedCount + ' / ' + totalOpen; countEl.style.color = progressColor; }
 }
 
 function saveAllTips() {
