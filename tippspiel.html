@@ -72,8 +72,9 @@
     }
     #mainNav.open { left: 0; }
     #mainNav .nav-drawer-header { display: block; }
-    #mainNav button { border-left: 3px solid transparent; border-bottom: none; padding: 13px 20px; white-space: nowrap; width: 100%; }
-    #mainNav button.active { border-left-color: var(--green-light); border-bottom-color: transparent; background: rgba(22,163,74,0.07); color: var(--green-light); }
+    #mainNav button[data-page] { border: 1px solid var(--border); border-radius: 6px; margin: 3px 10px; padding: 12px 14px; white-space: nowrap; width: calc(100% - 20px); color: var(--muted); background: transparent; }
+    #mainNav button[data-page]:hover { border-color: var(--text); color: var(--text); }
+    #mainNav button[data-page].active { border-color: var(--green-light); background: rgba(22,163,74,0.1); color: var(--green-light); }
   }
   .page { display: none; }
   .page.active { display: block; }
@@ -807,7 +808,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v31';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
