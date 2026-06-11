@@ -47,12 +47,32 @@
   main { padding: 24px; flex: 1; min-width: 0; }
   main > * { max-width: 860px; margin-left: auto; margin-right: auto; }
 
+  /* HAMBURGER BUTTON */
+  .hamburger-btn { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 4px 8px; border-radius: 6px; flex-direction: column; gap: 5px; align-items: center; justify-content: center; }
+  .hamburger-btn span { display: block; width: 22px; height: 2px; background: currentColor; border-radius: 2px; transition: all 0.2s; }
+
+  /* NAV DRAWER HEADER LABEL */
+  .nav-drawer-header { display: none; padding: 8px 20px 14px; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+
+  /* MOBILE BACKDROP */
+  .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; }
+  .nav-backdrop.open { display: block; }
+
   @media (max-width: 700px) {
     .layout { flex-direction: column; }
-    nav { width: 100%; flex-direction: row; overflow-x: auto; padding: 0; border-right: none; border-bottom: 1px solid var(--border); scrollbar-width: none; }
-    nav::-webkit-scrollbar { display: none; }
-    nav button { border-left: none; border-bottom: 3px solid transparent; padding: 12px 14px; white-space: nowrap; }
-    nav button.active { border-left-color: transparent; border-bottom-color: var(--green-light); background: rgba(22,163,74,0.07); }
+    .hamburger-btn { display: flex; }
+    /* Nav becomes a slide-in drawer on mobile */
+    #mainNav {
+      position: fixed; top: 0; left: -260px; width: 240px; height: 100vh;
+      z-index: 201; flex-direction: column; padding: 16px 0;
+      transition: left 0.25s ease;
+      background: var(--surface); border-right: 1px solid var(--border);
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5); overflow-y: auto;
+    }
+    #mainNav.open { left: 0; }
+    #mainNav .nav-drawer-header { display: block; }
+    #mainNav button { border-left: 3px solid transparent; border-bottom: none; padding: 13px 20px; white-space: nowrap; width: 100%; }
+    #mainNav button.active { border-left-color: var(--green-light); border-bottom-color: transparent; background: rgba(22,163,74,0.07); color: var(--green-light); }
   }
   .page { display: none; }
   .page.active { display: block; }
@@ -371,6 +391,9 @@
 <body>
 
 <header>
+  <button class="hamburger-btn" onclick="toggleDrawer()" id="hamburgerBtn" aria-label="Menü">
+    <span></span><span></span><span></span>
+  </button>
   <span class="header-icon">⚽</span>
   <div>
     <h1>Tippspiel</h1>
@@ -389,8 +412,11 @@
   </div>
 </header>
 
+<div class="nav-backdrop" id="navBackdrop" onclick="closeDrawer()"></div>
+
 <div class="layout">
-<nav>
+<nav id="mainNav">
+  <div class="nav-drawer-header">Navigation</div>
   <button data-page="meisterschaften" class="active" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
   <button data-page="tipps" onclick="showPage('tipps', this)">✏️ Tipps</button>
   <button data-page="spiele" onclick="showPage('spiele', this)">📅 Spiele</button>
@@ -748,7 +774,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v26';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -872,7 +898,25 @@ function showPage(name, btn) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
+  closeDrawer();
   renderAll();
+}
+
+function toggleDrawer() {
+  const nav = document.getElementById('mainNav');
+  const backdrop = document.getElementById('navBackdrop');
+  const isOpen = nav.classList.contains('open');
+  if (isOpen) { closeDrawer(); } else {
+    nav.classList.add('open');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('mainNav').classList.remove('open');
+  document.getElementById('navBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function renderAll() {
