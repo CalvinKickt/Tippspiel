@@ -38,7 +38,7 @@
   .header-week { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
 
   .layout { display: flex; min-height: calc(100vh - 56px); }
-  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 190px; flex-shrink: 0; padding: 12px 0; }
+  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; }
   nav button { background: none; border: none; color: var(--muted); padding: 11px 20px; cursor: pointer; font-size: 0.88rem; white-space: nowrap; border-left: 3px solid transparent; text-align: left; transition: all 0.2s; }
   nav button:hover { color: var(--text); background: rgba(255,255,255,0.03); }
   nav button.active { color: var(--green-light); border-left-color: var(--green-light); background: rgba(22,163,74,0.07); font-weight: 600; }
@@ -192,6 +192,21 @@
   .modal-preview { background: var(--surface2); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.85rem; }
   .modal-preview .winner-line { font-weight: 700; color: var(--gold); font-size: 1rem; margin-bottom: 8px; }
   .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* SPIELE LAYOUT */
+  #page-spiele.page { max-width: 1200px; }
+  .spiele-layout { display: flex; gap: 20px; align-items: flex-start; }
+  .spiele-cal { flex: 0 0 490px; position: sticky; top: 24px; }
+  .spiele-list { flex: 1; min-width: 0; max-height: calc(100vh - 82px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .spiele-list::-webkit-scrollbar { width: 5px; }
+  .spiele-list::-webkit-scrollbar-track { background: transparent; }
+  .spiele-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; }
+  @media (max-width: 960px) {
+    .spiele-layout { flex-direction: column; }
+    .spiele-cal { flex: none; width: 100%; position: static; }
+    .spiele-list { max-height: none; overflow-y: visible; padding-right: 0; }
+    #page-spiele.page { max-width: 860px; }
+  }
 
   /* CALENDAR */
   .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -427,23 +442,29 @@
 
   <!-- SPIELE -->
   <div id="page-spiele" class="page">
-    <div class="card">
-      <div class="cal-header">
-        <button class="cal-nav" onclick="calPrev()">‹</button>
-        <span class="cal-month-label" id="calMonthLabel"></span>
-        <button class="cal-nav" onclick="calNext()">›</button>
+    <div class="spiele-layout">
+      <div class="spiele-cal">
+        <div class="card">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="calPrev()">‹</button>
+            <span class="cal-month-label" id="calMonthLabel"></span>
+            <button class="cal-nav" onclick="calNext()">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
       </div>
-      <div class="cal-grid" id="calGrid"></div>
-    </div>
-    <div class="section-header">
-      <span class="section-title" id="spieleListTitle">Alle Spiele</span>
-      <div class="tab-group">
-        <button class="tab-btn active" onclick="filterMatches('all', this)">Alle</button>
-        <button class="tab-btn" onclick="filterMatches('open', this)">Offen</button>
-        <button class="tab-btn" onclick="filterMatches('done', this)">Beendet</button>
+      <div class="spiele-list">
+        <div class="section-header">
+          <span class="section-title" id="spieleListTitle">Alle Spiele</span>
+          <div class="tab-group">
+            <button class="tab-btn active" onclick="filterMatches('all', this)">Alle</button>
+            <button class="tab-btn" onclick="filterMatches('open', this)">Offen</button>
+            <button class="tab-btn" onclick="filterMatches('done', this)">Beendet</button>
+          </div>
+        </div>
+        <div id="spieleContent"></div>
       </div>
     </div>
-    <div id="spieleContent"></div>
   </div>
 
   <!-- ÜBERSICHT -->
@@ -726,7 +747,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v24';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1291,12 +1312,21 @@ function renderSpiele() {
   el.innerHTML = ms.map(m => {
     const done = m.resultHome!=null;
     const d = m.date ? new Date(m.date).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
-    return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer">
+    const countdown = !done ? getCountdown(m) : null;
+    const locked = !done && isMatchLocked(m);
+    const diff = m.date ? new Date(m.date) - new Date() : Infinity;
+    const urgent = !done && !locked && diff > 0 && diff < 24*60*60*1000;
+    const urgentBorder = urgent ? 'border-color:#f59e0b;' : locked && !done ? 'border-color:rgba(239,68,68,0.4);' : '';
+    return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer;${urgentBorder}">
       <div class="match-header">
-        <span class="match-meta">${d}</span>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div>
+          <span class="match-meta">${d}</span>
+          ${urgent && countdown ? `<div style="font-size:0.72rem;font-weight:700;color:#f59e0b;margin-top:2px">${countdown}</div>` : ''}
+          ${locked && !done ? `<div style="font-size:0.72rem;font-weight:600;color:#f87171;margin-top:2px">🔴 Läuft</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}</span>` : ''}
-          ${done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
+          ${done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : locked ? '<span style="font-size:0.75rem;color:#f87171">Läuft</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
         </div>
       </div>
       <div class="match-teams">
