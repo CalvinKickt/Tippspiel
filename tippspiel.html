@@ -278,6 +278,17 @@
   /* MATCH DETAIL MODAL */
   .detail-teams { font-size: 1.3rem; font-weight: 700; text-align: center; margin: 12px 0; }
   .detail-result { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  .erg-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .erg-row:last-child { border-bottom: none; }
+  .erg-teams { flex: 1; min-width: 160px; font-size: 0.9rem; font-weight: 600; }
+  .erg-teams .erg-date { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-bottom: 2px; }
+  .erg-inputs { display: flex; align-items: center; gap: 6px; }
+  .erg-inputs .score-input { width: 52px; }
+  .erg-save-btn { padding: 5px 12px; font-size: 0.8rem; }
+  .erg-done { color: var(--green-light); font-size: 0.8rem; white-space: nowrap; }
+  .erg-group-header { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 14px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .erg-has-result { opacity: 0.55; }
+  .erg-filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 
   @media (max-width: 600px) {
     header { padding: 11px 14px; gap: 8px; }
@@ -424,6 +435,7 @@
   <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
   <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
+  <button data-page="ergebnisse" onclick="showPage('ergebnisse', this)">🎯 Ergebnisse</button>
   <button data-page="einstellungen" onclick="showPage('einstellungen', this)">⚙️ Einstellungen</button>
 </nav>
 
@@ -525,6 +537,15 @@
     <div id="statistikContent"></div>
   </div>
 
+  <!-- ERGEBNISSE (Admin) -->
+  <div id="page-ergebnisse" class="page">
+    <div class="card">
+      <h2>🎯 Ergebnisse eintragen</h2>
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">Nur Spiele ohne Ergebnis werden angezeigt. Offen zuerst.</div>
+      <div id="ergebnisseContent"></div>
+    </div>
+  </div>
+
   <!-- EINSTELLUNGEN -->
   <div id="page-einstellungen" class="page">
     <div class="card">
@@ -598,21 +619,26 @@
     <h3 id="detailTitle">Spieldetails</h3>
     <div class="detail-teams" id="detailTeams"></div>
     <div style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px" id="detailMeta"></div>
-    <div id="detailResultSection">
-      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;text-align:center">Ergebnis eintragen</div>
+
+    <!-- TIPP SECTION (alle Spieler) -->
+    <div id="detailTippSection" style="margin-bottom:16px">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;text-align:center" id="detailTippLabel">Mein Tipp</div>
       <div class="detail-result">
-        <span id="detailHome" style="font-size:0.9rem;color:var(--muted)"></span>
-        <input class="score-input" id="detail_h" type="number" min="0" max="99" placeholder="0" style="width:60px" />
+        <span id="detailTippHome" style="font-size:0.9rem;color:var(--muted)"></span>
+        <input class="score-input" id="detail_tip_h" type="number" min="0" max="99" placeholder="?" style="width:60px" />
         <span style="color:var(--muted);font-weight:700">:</span>
-        <input class="score-input" id="detail_a" type="number" min="0" max="99" placeholder="0" style="width:60px" />
-        <span id="detailAway" style="font-size:0.9rem;color:var(--muted)"></span>
+        <input class="score-input" id="detail_tip_a" type="number" min="0" max="99" placeholder="?" style="width:60px" />
+        <span id="detailTippAway" style="font-size:0.9rem;color:var(--muted)"></span>
       </div>
+      <div style="text-align:center;margin-top:10px">
+        <button class="btn btn-primary btn-sm" id="detailTippSaveBtn" onclick="saveTipFromDetail()">💾 Tipp speichern</button>
+      </div>
+      <div id="detailTippStatus" style="text-align:center;font-size:0.8rem;margin-top:6px;min-height:18px"></div>
     </div>
+
     <div class="modal-btns">
-      <button class="btn btn-danger btn-sm" onclick="deleteMatchFromDetail()">Löschen</button>
-      <button class="btn btn-ghost" id="detailClearBtn" onclick="clearResultFromDetail()" style="display:none">Ergebnis zurücksetzen</button>
+      <button class="btn btn-danger btn-sm" id="detailDeleteBtn" onclick="deleteMatchFromDetail()">Löschen</button>
       <button class="btn btn-ghost" onclick="closeDetailModal()">Schließen</button>
-      <button class="btn btn-primary" id="detailSaveBtn" onclick="saveResultFromDetail()">Ergebnis speichern</button>
     </div>
   </div>
 </div>
@@ -774,7 +800,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v26';
+const APP_VERSION = 'v29';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -934,9 +960,88 @@ function renderAll() {
   renderGeschichte();
   renderMeisterschaften();
   renderStatistik();
+  renderErgebnisse();
   updateTipperSelect();
   const tn = document.getElementById('tournamentName');
   if (tn) tn.value = state.tournament || '';
+}
+
+function renderErgebnisse() {
+  const el = document.getElementById('ergebnisseContent');
+  if (!el) return;
+  const matches = [...state.matches].sort((a,b) => new Date(a.date)-new Date(b.date));
+  if (!matches.length) { el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Keine Spiele vorhanden.</div>'; return; }
+
+  // Group by date
+  const groups = {};
+  matches.forEach(m => {
+    const d = m.date ? new Date(m.date).toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : 'Kein Datum';
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(m);
+  });
+
+  let html = `<div class="erg-filter-bar">
+    <button class="btn btn-sm" id="ergFilterAll" onclick="setErgFilter('all')" style="background:var(--surface2);border:1px solid var(--border)">Alle</button>
+    <button class="btn btn-sm" id="ergFilterOpen" onclick="setErgFilter('open')" style="background:var(--green);color:#fff">Offen</button>
+    <button class="btn btn-sm" id="ergFilterDone" onclick="setErgFilter('done')" style="background:var(--surface2);border:1px solid var(--border)">Eingetragen</button>
+  </div>`;
+
+  Object.entries(groups).forEach(([date, ms]) => {
+    html += `<div class="erg-group-header">${date}</div>`;
+    ms.forEach(m => {
+      const hasResult = m.resultHome != null && m.resultAway != null;
+      const filterClass = hasResult ? 'erg-has-result erg-done-item' : 'erg-open-item';
+      const resultDisplay = hasResult ? `<span class="erg-done">✅ ${m.resultHome}:${m.resultAway}</span>` : '';
+      html += `<div class="erg-row ${filterClass}" data-erg-id="${m.id}">
+        <div class="erg-teams">
+          <div class="erg-date">${m.competition || ''}</div>
+          ${flagTeam(m.home)} vs ${flagTeam(m.away)}
+        </div>
+        <div class="erg-inputs">
+          <input class="score-input erg-input-h" type="number" min="0" max="99" placeholder="–" value="${hasResult ? m.resultHome : ''}" id="erg_h_${m.id}" />
+          <span style="color:var(--muted);font-weight:700">:</span>
+          <input class="score-input erg-input-a" type="number" min="0" max="99" placeholder="–" value="${hasResult ? m.resultAway : ''}" id="erg_a_${m.id}" />
+        </div>
+        <button class="btn btn-primary erg-save-btn" onclick="saveErgResult('${m.id}')">💾</button>
+        ${hasResult ? `<button class="btn btn-ghost erg-save-btn" onclick="clearErgResult('${m.id}')" title="Zurücksetzen">✕</button>` : ''}
+        ${resultDisplay}
+      </div>`;
+    });
+  });
+
+  el.innerHTML = html;
+  setErgFilter(window._ergFilter || 'open');
+}
+
+let _ergFilter = 'open';
+function setErgFilter(f) {
+  window._ergFilter = f;
+  const el = document.getElementById('ergebnisseContent');
+  if (!el) return;
+  ['all','open','done'].forEach(k => {
+    const btn = document.getElementById('ergFilter' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (btn) { btn.style.background = k===f ? 'var(--green)' : 'var(--surface2)'; btn.style.color = k===f ? '#fff' : ''; btn.style.border = k===f ? 'none' : '1px solid var(--border)'; }
+  });
+  el.querySelectorAll('.erg-row').forEach(row => {
+    if (f === 'all') row.style.display = '';
+    else if (f === 'open') row.style.display = row.classList.contains('erg-open-item') ? '' : 'none';
+    else if (f === 'done') row.style.display = row.classList.contains('erg-done-item') ? '' : 'none';
+  });
+}
+
+function saveErgResult(id) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  const h = document.getElementById('erg_h_' + id).value;
+  const a = document.getElementById('erg_a_' + id).value;
+  if (h === '' || a === '') { alert('Bitte beide Felder ausfüllen.'); return; }
+  m.resultHome = parseInt(h); m.resultAway = parseInt(a);
+  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function clearErgResult(id) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  m.resultHome = null; m.resultAway = null;
+  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function updateHeader() {
@@ -1245,21 +1350,39 @@ function openMatchDetail(id) {
   detailMatchId = id;
   document.getElementById('detailTitle').textContent = m.competition || 'Spieldetails';
   document.getElementById('detailTeams').textContent = flagTeam(m.home) + ' vs ' + flagTeam(m.away);
-  document.getElementById('detailHome').textContent = flagTeam(m.home);
-  document.getElementById('detailAway').textContent = flagTeam(m.away);
   const d = m.date ? new Date(m.date).toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   document.getElementById('detailMeta').textContent = d;
-  const haRes = m.resultHome != null;
-  document.getElementById('detail_h').value = haRes ? m.resultHome : '';
-  document.getElementById('detail_a').value = haRes ? m.resultAway : '';
-  document.getElementById('detailSaveBtn').textContent = haRes ? 'Ergebnis ändern' : 'Ergebnis speichern';
-  document.getElementById('detailClearBtn').style.display = haRes ? '' : 'none';
   // Admin-only controls
   const isAdmin = currentUser && currentUser.isAdmin;
-  document.getElementById('detailResultSection').style.display = isAdmin ? '' : 'none';
-  document.getElementById('detailSaveBtn').style.display = isAdmin ? '' : 'none';
-  document.getElementById('detailClearBtn').style.display = (isAdmin && haRes) ? '' : 'none';
-  document.querySelector('#matchDetailModal .btn-danger').style.display = isAdmin ? '' : 'none';
+  const delBtn = document.getElementById('detailDeleteBtn');
+  if (delBtn) delBtn.style.display = isAdmin ? '' : 'none';
+
+  // Tipp section
+  const player = currentUser ? currentUser.name : null;
+  const tippSection = document.getElementById('detailTippSection');
+  if (player) {
+    tippSection.style.display = '';
+    const locked = isMatchLocked(m);
+    const existingTip = (state.tips[id] || {})[player] || {};
+    document.getElementById('detailTippHome').textContent = flagTeam(m.home);
+    document.getElementById('detailTippAway').textContent = flagTeam(m.away);
+    const tipH = document.getElementById('detail_tip_h');
+    const tipA = document.getElementById('detail_tip_a');
+    tipH.value = existingTip.home !== undefined ? existingTip.home : '';
+    tipA.value = existingTip.away !== undefined ? existingTip.away : '';
+    tipH.disabled = locked;
+    tipA.disabled = locked;
+    tipH.style.opacity = locked ? '0.5' : '';
+    tipA.style.opacity = locked ? '0.5' : '';
+    document.getElementById('detailTippSaveBtn').disabled = locked;
+    document.getElementById('detailTippSaveBtn').style.opacity = locked ? '0.5' : '';
+    const label = locked ? '🔒 Tipp gesperrt (Spiel hat begonnen)' : (existingTip.home !== undefined ? 'Mein Tipp (ändern)' : 'Mein Tipp');
+    document.getElementById('detailTippLabel').textContent = label;
+    document.getElementById('detailTippStatus').textContent = '';
+  } else {
+    tippSection.style.display = 'none';
+  }
+
   document.getElementById('matchDetailModal').classList.add('open');
 }
 
@@ -1268,21 +1391,28 @@ function closeDetailModal() {
   detailMatchId = null;
 }
 
-function saveResultFromDetail() {
-  if (!detailMatchId) return;
-  const h = document.getElementById('detail_h').value;
-  const a = document.getElementById('detail_a').value;
-  if (h===''||a==='') { alert('Bitte beide Werte eingeben.'); return; }
-  const m = state.matches.find(m=>m.id===detailMatchId); if (!m) return;
-  m.resultHome = parseInt(h); m.resultAway = parseInt(a);
-  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+function saveTipFromDetail() {
+  if (!detailMatchId || !currentUser) return;
+  const m = state.matches.find(m => m.id === detailMatchId);
+  if (!m || isMatchLocked(m)) return;
+  const h = document.getElementById('detail_tip_h').value;
+  const a = document.getElementById('detail_tip_a').value;
+  if (h === '' || a === '') {
+    document.getElementById('detailTippStatus').textContent = '⚠️ Bitte beide Felder ausfüllen.';
+    document.getElementById('detailTippStatus').style.color = 'var(--red)';
+    return;
+  }
+  const player = currentUser.name;
+  if (!state.tips[detailMatchId]) state.tips[detailMatchId] = {};
+  state.tips[detailMatchId][player] = { home: parseInt(h), away: parseInt(a) };
+  save();
+  document.getElementById('detailTippLabel').textContent = 'Mein Tipp (ändern)';
+  document.getElementById('detailTippStatus').textContent = '✅ Tipp gespeichert!';
+  document.getElementById('detailTippStatus').style.color = 'var(--green-light)';
+  renderTipps();
 }
 
-function clearResultFromDetail() {
-  if (!detailMatchId) return;
-  const m = state.matches.find(m=>m.id===detailMatchId); if (!m) return;
-  m.resultHome = null; m.resultAway = null;
-  save(); closeDetailModal(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+function _unused_placeholder() {
 }
 
 function deleteMatchFromDetail() {
@@ -2067,7 +2197,7 @@ function applyAccessControl() {
   // Nav visibility
   document.querySelectorAll('nav button[data-page]').forEach(b => {
     const page = b.getAttribute('data-page');
-    const adminOnly = page === 'einstellungen';
+    const adminOnly = page === 'einstellungen' || page === 'ergebnisse';
     b.style.display = (!isAdmin && adminOnly) ? 'none' : '';
   });
   // Week close banner – admin only
