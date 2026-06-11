@@ -289,6 +289,11 @@
   .erg-save-btn { padding: 5px 12px; font-size: 0.8rem; }
   .erg-done { color: var(--green-light); font-size: 0.8rem; white-space: nowrap; }
   .erg-group-header { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 14px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .live-badge { display:inline-flex; align-items:center; gap:4px; background:#ef4444; color:#fff; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:20px; letter-spacing:0.05em; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#fff; animation:livepulse 1s infinite; }
+  @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .live-score { font-size:1.1rem; font-weight:700; color:#f87171; }
+  .erg-row.is-live { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
   .erg-has-result { opacity: 0.55; }
   .erg-filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 
@@ -808,7 +813,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v36';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -998,11 +1003,28 @@ function renderErgebnisse() {
     html += `<div class="erg-group-header">${date}</div>`;
     ms.forEach(m => {
       const hasResult = m.resultHome != null && m.resultAway != null;
+      const isLive = !!m.isLive;
+      const started = m.date && new Date(m.date) <= new Date();
       const filterClass = hasResult ? 'erg-has-result erg-done-item' : 'erg-open-item';
-      const resultDisplay = hasResult ? `<span class="erg-done">✅ ${m.resultHome}:${m.resultAway}</span>` : '';
-      html += `<div class="erg-row ${filterClass}" data-erg-id="${m.id}">
+      const liveClass = isLive ? ' is-live' : '';
+
+      const liveBadge = isLive ? `<span class="live-badge"><span class="live-dot"></span>LIVE</span>` : '';
+      const scoreDisplay = hasResult
+        ? (isLive
+            ? `<span class="live-score">${m.resultHome}:${m.resultAway}</span>`
+            : `<span class="erg-done">✅ ${m.resultHome}:${m.resultAway}</span>`)
+        : '';
+
+      const liveBtn = started && !hasResult
+        ? `<button class="btn btn-sm" style="background:#ef4444;color:#fff;white-space:nowrap" onclick="startLive('${m.id}')">🔴 Live starten</button>`
+        : '';
+      const liveEndBtn = isLive
+        ? `<button class="btn btn-ghost btn-sm" onclick="endLive('${m.id}')" title="Live beenden">✓ Beenden</button>`
+        : '';
+
+      html += `<div class="erg-row${liveClass} ${filterClass}" data-erg-id="${m.id}">
         <div class="erg-teams">
-          <div class="erg-date">${m.competition || ''}</div>
+          <div class="erg-date" style="display:flex;align-items:center;gap:6px">${m.competition || ''}${liveBadge}</div>
           ${flagTeam(m.home)} vs ${flagTeam(m.away)}
         </div>
         <div class="erg-inputs">
@@ -1010,9 +1032,11 @@ function renderErgebnisse() {
           <span style="color:var(--muted);font-weight:700">:</span>
           <input class="score-input erg-input-a" type="number" min="0" max="99" placeholder="–" value="${hasResult ? m.resultAway : ''}" id="erg_a_${m.id}" />
         </div>
-        <button class="btn btn-primary erg-save-btn" onclick="saveErgResult('${m.id}')">💾</button>
+        <button class="btn btn-primary erg-save-btn" onclick="saveErgResult('${m.id}', ${isLive})" title="${isLive ? 'Live aktualisieren' : 'Speichern'}">${isLive ? '🔄' : '💾'}</button>
         ${hasResult ? `<button class="btn btn-ghost erg-save-btn" onclick="clearErgResult('${m.id}')" title="Zurücksetzen">✕</button>` : ''}
-        ${resultDisplay}
+        ${liveEndBtn}
+        ${liveBtn}
+        ${scoreDisplay}
       </div>`;
     });
   });
@@ -1037,18 +1061,35 @@ function setErgFilter(f) {
   });
 }
 
-function saveErgResult(id) {
+function saveErgResult(id, keepLive) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   const h = document.getElementById('erg_h_' + id).value;
   const a = document.getElementById('erg_a_' + id).value;
   if (h === '' || a === '') { alert('Bitte beide Felder ausfüllen.'); return; }
   m.resultHome = parseInt(h); m.resultAway = parseInt(a);
+  if (!keepLive) m.isLive = false;
   save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function clearErgResult(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
-  m.resultHome = null; m.resultAway = null;
+  m.resultHome = null; m.resultAway = null; m.isLive = false;
+  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function startLive(id) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  const h = document.getElementById('erg_h_' + id).value;
+  const a = document.getElementById('erg_a_' + id).value;
+  m.resultHome = h !== '' ? parseInt(h) : 0;
+  m.resultAway = a !== '' ? parseInt(a) : 0;
+  m.isLive = true;
+  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function endLive(id) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  m.isLive = false;
   save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
@@ -1505,16 +1546,17 @@ function renderSpiele() {
         <div>
           <span class="match-meta">${d}</span>
           ${urgent && countdown ? `<div style="font-size:0.72rem;font-weight:700;color:#f59e0b;margin-top:2px">${countdown}</div>` : ''}
-          ${locked && !done ? `<div style="font-size:0.72rem;font-weight:600;color:#f87171;margin-top:2px">🔴 Läuft</div>` : ''}
+          ${locked && !done && !m.isLive ? `<div style="font-size:0.72rem;font-weight:600;color:#f87171;margin-top:2px">🔴 Läuft</div>` : ''}
+          ${m.isLive ? `<div style="margin-top:2px"><span class="live-badge"><span class="live-dot"></span>LIVE</span></div>` : ''}
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}</span>` : ''}
-          ${done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : locked ? '<span style="font-size:0.75rem;color:#f87171">Läuft</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
+          ${m.isLive ? '<span style="font-size:0.75rem;color:#f87171;font-weight:700">Live</span>' : done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : locked ? '<span style="font-size:0.75rem;color:#f87171">Läuft</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
         </div>
       </div>
       <div class="match-teams">
         <span>${flagTeam(m.home)}</span><span class="match-vs">vs</span><span>${flagTeam(m.away)}</span>
-        ${done ? `<span style="margin-left:auto;color:var(--green-light);font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : ''}
+        ${m.isLive ? `<span style="margin-left:auto;color:#f87171;font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : done ? `<span style="margin-left:auto;color:var(--green-light);font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1940,28 +1982,6 @@ function renderMeisterschaften() {
 
   // Podium (top 3)
   const [p1, p2, p3] = sorted;
-  const initials = n => n ? n[0].toUpperCase() : '?';
-  const podiumHtml = `
-    <div class="meister-podium">
-      ${p2 ? `<div class="meister-podium-item">
-        <div class="meister-podium-avatar p2">${initials(p2.name)}</div>
-        <div class="meister-podium-name">${p2.name}</div>
-        <div class="meister-podium-pts">${p2.pts} Pkt</div>
-        <div class="meister-podium-bar p2"></div>
-      </div>` : ''}
-      ${p1 ? `<div class="meister-podium-item">
-        <div class="meister-podium-avatar p1">${initials(p1.name)}</div>
-        <div class="meister-podium-name" style="font-size:1rem">${p1.name}</div>
-        <div class="meister-podium-pts">${p1.pts} Pkt</div>
-        <div class="meister-podium-bar p1"></div>
-      </div>` : ''}
-      ${p3 ? `<div class="meister-podium-item">
-        <div class="meister-podium-avatar p3">${initials(p3.name)}</div>
-        <div class="meister-podium-name">${p3.name}</div>
-        <div class="meister-podium-pts">${p3.pts} Pkt</div>
-        <div class="meister-podium-bar p3"></div>
-      </div>` : ''}
-    </div>`;
 
   // Full table
   const tableHtml = `<table class="rank-table">
@@ -1986,13 +2006,26 @@ function renderMeisterschaften() {
     </tbody></table>`;
 
   const comp = state.competitions.find(c => c.name === selectedMeisterComp);
-  const livePts = liveStats.reduce((s,p)=>s+p.pts,0);
+
+  // Live matches for this competition
+  const liveMatches = state.matches.filter(m => m.isLive && m.competition === selectedMeisterComp);
+  const liveBannerHtml = liveMatches.length ? `
+    <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:6px">
+        <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+        ${liveMatches.map(m => `
+          <span style="font-size:0.88rem;color:var(--text)">
+            ${flagTeam(m.home)} <strong style="color:#f87171">${m.resultHome}:${m.resultAway}</strong> ${flagTeam(m.away)}
+          </span>
+        `).join('<span style="color:var(--border)">·</span>')}
+      </div>
+    </div>` : '';
+
   contentEl.innerHTML = `
     <div class="card">
       <h2>${comp ? comp.icon : '🏆'} ${selectedMeisterComp} – Gesamttabelle</h2>
-      ${hasResults && livePts > 0 ? '<div style="font-size:0.78rem;color:#60a5fa;margin-bottom:12px">🔴 Live – aktuelle Woche einberechnet</div>' : ''}
-      ${!hasResults ? '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">⏳ Noch keine Ergebnisse – alle starten bei 0 Punkten.</div>' : ''}
-      ${hasResults ? podiumHtml : ''}
+      ${liveBannerHtml}
+      ${!hasResults && !liveMatches.length ? '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">⏳ Noch keine Ergebnisse – alle starten bei 0 Punkten.</div>' : ''}
       ${tableHtml}
     </div>`;
 }
