@@ -404,6 +404,35 @@
   .stat-cmp-sub { font-size: 0.75rem; color: var(--muted); min-width: 46px; text-align: right; }
   .stat-team-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(37,51,72,0.5); font-size: 0.88rem; }
   .stat-team-row:last-child { border-bottom: none; }
+
+  /* CHAT */
+  .chat-msg { display: flex; flex-direction: column; max-width: 72%; margin-bottom: 4px; }
+  .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
+  .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
+  .chat-msg .msg-sender { font-size: 0.72rem; color: var(--muted); margin-bottom: 2px; padding: 0 4px; }
+  .chat-msg .msg-bubble {
+    padding: 8px 13px; border-radius: 16px; font-size: 0.9rem; line-height: 1.45;
+    word-break: break-word; white-space: pre-wrap;
+  }
+  .chat-msg.mine .msg-bubble { background: var(--green); color: #fff; border-bottom-right-radius: 4px; }
+  .chat-msg.theirs .msg-bubble { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; }
+  .chat-msg .msg-time { font-size: 0.68rem; color: var(--muted); margin-top: 2px; padding: 0 4px; }
+  .chat-msg .msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .chat-reaction-btn {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 99px;
+    padding: 2px 8px; font-size: 0.8rem; cursor: pointer; color: var(--text);
+    display: flex; align-items: center; gap: 3px; transition: background 0.15s;
+  }
+  .chat-reaction-btn:hover { background: var(--border); }
+  .chat-reaction-btn.reacted { background: rgba(22,163,74,0.18); border-color: var(--green-light); }
+  .chat-reaction-picker {
+    display: flex; gap: 6px; padding: 6px 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
+    position: absolute; z-index: 50;
+  }
+  .chat-reaction-picker button { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+  .chat-reaction-picker button:hover { background: var(--surface2); }
+  .chat-date-divider { text-align: center; font-size: 0.72rem; color: var(--muted); margin: 10px 0 6px; }
 </style>
 </head>
 <body>
@@ -443,6 +472,7 @@
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
   <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
   <button data-page="ergebnisse" onclick="showPage('ergebnisse', this)">🎯 Ergebnisse</button>
+  <button data-page="chat" onclick="showPage('chat', this)" id="chatNavBtn">💬 Chat <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:99px;padding:1px 6px;margin-left:4px;vertical-align:middle">0</span></button>
   <button data-page="einstellungen" onclick="showPage('einstellungen', this)">⚙️ Einstellungen</button>
   <!-- User-Bereich -->
   <div id="drawerUserSection" style="display:none;border-top:1px solid var(--border);margin-top:8px;padding:8px 0">
@@ -556,6 +586,24 @@
       <h2>🎯 Ergebnisse eintragen</h2>
       <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">Nur Spiele ohne Ergebnis werden angezeigt. Offen zuerst.</div>
       <div id="ergebnisseContent"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="page-chat" class="page">
+    <div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 120px);max-height:700px;padding:0;overflow:hidden">
+      <div style="padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <h2 style="margin:0;font-size:1.1rem;flex-shrink:0">💬 Chat</h2>
+        <div id="chatMatchInfo" style="font-size:0.8rem;text-align:right;min-width:0"></div>
+      </div>
+      <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:2px"></div>
+      <div id="chatInputArea" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;align-items:flex-end">
+        <textarea id="chatInput" placeholder="Nachricht schreiben…" rows="1"
+          style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 12px;font-size:0.9rem;resize:none;max-height:100px;font-family:inherit;line-height:1.4"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="btn btn-primary" onclick="sendChatMessage()" style="flex-shrink:0;padding:9px 16px">Senden</button>
+      </div>
     </div>
   </div>
 
@@ -818,7 +866,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v41';
+const APP_VERSION = 'v45';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -943,7 +991,13 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
   closeDrawer();
-  renderAll();
+  if (name === 'chat') {
+    renderChatMessages(true);
+    renderChatMatchInfo();
+    markChatSeen();
+  } else {
+    renderAll();
+  }
 }
 
 function toggleDrawer() {
@@ -2920,6 +2974,171 @@ const wmMatches = [
 // ===================== FIREBASE =====================
 let _fbSaving = false;
 
+// ===================== CHAT =====================
+let chatMessages = {};       // msgId → {sender, text, ts, reactions:{emoji:{user:true}}}
+let chatUnread = 0;
+let chatOpen = false;
+let chatLastSeen = 0;        // timestamp der letzten gesehenen Nachricht
+
+function initChat() {
+  if (!window._fbDb) return;
+  window._fbDb.ref('chat').on('value', snap => {
+    chatMessages = snap.val() || {};
+    const isOnChatPage = document.getElementById('page-chat') && document.getElementById('page-chat').classList.contains('active');
+    if (isOnChatPage) {
+      renderChatMessages(true);
+      markChatSeen();
+    } else {
+      updateChatBadge();
+    }
+  });
+  // Live-Ticker für Chat-Header
+  setInterval(renderChatMatchInfo, 30000);
+}
+
+function renderChatMatchInfo() {
+  const el = document.getElementById('chatMatchInfo'); if (!el) return;
+  const now = new Date();
+
+  // Läuft gerade ein Live-Spiel?
+  const live = state.matches.find(m => m.isLive && m.resultHome != null);
+  if (live) {
+    const hf = COUNTRY_FLAGS[(live.home||'').toLowerCase()] || '';
+    const af = COUNTRY_FLAGS[(live.away||'').toLowerCase()] || '';
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+      <span style="font-weight:700;color:#f87171">${hf}${getIOCCode(live.home)} <span style="font-size:1rem">${live.resultHome}:${live.resultAway}</span> ${af}${getIOCCode(live.away)}</span>
+    </div>`;
+    return;
+  }
+
+  // Nächste 3 Spiele
+  const upcoming = state.matches
+    .filter(m => m.date && m.resultHome == null && new Date(m.date) > now)
+    .sort((a,b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 3);
+
+  if (!upcoming.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `<div style="display:flex;align-items:flex-start;gap:16px">
+    ${upcoming.map((m, i) => {
+      const hf = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
+      const af = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
+      const countdown = getCountdown(m);
+      const countdownColor = countdown && countdown.includes('Min') ? '#f87171' : '#f59e0b';
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:1px;${i>0?'opacity:0.6':''}">
+        <div style="font-weight:${i===0?'700':'500'};color:var(--text);font-size:${i===0?'0.82':'0.76'}rem;white-space:nowrap">${hf}${getIOCCode(m.home)} vs ${af}${getIOCCode(m.away)}</div>
+        <div style="font-size:0.7rem;font-weight:600;color:${countdown?countdownColor:'var(--muted)'};white-space:nowrap">${countdown || '—'}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function markChatSeen() {
+  chatLastSeen = Date.now();
+  chatUnread = 0;
+  updateChatBadge();
+  localStorage.setItem('chatLastSeen', chatLastSeen);
+}
+
+function updateChatBadge() {
+  const saved = parseInt(localStorage.getItem('chatLastSeen') || '0');
+  const unread = Object.values(chatMessages).filter(m => m.ts > saved && m.sender !== (currentUser && currentUser.name)).length;
+  const badge = document.getElementById('chatUnreadBadge');
+  if (!badge) return;
+  if (unread > 0) { badge.style.display = 'inline'; badge.textContent = unread; }
+  else { badge.style.display = 'none'; }
+}
+
+function renderChatMessages(scrollToBottom) {
+  const el = document.getElementById('chatMessages'); if (!el) return;
+  const msgs = Object.entries(chatMessages)
+    .map(([id, m]) => ({id, ...m}))
+    .sort((a, b) => a.ts - b.ts);
+
+  if (msgs.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.88rem;margin:auto">Noch keine Nachrichten. Sag Hallo! 👋</div>';
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+  msgs.forEach(m => {
+    const isMe = currentUser && m.sender === currentUser.name;
+    const d = new Date(m.ts);
+    const dateStr = d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'long'});
+    if (dateStr !== lastDate) {
+      html += `<div class="chat-date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+    const timeStr = d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+    const reactionEmojis = ['👍','😂','🔥','❤️'];
+    // Collect reactions
+    const reactions = m.reactions || {};
+    const reactionHtml = Object.entries(reactions).map(([emoji, users]) => {
+      const count = Object.keys(users).length;
+      if (count === 0) return '';
+      const iReacted = currentUser && users[currentUser.name];
+      return `<button class="chat-reaction-btn${iReacted?' reacted':''}" onclick="toggleReaction('${m.id}','${emoji}')">${emoji} ${count}</button>`;
+    }).join('');
+
+    html += `<div class="chat-msg ${isMe?'mine':'theirs'}" id="cmsg-${m.id}">
+      ${!isMe ? `<div class="msg-sender">${esc(m.sender)}</div>` : ''}
+      <div class="msg-bubble" ondblclick="showReactionPicker('${m.id}',this)" title="Doppelklick für Reaktion">${esc(m.text)}</div>
+      ${reactionHtml ? `<div class="msg-reactions">${reactionHtml}</div>` : ''}
+      <div class="msg-time">${timeStr}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+  if (scrollToBottom) el.scrollTop = el.scrollHeight;
+}
+
+function sendChatMessage() {
+  if (!currentUser) return;
+  const input = document.getElementById('chatInput');
+  const text = (input.value || '').trim();
+  if (!text) return;
+  if (!window._fbDb) { alert('Keine Datenbankverbindung.'); return; }
+  const msg = { sender: currentUser.name, text, ts: Date.now() };
+  window._fbDb.ref('chat').push(msg);
+  input.value = '';
+  input.style.height = 'auto';
+}
+
+function toggleReaction(msgId, emoji) {
+  if (!currentUser || !window._fbDb) return;
+  const userName = currentUser.name;
+  const ref = window._fbDb.ref(`chat/${msgId}/reactions/${emoji}/${userName}`);
+  const current = (chatMessages[msgId]?.reactions?.[emoji]?.[userName]);
+  if (current) ref.remove(); else ref.set(true);
+}
+
+let reactionPickerEl = null;
+function showReactionPicker(msgId, bubbleEl) {
+  if (reactionPickerEl) { reactionPickerEl.remove(); reactionPickerEl = null; return; }
+  const picker = document.createElement('div');
+  picker.className = 'chat-reaction-picker';
+  ['👍','😂','🔥','❤️','😮','😢'].forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.textContent = emoji;
+    btn.onclick = () => { toggleReaction(msgId, emoji); picker.remove(); reactionPickerEl = null; };
+    picker.appendChild(btn);
+  });
+  // Position near bubble
+  bubbleEl.style.position = 'relative';
+  bubbleEl.appendChild(picker);
+  reactionPickerEl = picker;
+  setTimeout(() => {
+    document.addEventListener('click', function dismiss(e) {
+      if (!picker.contains(e.target) && e.target !== bubbleEl) { picker.remove(); reactionPickerEl = null; document.removeEventListener('click', dismiss); }
+    });
+  }, 100);
+}
+
+// Beim Öffnen der Chat-Seite: als gelesen markieren
+const _origShowPage = typeof showPage === 'function' ? showPage : null;
+
 window.addEventListener('load', function() {
   const lo = document.getElementById('loadingOverlay');
   if (lo) { lo.style.display = 'flex'; }
@@ -2950,11 +3169,13 @@ window.addEventListener('load', function() {
         if (lo) lo.style.display = 'none';
         initLogin();
         renderAll();
+        initChat();
       }, err => {
         console.error('Firebase read error:', err);
         if (lo) lo.style.display = 'none';
         initLogin();
         renderAll();
+        initChat();
       });
     } catch(e) {
       console.error('Firebase init error:', e);
