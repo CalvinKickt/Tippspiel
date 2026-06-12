@@ -633,7 +633,7 @@
     <div class="detail-teams" id="detailTeams"></div>
     <div style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px" id="detailMeta"></div>
 
-    <!-- TIPP SECTION (alle Spieler) -->
+    <!-- TIPP SECTION (vor Ergebnis) -->
     <div id="detailTippSection" style="margin-bottom:16px">
       <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;text-align:center" id="detailTippLabel">Mein Tipp</div>
       <div class="detail-result">
@@ -647,6 +647,11 @@
         <button class="btn btn-primary btn-sm" id="detailTippSaveBtn" onclick="saveTipFromDetail()">💾 Tipp speichern</button>
       </div>
       <div id="detailTippStatus" style="text-align:center;font-size:0.8rem;margin-top:6px;min-height:18px"></div>
+    </div>
+
+    <!-- ERGEBNIS SECTION (nach Spielende) -->
+    <div id="detailResultSection" style="display:none;margin-bottom:16px">
+      <div id="detailResultChart"></div>
     </div>
 
     <div class="modal-btns">
@@ -813,7 +818,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v36';
+const APP_VERSION = 'v39';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1406,30 +1411,42 @@ function openMatchDetail(id) {
   const delBtn = document.getElementById('detailDeleteBtn');
   if (delBtn) delBtn.style.display = isAdmin ? '' : 'none';
 
-  // Tipp section
-  const player = currentUser ? currentUser.name : null;
+  // Hat das Spiel ein Ergebnis?
+  const hasResult = m.resultHome != null && m.resultAway != null;
   const tippSection = document.getElementById('detailTippSection');
-  if (player) {
-    tippSection.style.display = '';
-    const locked = isMatchLocked(m);
-    const existingTip = (state.tips[id] || {})[player] || {};
-    document.getElementById('detailTippHome').textContent = flagTeam(m.home);
-    document.getElementById('detailTippAway').textContent = flagTeam(m.away);
-    const tipH = document.getElementById('detail_tip_h');
-    const tipA = document.getElementById('detail_tip_a');
-    tipH.value = existingTip.home !== undefined ? existingTip.home : '';
-    tipA.value = existingTip.away !== undefined ? existingTip.away : '';
-    tipH.disabled = locked;
-    tipA.disabled = locked;
-    tipH.style.opacity = locked ? '0.5' : '';
-    tipA.style.opacity = locked ? '0.5' : '';
-    document.getElementById('detailTippSaveBtn').disabled = locked;
-    document.getElementById('detailTippSaveBtn').style.opacity = locked ? '0.5' : '';
-    const label = locked ? '🔒 Tipp gesperrt (Spiel hat begonnen)' : (existingTip.home !== undefined ? 'Mein Tipp (ändern)' : 'Mein Tipp');
-    document.getElementById('detailTippLabel').textContent = label;
-    document.getElementById('detailTippStatus').textContent = '';
-  } else {
+  const resultSection = document.getElementById('detailResultSection');
+
+  if (hasResult) {
+    // Ergebnis-Ansicht: Kreisdiagramm statt Tipp-Eingabe
     tippSection.style.display = 'none';
+    resultSection.style.display = '';
+    renderDetailChart(m);
+  } else {
+    // Tipp-Eingabe
+    resultSection.style.display = 'none';
+    const player = currentUser ? currentUser.name : null;
+    if (player) {
+      tippSection.style.display = '';
+      const locked = isMatchLocked(m);
+      const existingTip = (state.tips[id] || {})[player] || {};
+      document.getElementById('detailTippHome').textContent = flagTeam(m.home);
+      document.getElementById('detailTippAway').textContent = flagTeam(m.away);
+      const tipH = document.getElementById('detail_tip_h');
+      const tipA = document.getElementById('detail_tip_a');
+      tipH.value = existingTip.home !== undefined ? existingTip.home : '';
+      tipA.value = existingTip.away !== undefined ? existingTip.away : '';
+      tipH.disabled = locked;
+      tipA.disabled = locked;
+      tipH.style.opacity = locked ? '0.5' : '';
+      tipA.style.opacity = locked ? '0.5' : '';
+      document.getElementById('detailTippSaveBtn').disabled = locked;
+      document.getElementById('detailTippSaveBtn').style.opacity = locked ? '0.5' : '';
+      const label = locked ? '🔒 Tipp gesperrt (Spiel hat begonnen)' : (existingTip.home !== undefined ? 'Mein Tipp (ändern)' : 'Mein Tipp');
+      document.getElementById('detailTippLabel').textContent = label;
+      document.getElementById('detailTippStatus').textContent = '';
+    } else {
+      tippSection.style.display = 'none';
+    }
   }
 
   document.getElementById('matchDetailModal').classList.add('open');
@@ -1438,6 +1455,95 @@ function openMatchDetail(id) {
 function closeDetailModal() {
   document.getElementById('matchDetailModal').classList.remove('open');
   detailMatchId = null;
+}
+
+function renderDetailChart(m) {
+  const cats = [
+    { key:'exact',     label:'🎯 Genau',     pts:3, color:'#22c55e' },
+    { key:'diff',      label:'✌️ Differenz', pts:2, color:'#a78bfa' },
+    { key:'tendency',  label:'👍 Tendenz',   pts:1, color:'#60a5fa' },
+    { key:'miss',      label:'❌ Falsch',    pts:0, color:'#f87171' },
+  ];
+  const counts = { exact:0, diff:0, tendency:0, miss:0, none:0 };
+  const playerRows = [];
+
+  state.players.forEach(p => {
+    const tip = (state.tips[m.id]||{})[p];
+    if (!tip || tip.home == null) { counts.none++; return; }
+    const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+    if (pts===3) counts.exact++;
+    else if (pts===2) counts.diff++;
+    else if (pts===1) counts.tendency++;
+    else counts.miss++;
+    const cat = cats.find(c=>c.pts===pts);
+    playerRows.push({ name:p, tip, pts, color:cat.color, tipClass: pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss' });
+  });
+
+  const tipped = counts.exact + counts.diff + counts.tendency + counts.miss;
+  const total = tipped + counts.none;
+
+  // SVG donut chart
+  const r = 60, cx = 80, cy = 80, stroke = 28;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+  const segments = cats.map(c => {
+    const pct = tipped > 0 ? counts[c.key] / total : 0;
+    const dash = pct * circumference;
+    const seg = { color: c.color, dash, offset };
+    offset += dash;
+    return seg;
+  });
+
+  const svgSegments = tipped === 0
+    ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${stroke}"/>`
+    : segments.map(s => s.dash > 0 ? `
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+          stroke="${s.color}" stroke-width="${stroke}"
+          stroke-dasharray="${s.dash} ${circumference - s.dash}"
+          stroke-dashoffset="${circumference / 4 - s.offset}"
+          transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dasharray 0.4s"/>` : '').join('');
+
+  const svgHtml = `<svg width="160" height="160" viewBox="0 0 160 160">
+    ${svgSegments}
+    <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text)">${tipped}</text>
+    <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="10" fill="var(--muted)">Tipps</text>
+  </svg>`;
+
+  // Legend
+  const legendHtml = cats.map(c => {
+    const n = counts[c.key];
+    const pct = total > 0 ? Math.round(n/total*100) : 0;
+    return `<div style="display:flex;align-items:center;gap:7px;padding:3px 0">
+      <div style="width:11px;height:11px;border-radius:50%;background:${c.color};flex-shrink:0"></div>
+      <div style="flex:1;font-size:0.83rem">${c.label}</div>
+      <div style="font-weight:700;font-size:0.9rem;color:${c.color};min-width:18px;text-align:right">${n}</div>
+      <div style="font-size:0.75rem;color:var(--muted);min-width:36px;text-align:right">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // Player list
+  const sortedRows = [...playerRows].sort((a,b)=>b.pts-a.pts||a.name.localeCompare(b.name));
+  const playerHtml = sortedRows.map(r=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.83rem">
+      <div style="flex:1">${r.name}</div>
+      <span class="${r.tipClass}">${r.tip.home}:${r.tip.away}</span>
+    </div>`).join('');
+
+  const noTipNote = counts.none > 0 ? `<div style="font-size:0.75rem;color:var(--muted);margin-top:6px">${counts.none} Spieler ohne Tipp</div>` : '';
+
+  document.getElementById('detailResultChart').innerHTML = `
+    <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;text-align:center">
+      Ergebnis: ${m.resultHome}:${m.resultAway}
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;justify-content:center;margin-bottom:16px">
+      ${svgHtml}
+      <div style="min-width:160px">${legendHtml}${noTipNote}</div>
+    </div>
+    ${sortedRows.length > 0 ? `<div style="border-top:1px solid var(--border);padding-top:10px">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Alle Tipps</div>
+      ${playerHtml}
+    </div>` : ''}
+  `;
 }
 
 function saveTipFromDetail() {
@@ -1825,14 +1931,22 @@ function renderUebersicht() {
   const rows = state.players.map(p=>{
     const cells = sorted.map(m=>{
       const tip = (state.tips[m.id]||{})[p];
-      // Non-admin sees full details only for own tips; others: just ✓ or —
+      const hasResult = m.resultHome != null;
+      // Non-admin + fremder Spieler: Tipp nur sichtbar wenn Spiel beendet
       if (myName && p !== myName) {
         if (!tip) return `<td><span class="tip-pending">—</span></td>`;
-        return `<td><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
+        if (!hasResult) return `<td><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
+        // Spiel hat Ergebnis → echten Tipp mit Farbe zeigen
+        const ts = `${tip.home}:${tip.away}`;
+        const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
+        if (pts===3) return `<td><span class="tip-exact">${ts}</span></td>`;
+        if (pts===2) return `<td><span class="tip-diff">${ts}</span></td>`;
+        if (pts===1) return `<td><span class="tip-tendency">${ts}</span></td>`;
+        return `<td><span class="tip-miss">${ts}</span></td>`;
       }
       if (!tip) return `<td><span class="tip-pending">—</span></td>`;
       const ts = `${tip.home}:${tip.away}`;
-      if (m.resultHome==null) return `<td><span class="tip-noresult">${ts}</span></td>`;
+      if (!hasResult) return `<td><span class="tip-noresult">${ts}</span></td>`;
       const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
       if (pts===3) return `<td><span class="tip-exact">${ts}</span></td>`;
       if (pts===2) return `<td><span class="tip-diff">${ts}</span></td>`;
