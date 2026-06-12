@@ -818,7 +818,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v39';
+const APP_VERSION = 'v41';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1214,6 +1214,53 @@ const COUNTRY_FLAGS = {
   'nordmazedonien':'🇲🇰','mazedonien':'🇲🇰',
 };
 
+const IOC_CODES = {
+  'ägypten':'EGY','albanien':'ALB','algerien':'ALG','andorra':'AND',
+  'angola':'ANG','argentinien':'ARG','armenien':'ARM','australien':'AUS',
+  'österreich':'AUT','aserbaidschan':'AZE','bahrain':'BRN','belgien':'BEL',
+  'bolivien':'BOL','bosnien':'BIH','bosnien-herzegowina':'BIH','brasilien':'BRA',
+  'bulgarien':'BUL','burkina faso':'BUR','kamerun':'CMR','kanada':'CAN',
+  'kap verde':'CPV','kapverden':'CPV','chile':'CHI','china':'CHN','kolumbien':'COL',
+  'costa rica':'CRC','kroatien':'CRO','kuba':'CUB','curaçao':'CUW',
+  'tschechien':'CZE','dänemark':'DEN','deutschland':'GER','dr kongo':'COD',
+  'ecuador':'ECU','elfenbeinküste':'CIV','el salvador':'ESA','england':'ENG',
+  'eritrea':'ERI','estland':'EST','äthiopien':'ETH','finnland':'FIN',
+  'frankreich':'FRA','gabun':'GAB','georgien':'GEO','ghana':'GHA',
+  'griechenland':'GRE','guatemala':'GUA','guinea':'GUI','haiti':'HAI',
+  'honduras':'HON','ungarn':'HUN','island':'ISL','indien':'IND',
+  'indonesien':'INA','iran':'IRI','irak':'IRQ','irland':'IRL',
+  'israel':'ISR','italien':'ITA','jamaika':'JAM','japan':'JPN',
+  'jordanien':'JOR','kasachstan':'KAZ','kenia':'KEN','nordkorea':'PRK',
+  'südkorea':'KOR','kosovo':'KOS','kuwait':'KUW','lettland':'LAT',
+  'libanon':'LIB','liechtenstein':'LIE','litauen':'LTU','luxemburg':'LUX',
+  'mali':'MLI','malta':'MLT','marokko':'MAR','mexiko':'MEX','mexico':'MEX',
+  'moldau':'MDA','montenegro':'MNE','nordmazedonien':'MKD','mazedonien':'MKD',
+  'mosambik':'MOZ','namibia':'NAM','niederlande':'NED','neuseeland':'NZL',
+  'nicaragua':'NCA','niger':'NIG','nigeria':'NGR','norwegen':'NOR','oman':'OMA',
+  'pakistan':'PAK','panama':'PAN','paraguay':'PAR','peru':'PER',
+  'philippinen':'PHI','polen':'POL','portugal':'POR','katar':'QAT',
+  'rumänien':'ROU','russland':'RUS','saudi-arabien':'KSA','schottland':'SCO',
+  'senegal':'SEN','serbien':'SRB','sierra leone':'SLE','slowakei':'SVK',
+  'slowenien':'SLO','somalia':'SOM','spanien':'ESP','sri lanka':'SRI',
+  'schweden':'SWE','schweiz':'SUI','syrien':'SYR','tansania':'TAN',
+  'thailand':'THA','tunesien':'TUN','türkei':'TUR','ukraine':'UKR',
+  'uruguay':'URU','usa':'USA','usbekistan':'UZB','venezuela':'VEN',
+  'vietnam':'VIE','wales':'WAL','jemen':'YEM','sambia':'ZAM','simbabwe':'ZIM',
+  'südafrika':'RSA','south africa':'RSA','nordirland':'NIR',
+  'côte d\'ivoire':'CIV','vereinigte arabische emirate':'UAE','vae':'UAE',
+  'trinidad':'TRI','trinidad und tobago':'TRI',
+  'dominikanische republik':'DOM','tschad':'CHA','ruanda':'RWA',
+  'madagaskar':'MAD','mauritius':'MRI','liberia':'LBR',
+  'guinea-bissau':'GBS','äquatorialguinea':'GEQ','belize':'BIZ',
+  'fidschi':'FIJ','papua-neuguinea':'PNG','salomoninseln':'SOL',
+  'antigua':'ANT','barbados':'BAR','kongo':'CGO','republik kongo':'CGO',
+  'demokratische republik kongo':'COD','dr kongo':'COD','kongo-brazzaville':'CGO',
+};
+
+function getIOCCode(name) {
+  return IOC_CODES[(name||'').toLowerCase()] || name.substring(0,3).toUpperCase();
+}
+
 function flagTeam(name) {
   const flag = COUNTRY_FLAGS[name.toLowerCase()];
   return flag ? flag + ' ' + name : name;
@@ -1336,7 +1383,11 @@ function renderCalendar() {
       const hasAwayFlag = !!COUNTRY_FLAGS[m.away.toLowerCase()];
       // Wettbewerbs-Icon nur zeigen wenn kein Land eine Flagge hat
       const icon = (!hasHomeFlag && !hasAwayFlag && m.competition) ? getCompIcon(m.competition) + ' ' : '';
-      const label = flagShort(m.home, 4) + '–' + flagShort(m.away, 4);
+      const hf = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
+      const af = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
+      const label = hf
+        ? `${hf}${getIOCCode(m.home)}–${af}${getIOCCode(m.away)}`
+        : flagShort(m.home, 4) + '–' + flagShort(m.away, 4);
       return `<div class="cal-match-chip ${cls}" onclick="event.stopPropagation();openMatchDetail('${m.id}')" title="${m.home} vs ${m.away}">${icon}${label}</div>`;
     }).join('');
     if (dayMatches.length > 3) chips += `<div style="font-size:0.65rem;color:var(--muted)">+${dayMatches.length-3} weitere</div>`;
@@ -2631,9 +2682,9 @@ function openPlayerStats(name) {
       return `<div class="${extraClass}" style="display:${displayStyle};align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.83rem">
         <div style="width:28px;color:var(--muted);font-size:0.73rem;flex-shrink:0">${d}</div>
         <div style="flex:1;display:flex;align-items:center;gap:4px;min-width:0;white-space:nowrap;font-size:0.82rem">
-          <span>${homeFlag}</span><span style="font-weight:600">${m.home.substring(0,3).toUpperCase()}</span>
+          <span>${homeFlag}</span><span style="font-weight:600">${getIOCCode(m.home)}</span>
           <span style="color:var(--text);font-weight:700;margin:0 2px">${m.resultHome}:${m.resultAway}</span>
-          <span>${awayFlag}</span><span style="font-weight:600">${m.away.substring(0,3).toUpperCase()}</span>
+          <span>${awayFlag}</span><span style="font-weight:600">${getIOCCode(m.away)}</span>
         </div>
         <span class="${tipClass}" style="flex-shrink:0">${tip.home}:${tip.away}</span>
       </div>`;
