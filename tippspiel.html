@@ -2494,8 +2494,54 @@ function openPlayerStats(name) {
         </div>`).join('')}
     </div>`;
 
+  // Letzte Tipps
+  const recentTipped = doneMatches
+    .filter(m => {
+      const tip = (state.tips[m.id]||{})[name];
+      return tip && tip.home != null && tip.away != null;
+    })
+    .sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1)
+    .slice(0, 10);
+
+  let recentCount = recentTipped.length;
+  const recentHtml = recentCount === 0 ? '' : (() => {
+    const rows = recentTipped.map((m, i) => {
+      const tip = (state.tips[m.id]||{})[name];
+      const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      const tipClass = pts===3 ? 'tip-exact' : pts===2 ? 'tip-diff' : pts===1 ? 'tip-tendency' : 'tip-miss';
+      const d = m.date ? new Date(m.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
+      const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()]||'⚽';
+      const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()]||'⚽';
+      const extraClass = i >= 5 ? 'recent-tip-extra' : '';
+      const displayStyle = i >= 5 ? 'none' : 'flex';
+      return `<div class="${extraClass}" style="display:${displayStyle};align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.83rem">
+        <div style="width:28px;color:var(--muted);font-size:0.73rem;flex-shrink:0">${d}</div>
+        <div style="flex:1;display:flex;align-items:center;gap:4px;min-width:0;white-space:nowrap;font-size:0.82rem">
+          <span>${homeFlag}</span><span style="font-weight:600">${m.home.substring(0,3).toUpperCase()}</span>
+          <span style="color:var(--text);font-weight:700;margin:0 2px">${m.resultHome}:${m.resultAway}</span>
+          <span>${awayFlag}</span><span style="font-weight:600">${m.away.substring(0,3).toUpperCase()}</span>
+        </div>
+        <span class="${tipClass}" style="flex-shrink:0">${tip.home}:${tip.away}</span>
+      </div>`;
+    });
+
+    const toggleBtn = recentCount > 5 ? `
+      <button onclick="
+        var extras = this.closest('div').querySelectorAll('.recent-tip-extra');
+        var showing = extras[0].style.display !== 'none';
+        extras.forEach(e => e.style.display = showing ? 'none' : 'flex');
+        this.textContent = showing ? 'Alle ${recentCount} anzeigen ▾' : 'Weniger anzeigen ▴';
+      " style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:6px 0 0;width:100%;text-align:left">Alle ${recentCount} anzeigen ▾</button>` : '';
+
+    return `<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">🕐 Letzte Tipps</div>
+      ${rows.join('')}
+      ${toggleBtn}
+    </div>`;
+  })();
+
   document.getElementById('playerStatsTitle').textContent = '📈 ' + name;
-  document.getElementById('playerStatsContent').innerHTML = hitHtml + teamHtml;
+  document.getElementById('playerStatsContent').innerHTML = hitHtml + teamHtml + recentHtml;
   document.getElementById('playerStatsModal').classList.add('open');
 }
 
