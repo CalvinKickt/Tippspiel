@@ -207,8 +207,9 @@
   .comp-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); padding: 10px 14px; border-radius: 8px; }
 
   /* CONFIRM MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-start; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 0; }
   .modal-overlay.open { display: flex; }
+  @media (min-height: 600px) { .modal-overlay { align-items: center; } }
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; max-width: 420px; width: 90%; }
   .modal h3 { font-size: 1.1rem; margin-bottom: 8px; }
   .modal p { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
@@ -675,8 +676,8 @@
 </div>
 
 <!-- SPIEL DETAIL MODAL -->
-<div class="modal-overlay" id="matchDetailModal">
-  <div class="modal modal-wide">
+<div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal modal-wide" style="max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <h3 id="detailTitle">Spieldetails</h3>
     <div class="detail-teams" id="detailTeams"></div>
     <div style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px" id="detailMeta"></div>
@@ -788,8 +789,8 @@
 </div>
 
 <!-- PLAYER STATS MODAL -->
-<div class="modal-overlay" id="playerStatsModal">
-  <div class="modal" style="max-width:480px;max-height:88vh;overflow-y:auto">
+<div class="modal-overlay" id="playerStatsModal" onclick="if(event.target===this)document.getElementById('playerStatsModal').classList.remove('open')">
+  <div class="modal" style="max-width:480px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <h3 id="playerStatsTitle" style="font-size:1.15rem;margin-bottom:16px"></h3>
     <div id="playerStatsContent"></div>
     <div class="modal-btns" style="margin-top:18px">
@@ -866,7 +867,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v45';
+const APP_VERSION = 'v46';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
