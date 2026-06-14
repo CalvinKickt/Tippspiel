@@ -162,9 +162,9 @@
   /* ÜBERSICHT */
   .overview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .overview-table th { padding: 8px 10px; text-align: center; font-size: 0.75rem; color: var(--muted); border-bottom: 1px solid var(--border); }
-  .overview-table th.left { text-align: left; }
+  .overview-table th.left { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--surface); }
   .overview-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid rgba(71,85,105,0.3); }
-  .overview-table td.left { text-align: left; font-weight: 500; }
+  .overview-table td.left { text-align: left; font-weight: 500; position: sticky; left: 0; z-index: 1; background: var(--surface); }
   .tip-exact { background: rgba(22,163,74,0.2); color: var(--green-light); border-radius: 4px; padding: 2px 6px; font-weight: 700; }
   .tip-diff { background: rgba(167,139,250,0.2); color: #c4b5fd; border-radius: 4px; padding: 2px 6px; font-weight: 700; }
   .tip-tendency { background: rgba(59,130,246,0.15); color: #93c5fd; border-radius: 4px; padding: 2px 6px; }
@@ -540,8 +540,8 @@
         <div class="section-header">
           <span class="section-title" id="spieleListTitle">Alle Spiele</span>
           <div class="tab-group">
-            <button class="tab-btn active" onclick="filterMatches('all', this)">Alle</button>
-            <button class="tab-btn" onclick="filterMatches('open', this)">Offen</button>
+            <button class="tab-btn" onclick="filterMatches('all', this)">Alle</button>
+            <button class="tab-btn active" onclick="filterMatches('open', this)">Offen</button>
             <button class="tab-btn" onclick="filterMatches('done', this)">Beendet</button>
           </div>
         </div>
@@ -867,7 +867,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v46';
+const APP_VERSION = 'v51';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -997,6 +997,12 @@ function showPage(name, btn) {
     renderChatMatchInfo();
     markChatSeen();
   } else {
+    if (name === 'spiele') {
+      matchFilter = 'open';
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim() === 'Offen');
+      });
+    }
     renderAll();
   }
 }
@@ -1694,7 +1700,7 @@ function confirmDeleteMatch() {
 }
 
 // ===================== MATCHES =====================
-let matchFilter = 'all';
+let matchFilter = 'open';
 
 function addMatch() {
   const home = document.getElementById('heimteam').value.trim();
@@ -2028,9 +2034,10 @@ function renderUebersicht() {
   const el = document.getElementById('uebersichtContent'); if (!el) return;
   if (!state.players.length||!state.matches.length) { el.innerHTML = '<div class="empty">Keine Daten vorhanden.</div>'; return; }
   const sorted = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const firstOpenIdx = sorted.findIndex(m => m.resultHome == null);
   const header = `<tr>
     <th class="left">Spieler</th>
-    ${sorted.map(m=>`<th title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
+    ${sorted.map((m,i)=>`<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
     <th>Pkt.</th></tr>`;
   const isAdmin = currentUser && currentUser.isAdmin;
   const myName = currentUser && !currentUser.isAdmin ? currentUser.name : null;
@@ -2070,6 +2077,16 @@ function renderUebersicht() {
     <span class="tip-noresult">Offen</span>
   </div>
   <table class="overview-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+
+  // Scroll so dass letztes beendetes Spiel + erstes offenes Spiel sichtbar sind
+  if (firstOpenIdx >= 0) {
+    requestAnimationFrame(() => {
+      const targetIdx = Math.max(0, firstOpenIdx - 1);
+      const col = document.getElementById(`ub-col-${targetIdx}`);
+      const stickyTh = document.querySelector('.overview-table th.left');
+      if (col) el.scrollLeft = col.offsetLeft - (stickyTh ? stickyTh.offsetWidth : 0);
+    });
+  }
 }
 
 // ===================== GESCHICHTE =====================
