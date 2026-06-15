@@ -31,7 +31,7 @@
   html, body { width: 100%; overflow-x: hidden; }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  header { background: linear-gradient(135deg, #050d1a 0%, #0d1e36 35%, #132d55 65%, #1a3d70 100%); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 18px rgba(0,0,0,0.55); width: 100%; }
+  header { background: linear-gradient(135deg, #050d1a 0%, #0d1e36 35%, #132d55 65%, #1a3d70 100%); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 18px rgba(0,0,0,0.55); width: 100%; position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
   header h1 { font-size: 1.4rem; font-weight: 700; }
   header .header-icon { font-size: 1.6rem; }
   .header-right { margin-left: auto; text-align: right; }
@@ -79,7 +79,7 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); overflow: clip; }
   .card h2 { font-size: 1.05rem; margin-bottom: 16px; color: var(--green-light); display: flex; align-items: center; gap: 8px; }
 
   .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -107,7 +107,7 @@
 
   /* RANGLISTE */
   .rank-table { width: 100%; border-collapse: collapse; }
-  .rank-table th { text-align: left; padding: 10px 12px; font-size: 0.78rem; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+  .rank-table th { text-align: left; padding: 10px 12px; font-size: 0.78rem; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; background: var(--surface); z-index: 2; }
   .rank-table td { padding: 12px; border-bottom: 1px solid rgba(71,85,105,0.4); }
   .rank-table tr:last-child td { border-bottom: none; }
   .rank-table tr:hover td { background: rgba(255,255,255,0.02); }
@@ -867,12 +867,20 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v51';
+const APP_VERSION = 'v56';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
   const lv = document.getElementById('loginVersion');
   if (lv) lv.textContent = APP_VERSION;
+
+  // Dynamically set body padding-top to match fixed header height
+  function syncHeaderOffset() {
+    const h = document.querySelector('header');
+    if (h) document.body.style.paddingTop = h.offsetHeight + 'px';
+  }
+  syncHeaderOffset();
+  window.addEventListener('resize', syncHeaderOffset);
 });
 
 // ===================== STATE =====================
@@ -2007,7 +2015,7 @@ function renderRangliste() {
   if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler. Gehe zu ⚙️ Einstellungen.</div>'; return; }
   const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.diff-a.diff);
-  el.innerHTML = `<table class="rank-table">
+  el.innerHTML = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
@@ -2026,7 +2034,7 @@ function renderRangliste() {
         <td style="color:var(--muted);font-size:0.82rem">${s.played}</td>
       </tr>`;
     }).join('')}
-    </tbody></table>`;
+    </tbody></table></div>`;
 }
 
 // ===================== ÜBERSICHT =====================
@@ -2221,7 +2229,7 @@ function renderMeisterschaften() {
   const [p1, p2, p3] = sorted;
 
   // Full table
-  const tableHtml = `<table class="rank-table">
+  const tableHtml = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${sorted.map((s,i) => {
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
@@ -2240,7 +2248,7 @@ function renderMeisterschaften() {
         <td style="color:var(--muted);font-size:0.82rem">${s.played}</td>
       </tr>`;
     }).join('')}
-    </tbody></table>`;
+    </tbody></table></div>`;
 
   const comp = state.competitions.find(c => c.name === selectedMeisterComp);
 
