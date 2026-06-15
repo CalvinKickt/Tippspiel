@@ -125,13 +125,23 @@
 
   /* WEEK HISTORY */
   .week-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
-  .week-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .week-title { font-weight: 700; font-size: 1rem; }
+  .week-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; user-select: none; }
+  .week-card-header:hover .week-title { color: #60a5fa; }
+  .week-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; transition: color 0.15s; }
+  .week-chevron { font-size: 0.75rem; color: var(--muted); transition: transform 0.2s; display: inline-block; }
+  .week-card.expanded .week-chevron { transform: rotate(180deg); }
   .week-date { font-size: 0.75rem; color: var(--muted); }
   .week-winner { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
   .week-scores { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .week-score-item { background: var(--surface2); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: flex; gap: 6px; align-items: center; }
   .week-score-item.winner { border: 1px solid var(--gold); background: rgba(245,158,11,0.1); }
+  .week-detail-table { display: none; margin-top: 14px; overflow-x: auto; }
+  .week-card.expanded .week-detail-table { display: block; }
+  .week-detail-table table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .week-detail-table th { text-align: left; padding: 7px 10px; color: var(--muted); border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .week-detail-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .week-detail-table tr:last-child td { border-bottom: none; }
+  .week-detail-table tr:hover td { background: var(--surface2); }
 
   /* GESAMTWERTUNG */
   .overall-table { width: 100%; border-collapse: collapse; }
@@ -448,7 +458,7 @@
   </div>
   <div class="header-right" style="display:flex;align-items:center;gap:10px">
     <div style="text-align:right">
-      <div class="header-week" id="headerWeek">Woche 1</div>
+      <div class="header-week" id="headerWeek">Saison 1</div>
       <div class="header-tournament" id="headerSub">Kein Turnier</div>
       <div style="font-size:0.65rem;color:rgba(255,255,255,0.35);text-align:right;margin-top:1px" id="appVersion"></div>
     </div>
@@ -489,13 +499,13 @@
   <div id="page-rangliste" class="page">
     <div class="week-banner" id="weekBanner">
       <div class="week-banner-info">
-        <h3 id="weekBannerTitle">Woche 1</h3>
-        <p id="weekBannerSub">Wenn alle Spiele beendet sind, kannst du die Woche abschließen.</p>
+        <h3 id="weekBannerTitle">Saison 1</h3>
+        <p id="weekBannerSub">Wenn alle Spiele beendet sind, kannst du die Saison abschließen.</p>
       </div>
-      <button class="btn btn-gold" onclick="openCloseWeekModal()">🏁 Woche abschließen</button>
+      <button class="btn btn-gold" onclick="openCloseWeekModal()">🏁 Saison abschließen</button>
     </div>
     <div class="card">
-      <h2>🏆 Aktuelle Wochenwertung</h2>
+      <h2>🏆 Aktuelle Saisonwertung</h2>
       <div id="ranglisteContent"></div>
     </div>
     <div class="card">
@@ -554,6 +564,7 @@
   <div id="page-uebersicht" class="page">
     <div class="card">
       <h2>📊 Tipp-Übersicht – <span id="uebersichtWeekLabel"></span></h2>
+      <div id="uebersichtLegend" style="margin-bottom:10px;font-size:0.78rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap"></div>
       <div id="uebersichtContent" style="overflow-x:auto"></div>
     </div>
   </div>
@@ -567,11 +578,11 @@
   <!-- GESCHICHTE -->
   <div id="page-geschichte" class="page">
     <div class="card">
-      <h2>🥇 Gesamtwertung – Wochensiege</h2>
+      <h2>🥇 Gesamtwertung – Saisonsiege</h2>
       <div id="gesamtContent"></div>
     </div>
     <div class="section-header" style="margin-top:8px">
-      <span class="section-title">Wochenarchiv</span>
+      <span class="section-title">Saisonarchiv</span>
     </div>
     <div id="geschichteContent"></div>
   </div>
@@ -725,12 +736,12 @@
 <!-- WOCHE ABSCHLIESSEN MODAL -->
 <div class="modal-overlay" id="closeWeekModal">
   <div class="modal">
-    <h3>🏁 Woche abschließen?</h3>
-    <p>Die aktuelle Woche wird archiviert und ein neuer Spieltag beginnt. Tipps und Spiele der aktuellen Woche werden gelöscht.</p>
+    <h3>🏁 Saison abschließen?</h3>
+    <p>Die aktuelle Saison wird archiviert und eine neue beginnt. Tipps und Spiele der aktuellen Saison werden gelöscht.</p>
     <div class="modal-preview" id="modalPreview"></div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn btn-gold" onclick="closeWeek()">Woche abschließen</button>
+      <button class="btn btn-gold" onclick="closeWeek()">Saison abschließen</button>
     </div>
   </div>
 </div>
@@ -867,7 +878,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v56';
+const APP_VERSION = 'v64';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -896,6 +907,89 @@ let state = {
   // weekHistory[]: { week, label, date, scores: [{name, pts, exact, diff, tendency, miss}] }
 };
 
+// ===================== AUTO WEEK CLOSE =====================
+// Cutoff: every 14 days starting from 2026-06-15 00:00 local time
+function getWeekCutoffs() {
+  const start = new Date('2026-06-15T00:00:00');
+  const now = new Date();
+  const cutoffs = [];
+  let d = new Date(start);
+  while (d <= now) {
+    cutoffs.push(new Date(d));
+    d = new Date(d.getTime() + 14 * 24 * 60 * 60 * 1000);
+  }
+  return cutoffs;
+}
+
+function checkAutoWeekClose() {
+  const cutoffs = getWeekCutoffs();
+  const lastProcessed = state.lastAutoClose || 0;
+  const pending = cutoffs.filter(c => c.getTime() > lastProcessed);
+  if (!pending.length) return;
+
+  let changed = false;
+  for (const cutoff of pending) {
+    const oldMatches = state.matches.filter(m => !m.date || new Date(m.date) < cutoff);
+    const newMatches = state.matches.filter(m => m.date && new Date(m.date) >= cutoff);
+
+    if (oldMatches.length > 0) {
+      // Stats only for matches of this week
+      const stats = state.players.map(p => {
+        let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
+        oldMatches.filter(m => m.resultHome != null).forEach(m => {
+          const tip = (state.tips[m.id]||{})[p];
+          if (!tip) return;
+          const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+          if (pt === null) return;
+          played++; pts += pt;
+          if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+        });
+        return {name:p, pts, exact, diff, tendency, miss, played};
+      }).sort((a,b) => b.pts-a.pts || b.exact-a.exact);
+
+      // Per-competition scores
+      const competitionScores = {};
+      (state.competitions||[]).forEach(c => {
+        competitionScores[c.name] = state.players.map(p => {
+          let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
+          oldMatches.filter(m => m.competition === c.name && m.resultHome != null).forEach(m => {
+            const tip = (state.tips[m.id]||{})[p];
+            if (!tip) return;
+            const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+            if (pt === null) return;
+            played++; pts += pt;
+            if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+          });
+          return {name:p, pts, exact, diff, tendency, miss, played};
+        });
+      });
+
+      const dateStr = cutoff.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+      state.weekHistory.push({
+        week: state.currentWeek,
+        label: state.tournament,
+        date: dateStr,
+        scores: stats.map(s => ({name:s.name, pts:s.pts, exact:s.exact, diff:s.diff, tendency:s.tendency, miss:s.miss, played:s.played})),
+        competitionScores
+      });
+
+      // Remove tips for archived matches
+      const oldIds = new Set(oldMatches.map(m => m.id));
+      const newTips = {};
+      Object.keys(state.tips).forEach(mid => { if (!oldIds.has(mid)) newTips[mid] = state.tips[mid]; });
+
+      state.currentWeek++;
+      state.matches = newMatches;
+      state.tips = newTips;
+    }
+
+    state.lastAutoClose = cutoff.getTime();
+    changed = true;
+  }
+
+  if (changed) save();
+}
+
 function save() {
   if (window._fbDb) {
     _fbSaving = true;
@@ -916,6 +1010,7 @@ function applyDefaults() {
   state.competitions = Array.isArray(state.competitions) ? state.competitions : Object.values(state.competitions || {});
   state.passwords = state.passwords || {};
   state.userPrefs = state.userPrefs || {};
+  state.lastAutoClose = state.lastAutoClose || 0;
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
@@ -1169,16 +1264,16 @@ function endLive(id) {
 
 function updateHeader() {
   document.getElementById('headerSub').textContent = state.tournament || 'Kein Turnier';
-  document.getElementById('headerWeek').textContent = 'Woche ' + state.currentWeek;
+  document.getElementById('headerWeek').textContent = 'Saison ' + state.currentWeek;
   const wb = document.getElementById('weekBannerTitle');
   const ws = document.getElementById('weekBannerSub');
-  if (wb) wb.textContent = 'Woche ' + state.currentWeek;
+  if (wb) wb.textContent = 'Saison ' + state.currentWeek;
   const open = state.matches.filter(m => m.resultHome == null).length;
   if (ws) ws.textContent = open > 0
     ? `Noch ${open} Spiel${open > 1 ? 'e' : ''} ohne Ergebnis.`
-    : 'Alle Spiele haben ein Ergebnis – Woche kann abgeschlossen werden!';
+    : 'Alle Spiele haben ein Ergebnis – Saison kann abgeschlossen werden!';
   const wl = document.getElementById('uebersichtWeekLabel');
-  if (wl) wl.textContent = 'Woche ' + state.currentWeek;
+  if (wl) wl.textContent = 'Saison ' + state.currentWeek;
 }
 
 // ===================== PLAYERS =====================
@@ -2077,14 +2172,13 @@ function renderUebersicht() {
     const s = getPlayerStats(p);
     return `<tr><td class="left">${p}</td>${cells}<td><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
   }).join('');
-  el.innerHTML = `<div style="margin-bottom:10px;font-size:0.78rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap">
-    <span class="tip-exact">3 Pkt Ergebnis</span>
+  const legend = document.getElementById('uebersichtLegend');
+  if (legend) legend.innerHTML = `<span class="tip-exact">3 Pkt Ergebnis</span>
     <span class="tip-diff">2 Pkt Differenz</span>
     <span class="tip-tendency">1 Pkt Sieger</span>
     <span class="tip-miss">0 Pkt</span>
-    <span class="tip-noresult">Offen</span>
-  </div>
-  <table class="overview-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+    <span class="tip-noresult">Offen</span>`;
+  el.innerHTML = `<table class="overview-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
 
   // Scroll so dass letztes beendetes Spiel + erstes offenes Spiel sichtbar sind
   if (firstOpenIdx >= 0) {
@@ -2098,6 +2192,10 @@ function renderUebersicht() {
 }
 
 // ===================== GESCHICHTE =====================
+function toggleWeekCard(el) {
+  el.closest('.week-card').classList.toggle('expanded');
+}
+
 function renderGeschichte() {
   renderGesamtwertung();
   const el = document.getElementById('geschichteContent'); if (!el) return;
@@ -2106,21 +2204,30 @@ function renderGeschichte() {
   el.innerHTML = weeks.map(w => {
     const sorted = [...w.scores].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
     const winner = sorted[0];
+    const detailRows = sorted.map((s,i) => `
+      <tr>
+        <td style="color:var(--muted)">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td style="font-weight:600">${s.name}</td>
+        <td style="color:var(--green-light);font-weight:700">${s.pts}</td>
+        <td><span class="badge badge-exact">${s.exact}</span></td>
+        <td style="color:var(--muted)">${s.diff??'—'}</td>
+        <td style="color:var(--muted)">${s.tendency??'—'}</td>
+        <td style="color:var(--muted)">${s.miss??'—'}</td>
+        <td style="color:var(--muted)">${s.played??'—'}</td>
+      </tr>`).join('');
     return `<div class="week-card">
-      <div class="week-card-header">
+      <div class="week-card-header" onclick="toggleWeekCard(this)">
         <div>
-          <div class="week-title">📅 Woche ${w.week}${w.label?' – '+w.label:''}</div>
+          <div class="week-title">📅 Season ${w.week}${w.label?' – '+w.label:''} <span class="week-chevron">▼</span></div>
           <div class="week-date">${w.date}</div>
         </div>
         <div class="week-winner">🏆 <strong style="color:var(--gold)">${winner?winner.name:'—'}</strong> <span style="color:var(--muted);font-size:0.85rem">${winner?winner.pts+' Pkt':''}</span></div>
       </div>
-      <div class="week-scores">
-        ${sorted.map((s,i)=>`
-          <div class="week-score-item ${i===0?'winner':''}">
-            ${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}
-            <span>${s.name}</span>
-            <strong>${s.pts}</strong>
-          </div>`).join('')}
+      <div class="week-detail-table">
+        <table>
+          <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th>Differenz</th><th>Tendenz</th><th>Fehler</th><th>Spiele</th></tr></thead>
+          <tbody>${detailRows}</tbody>
+        </table>
       </div>
     </div>`;
   }).join('');
@@ -2151,12 +2258,12 @@ function renderGesamtwertung() {
   if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
 
   el.innerHTML = `<table class="overall-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>🏆 Wochensiege</th><th>Top 3</th><th>Gesamtpunkte</th></tr></thead>
+    <thead><tr><th>#</th><th>Spieler</th><th>🏆 Saisonsiege</th><th>Top 3</th><th>Gesamtpunkte</th></tr></thead>
     <tbody>${rows.map((r,i)=>`
       <tr>
         <td style="font-weight:700;width:40px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
         <td><strong>${r.name}</strong></td>
-        <td><span class="badge badge-wins">${r.wins}</span></td>
+        <td>${r.wins > 0 ? `<span class="badge badge-wins">${r.wins}</span>` : `<span style="color:var(--muted)">${r.wins}</span>`}</td>
         <td style="color:var(--muted)">${r.top3}</td>
         <td class="pts">${r.totalPts}</td>
       </tr>`).join('')}
@@ -2239,7 +2346,6 @@ function renderMeisterschaften() {
         <td onclick="openPlayerStats('${esc(s.name)}')" style="cursor:pointer">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
           <span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>
-          ${s.weekScores.length ? `<div class="meister-week-chips">${s.weekScores.map(w=>`<span class="meister-week-chip ${w.won?'won':''}" title="Woche ${w.week}">${w.won?'🏆':''}W${w.week}: ${w.pts}</span>`).join('')}</div>` : ''}
         </td>
         <td class="pts" style="font-size:1.4rem">${s.pts}</td>
         <td><span class="badge badge-exact">${s.exact}</span></td>
@@ -2286,7 +2392,7 @@ function openCloseWeekModal() {
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
   const winner = stats[0];
   const preview = document.getElementById('modalPreview');
-  preview.innerHTML = `<div class="winner-line">🏆 Wochenmeister: ${winner ? winner.name + ' ('+winner.pts+' Pkt)' : '—'}</div>` +
+  preview.innerHTML = `<div class="winner-line">🏆 Saisonmeister: ${winner ? winner.name + ' ('+winner.pts+' Pkt)' : '—'}</div>` +
     stats.map((s,i)=>`<div style="margin-bottom:4px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '} ${s.name}: ${s.pts} Pkt</div>`).join('');
   document.getElementById('closeWeekModal').classList.add('open');
 }
@@ -2339,7 +2445,7 @@ function closeWeek() {
 
 // ===================== RESET =====================
 function resetWeek() {
-  if (!confirm('Aktuelle Woche (Spiele + Tipps) löschen?')) return;
+  if (!confirm('Aktuelle Saison (Spiele + Tipps) löschen?')) return;
   state.matches = []; state.tips = {}; save(); renderAll();
 }
 
@@ -3190,6 +3296,7 @@ window.addEventListener('load', function() {
         if (data) {
           state = data;
           applyDefaults();
+          checkAutoWeekClose();
         }
         _fbSaving = false;
         if (lo) lo.style.display = 'none';
