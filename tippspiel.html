@@ -895,7 +895,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v74';
+const APP_VERSION = 'v75';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1038,30 +1038,8 @@ function applyDefaults() {
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
-  // Merge wmMatches: nur einmalig pro Seitenladung (_wmMergeDone) UND nur wenn Version neu
-  if (!_wmMergeDone && typeof wmMatches !== 'undefined' && (state.wmMatchesVersion || 0) < WM_MATCHES_VERSION) {
-    _wmMergeDone = true; // Session-Guard – egal wie oft Firebase feuert, Merge läuft nur 1x
-    const deletedKeys = new Set(state.deletedMatchKeys || []);
-    const existingKeys = new Set(state.matches.map(m => m.home + '|' + m.away + '|' + m.date));
-    const wmComp = state.competitions.find(c => c.name && c.name.toLowerCase().includes('wm')) || null;
-    const wmCompName = wmComp ? wmComp.name : (state.competitions.length > 0 ? state.competitions[0].name : 'WM 2026');
-    wmMatches.forEach(wm => {
-      const key = wm.home + '|' + wm.away + '|' + wm.date;
-      if (!existingKeys.has(key) && !deletedKeys.has(key)) {
-        state.matches.push({
-          id: 'wm_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-          home: wm.home, away: wm.away, date: wm.date,
-          competition: wmCompName, group: wm.group,
-          resultHome: null, resultAway: null
-        });
-        existingKeys.add(key);
-      }
-    });
-    state.wmMatchesVersion = WM_MATCHES_VERSION;
-    save();
-  } else {
-    _wmMergeDone = true; // auch wenn kein Merge nötig: sperren für diese Session
-  }
+  // WM-Merge wurde entfernt – Spiele sind direkt in Firebase gespeichert.
+  // Neue Spiele (z.B. K.O.-Runde) bitte über "Spiel hinzufügen" im Admin-Bereich eintragen.
   // Einmalige Bereinigung: falsche Spiele entfernen
   const wrongMatches = [
     {home:'USA', away:'Kanada', date:'2026-06-19T00:00'},
