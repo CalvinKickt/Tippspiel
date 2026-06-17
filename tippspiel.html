@@ -895,7 +895,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v78';
+const APP_VERSION = 'v81';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1032,65 +1032,19 @@ function applyDefaults() {
   state.passwords = state.passwords || {};
   state.userPrefs = state.userPrefs || {};
   state.lastAutoClose = state.lastAutoClose || 0;
-  state.deletedMatchKeys = Array.isArray(state.deletedMatchKeys)
-    ? state.deletedMatchKeys
-    : Object.values(state.deletedMatchKeys || {});
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
-  // WM-Merge wurde entfernt – Spiele sind direkt in Firebase gespeichert.
-  // Neue Spiele (z.B. K.O.-Runde) bitte über "Spiel hinzufügen" im Admin-Bereich eintragen.
-  // Einmalige Bereinigung: falsche Spiele entfernen
-  const wrongMatches = [
-    {home:'USA', away:'Kanada', date:'2026-06-19T00:00'},
-    {home:'Mexiko', away:'Kamerun', date:'2026-06-19T03:00'},
-    {home:'Uruguay', away:'Kap Verde', date:'2026-06-19T19:00'},
-    {home:'Spanien', away:'Saudi-Arabien', date:'2026-06-19T22:00'},
-    {home:'Norwegen', away:'Frankreich', date:'2026-06-20T01:00'},
-    {home:'Senegal', away:'Irak', date:'2026-06-20T04:00'},
-    {home:'Deutschland', away:'Schottland', date:'2026-06-20T19:00'},
-    {home:'Curaçao', away:'Haiti', date:'2026-06-20T22:00'},
-    {home:'Portugal', away:'Österreich', date:'2026-06-21T00:00'},
-    {home:'Algerien', away:'Jordanien', date:'2026-06-21T03:00'},
-    {home:'Brasilien', away:'Mexiko', date:'2026-06-21T19:00'},
-    {home:'Kamerun', away:'Tschechien', date:'2026-06-21T22:00'},
-    {home:'Schweiz', away:'Südafrika', date:'2026-06-22T00:00'},
-    {home:'USA', away:'Bosnien-Herzegowina', date:'2026-06-22T03:00'},
-    {home:'Australien', away:'Deutschland', date:'2026-06-22T19:00'},
-    {home:'Niederlande', away:'Elfenbeinküste', date:'2026-06-22T22:00'},
-    {home:'Ecuador', away:'Japan', date:'2026-06-23T00:00'},
-    {home:'Schweden', away:'Schottland', date:'2026-06-23T03:00'},
-    {home:'Türkei', away:'Haiti', date:'2026-06-23T19:00'},
-    {home:'Marokko', away:'Curaçao', date:'2026-06-23T22:00'},
-    {home:'Tunesien', away:'Elfenbeinküste', date:'2026-06-24T00:00'},
-    {home:'Japan', away:'Niederlande', date:'2026-06-24T03:00'},
-    {home:'Argentinien', away:'Jordanien', date:'2026-06-24T19:00'},
-    {home:'Portugal', away:'Algerien', date:'2026-06-24T22:00'},
-    {home:'England', away:'Usbekistan', date:'2026-06-25T00:00'},
-    {home:'Panama', away:'Kroatien', date:'2026-06-25T03:00'},
-    {home:'Kolumbien', away:'DR Kongo', date:'2026-06-25T19:00'},
-    {home:'Ghana', away:'Portugal', date:'2026-06-25T22:00'},
-    {home:'Belgien', away:'Iran', date:'2026-06-26T00:00'},
-    {home:'Ägypten', away:'Neuseeland', date:'2026-06-26T03:00'},
-    {home:'Saudi-Arabien', away:'Belgien', date:'2026-06-26T19:00'},
-    {home:'Neuseeland', away:'Iran', date:'2026-06-26T22:00'},
-    {home:'Brasilien', away:'Tschechien', date:'2026-06-27T00:00'},
-    {home:'Schweiz', away:'Kanada', date:'2026-06-27T03:00'},
-    {home:'Senegal', away:'Norwegen', date:'2026-06-27T19:00'},
-    {home:'Frankreich', away:'Irak', date:'2026-06-27T22:00'},
-    {home:'Deutschland', away:'Türkei', date:'2026-06-28T00:00'},
-    {home:'Schottland', away:'Curaçao', date:'2026-06-28T03:00'},
-    {home:'Kroatien', away:'Usbekistan', date:'2026-06-28T19:00'},
-    {home:'England', away:'Panama', date:'2026-06-28T22:00'},
-  ];
-  const wrongIds = state.matches
-    .filter(m => wrongMatches.some(w => w.home===m.home && w.away===m.away && (m.date||'').startsWith(w.date.slice(0,16))))
-    .map(m => m.id);
-  if (wrongIds.length) {
-    state.matches = state.matches.filter(m => !wrongIds.includes(m.id));
-    wrongIds.forEach(id => delete state.tips[id]);
-    save();
+  // Gelöschte Spiele dauerhaft herausfiltern — egal was andere Clients gespeichert haben
+  state.deletedMatchIds = state.deletedMatchIds || {};
+  const _delIds = Object.keys(state.deletedMatchIds);
+  if (_delIds.length) {
+    const before = state.matches.length;
+    state.matches = state.matches.filter(m => !state.deletedMatchIds[m.id]);
+    if (state.matches.length !== before) save(); // sauber zurückschreiben
   }
+  // WM-Merge wurde entfernt – Spiele sind direkt in Firebase gespeichert.
+  // Kein automatisches Löschen — nur der Admin darf Spiele manuell löschen
 }
 
 // ===================== NAV =====================
@@ -1457,8 +1411,9 @@ function flagTeam(name) {
   return flag ? flag + ' ' + name : name;
 }
 function flagShort(name, len) {
-  const flag = COUNTRY_FLAGS[name.toLowerCase()];
-  return flag ? flag + name.substring(0, len) : name.substring(0, len);
+  const flag = COUNTRY_FLAGS[(name||'').toLowerCase()];
+  const code = getIOCCode(name);
+  return flag ? flag + code : code;
 }
 
 function defaultCompIcon(name) {
@@ -1824,16 +1779,18 @@ function confirmDeleteMatch() {
   if (!pendingDeleteMatchId) return;
   document.getElementById('deleteMatchModal').classList.remove('open');
   const id = pendingDeleteMatchId;
-
-  // Lokal entfernen
-  state.matches = state.matches.filter(m => m.id !== id);
-  delete state.tips[id];
   pendingDeleteMatchId = null;
 
+  // Lokal entfernen
+  if (!state.deletedMatchIds) state.deletedMatchIds = {};
+  state.deletedMatchIds[id] = true;   // dauerhaft merken
+  state.matches = state.matches.filter(m => m.id !== id);
+  delete state.tips[id];
+
   if (window._fbDb) {
-    // Gezieltes Update: nur matches + den einen Tip-Eintrag löschen
-    // So kann kein anderer Client die Löschung durch einen vollen save() überschreiben
+    // Atomisches Update: deletedMatchIds-Eintrag + matches-Array + Tips
     const updates = {};
+    updates['tippspiel/deletedMatchIds/' + id] = true;
     updates['tippspiel/matches'] = JSON.parse(JSON.stringify(state.matches));
     updates['tippspiel/tips/' + id] = null;
     window._fbDb.ref().update(updates)
