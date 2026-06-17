@@ -142,6 +142,12 @@
   .week-detail-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
   .week-detail-table tr:last-child td { border-bottom: none; }
   .week-detail-table tr:hover td { background: var(--surface2); }
+  .week-detail-table td.clickable-player { cursor: pointer; color: #60a5fa; font-weight: 600; }
+  .week-detail-table td.clickable-player:hover { text-decoration: underline; }
+  .archive-tips-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 8px; }
+  .archive-tips-table th { text-align: left; padding: 6px 10px; color: var(--muted); border-bottom: 1px solid var(--border); font-size: 0.72rem; text-transform: uppercase; }
+  .archive-tips-table td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .archive-tips-table tr:last-child td { border-bottom: none; }
 
   /* GESAMTWERTUNG */
   .overall-table { width: 100%; border-collapse: collapse; }
@@ -810,6 +816,17 @@
   </div>
 </div>
 
+<!-- ARCHIV SPIELER TIPPS MODAL -->
+<div class="modal-overlay" id="archiveTipsModal" onclick="if(event.target===this)document.getElementById('archiveTipsModal').classList.remove('open')">
+  <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <h3 id="archiveTipsTitle" style="font-size:1.1rem;margin-bottom:16px"></h3>
+    <div id="archiveTipsContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('archiveTipsModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-size:3.5rem">⚽</div>
@@ -878,7 +895,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v64';
+const APP_VERSION = 'v74';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -965,22 +982,26 @@ function checkAutoWeekClose() {
       });
 
       const dateStr = cutoff.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+      // Snapshot tips for old matches only
+      const oldIds = new Set(oldMatches.map(m => m.id));
+      const archivedTips = {};
+      Object.keys(state.tips).forEach(mid => { if (oldIds.has(mid)) archivedTips[mid] = state.tips[mid]; });
+
       state.weekHistory.push({
         week: state.currentWeek,
         label: state.tournament,
         date: dateStr,
         scores: stats.map(s => ({name:s.name, pts:s.pts, exact:s.exact, diff:s.diff, tendency:s.tendency, miss:s.miss, played:s.played})),
-        competitionScores
+        competitionScores,
+        matches: JSON.parse(JSON.stringify(oldMatches)),
+        tips: archivedTips
       });
 
       // Remove tips for archived matches
-      const oldIds = new Set(oldMatches.map(m => m.id));
-      const newTips = {};
-      Object.keys(state.tips).forEach(mid => { if (!oldIds.has(mid)) newTips[mid] = state.tips[mid]; });
-
       state.currentWeek++;
       state.matches = newMatches;
-      state.tips = newTips;
+      // Tips bleiben erhalten – nicht löschen
     }
 
     state.lastAutoClose = cutoff.getTime();
@@ -1011,18 +1032,22 @@ function applyDefaults() {
   state.passwords = state.passwords || {};
   state.userPrefs = state.userPrefs || {};
   state.lastAutoClose = state.lastAutoClose || 0;
+  state.deletedMatchKeys = Array.isArray(state.deletedMatchKeys)
+    ? state.deletedMatchKeys
+    : Object.values(state.deletedMatchKeys || {});
   state.competitions = state.competitions.map(c =>
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
-  // Merge missing wmMatches into state (by home+away+date)
-  if (typeof wmMatches !== 'undefined') {
+  // Merge wmMatches: nur einmalig pro Seitenladung (_wmMergeDone) UND nur wenn Version neu
+  if (!_wmMergeDone && typeof wmMatches !== 'undefined' && (state.wmMatchesVersion || 0) < WM_MATCHES_VERSION) {
+    _wmMergeDone = true; // Session-Guard – egal wie oft Firebase feuert, Merge läuft nur 1x
+    const deletedKeys = new Set(state.deletedMatchKeys || []);
     const existingKeys = new Set(state.matches.map(m => m.home + '|' + m.away + '|' + m.date));
     const wmComp = state.competitions.find(c => c.name && c.name.toLowerCase().includes('wm')) || null;
     const wmCompName = wmComp ? wmComp.name : (state.competitions.length > 0 ? state.competitions[0].name : 'WM 2026');
-    let added = false;
     wmMatches.forEach(wm => {
       const key = wm.home + '|' + wm.away + '|' + wm.date;
-      if (!existingKeys.has(key)) {
+      if (!existingKeys.has(key) && !deletedKeys.has(key)) {
         state.matches.push({
           id: 'wm_' + Date.now() + '_' + Math.random().toString(36).slice(2),
           home: wm.home, away: wm.away, date: wm.date,
@@ -1030,10 +1055,12 @@ function applyDefaults() {
           resultHome: null, resultAway: null
         });
         existingKeys.add(key);
-        added = true;
       }
     });
-    if (added) save();
+    state.wmMatchesVersion = WM_MATCHES_VERSION;
+    save();
+  } else {
+    _wmMergeDone = true; // auch wenn kein Merge nötig: sperren für diese Session
   }
   // Einmalige Bereinigung: falsche Spiele entfernen
   const wrongMatches = [
@@ -1162,19 +1189,24 @@ function renderErgebnisse() {
     groups[d].push(m);
   });
 
+  const liveCount = matches.filter(m => m.isLive).length;
   let html = `<div class="erg-filter-bar">
     <button class="btn btn-sm" id="ergFilterAll" onclick="setErgFilter('all')" style="background:var(--surface2);border:1px solid var(--border)">Alle</button>
     <button class="btn btn-sm" id="ergFilterOpen" onclick="setErgFilter('open')" style="background:var(--green);color:#fff">Offen</button>
     <button class="btn btn-sm" id="ergFilterDone" onclick="setErgFilter('done')" style="background:var(--surface2);border:1px solid var(--border)">Eingetragen</button>
+    <button class="btn btn-sm" id="ergFilterLive" onclick="setErgFilter('live')" style="background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:5px"><span class="live-dot" style="width:7px;height:7px;flex-shrink:0"></span>Live${liveCount > 0 ? ` <span style="background:#ef4444;color:#fff;border-radius:99px;font-size:0.7rem;padding:0 5px;min-width:16px;text-align:center">${liveCount}</span>` : ''}</button>
   </div>`;
 
   Object.entries(groups).forEach(([date, ms]) => {
-    html += `<div class="erg-group-header">${date}</div>`;
+    html += `<div class="erg-group-header erg-date-header">${date}</div>`;
     ms.forEach(m => {
       const hasResult = m.resultHome != null && m.resultAway != null;
       const isLive = !!m.isLive;
       const started = m.date && new Date(m.date) <= new Date();
-      const filterClass = hasResult ? 'erg-has-result erg-done-item' : 'erg-open-item';
+      const filterClass = [
+        hasResult ? 'erg-has-result erg-done-item' : 'erg-open-item',
+        isLive ? 'erg-live-item' : ''
+      ].join(' ').trim();
       const liveClass = isLive ? ' is-live' : '';
 
       const liveBadge = isLive ? `<span class="live-badge"><span class="live-dot"></span>LIVE</span>` : '';
@@ -1219,14 +1251,31 @@ function setErgFilter(f) {
   window._ergFilter = f;
   const el = document.getElementById('ergebnisseContent');
   if (!el) return;
-  ['all','open','done'].forEach(k => {
+  ['all','open','done','live'].forEach(k => {
     const btn = document.getElementById('ergFilter' + k.charAt(0).toUpperCase() + k.slice(1));
-    if (btn) { btn.style.background = k===f ? 'var(--green)' : 'var(--surface2)'; btn.style.color = k===f ? '#fff' : ''; btn.style.border = k===f ? 'none' : '1px solid var(--border)'; }
+    if (btn) {
+      const isLiveBtn = k === 'live';
+      const active = k === f;
+      btn.style.background = active ? (isLiveBtn ? '#ef4444' : 'var(--green)') : 'var(--surface2)';
+      btn.style.color = active ? '#fff' : '';
+      btn.style.border = active ? 'none' : '1px solid var(--border)';
+    }
   });
   el.querySelectorAll('.erg-row').forEach(row => {
     if (f === 'all') row.style.display = '';
     else if (f === 'open') row.style.display = row.classList.contains('erg-open-item') ? '' : 'none';
     else if (f === 'done') row.style.display = row.classList.contains('erg-done-item') ? '' : 'none';
+    else if (f === 'live') row.style.display = row.classList.contains('erg-live-item') ? '' : 'none';
+  });
+  // Datumsköpfe ohne sichtbare Spiele ausblenden
+  el.querySelectorAll('.erg-date-header').forEach(header => {
+    let sibling = header.nextElementSibling;
+    let hasVisible = false;
+    while (sibling && !sibling.classList.contains('erg-date-header')) {
+      if (sibling.classList.contains('erg-row') && sibling.style.display !== 'none') { hasVisible = true; break; }
+      sibling = sibling.nextElementSibling;
+    }
+    header.style.display = hasVisible ? '' : 'none';
   });
 }
 
@@ -1796,6 +1845,12 @@ function deleteMatchFromDetail() {
 function confirmDeleteMatch() {
   if (!pendingDeleteMatchId) return;
   document.getElementById('deleteMatchModal').classList.remove('open');
+  const deletedMatch = state.matches.find(m=>m.id===pendingDeleteMatchId);
+  if (deletedMatch) {
+    const key = deletedMatch.home + '|' + deletedMatch.away + '|' + deletedMatch.date;
+    if (!Array.isArray(state.deletedMatchKeys)) state.deletedMatchKeys = Object.values(state.deletedMatchKeys || {});
+    if (!state.deletedMatchKeys.includes(key)) state.deletedMatchKeys.push(key);
+  }
   state.matches = state.matches.filter(m=>m.id!==pendingDeleteMatchId);
   delete state.tips[pendingDeleteMatchId];
   pendingDeleteMatchId = null;
@@ -1833,7 +1888,7 @@ function renderSpiele() {
   const el = document.getElementById('spieleContent'); if (!el) return;
   let ms = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if (matchFilter==='open') ms = ms.filter(m=>m.resultHome==null);
-  if (matchFilter==='done') ms = ms.filter(m=>m.resultHome!=null);
+  if (matchFilter==='done') { ms = ms.filter(m=>m.resultHome!=null); ms.reverse(); }
   // filter by selected day
   if (selectedCalDate) ms = ms.filter(m => m.date && m.date.startsWith(selectedCalDate));
 
@@ -2196,18 +2251,72 @@ function toggleWeekCard(el) {
   el.closest('.week-card').classList.toggle('expanded');
 }
 
+function openArchiveTips(weekIdx, playerName) {
+  const w = state.weekHistory[weekIdx];
+  if (!w) return;
+  const matches = w.matches || [];
+  const tips = w.tips || {};
+  if (!matches.length) {
+    document.getElementById('archiveTipsTitle').textContent = `${playerName} – Season ${w.week}`;
+    document.getElementById('archiveTipsContent').innerHTML = '<div class="empty">Keine Spieldaten gespeichert.</div>';
+    document.getElementById('archiveTipsModal').classList.add('open');
+    return;
+  }
+  const sorted = [...matches].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const rows = sorted.map(m => {
+    const tip = (tips[m.id]||{})[playerName];
+    const hasResult = m.resultHome != null;
+    let tipDisplay = '—';
+    let pts = null;
+    let ptsBadge = '';
+    if (tip) {
+      tipDisplay = `${tip.home}:${tip.away}`;
+      if (hasResult) {
+        pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+        const cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
+        tipDisplay = `<span class="${cls}">${tip.home}:${tip.away}</span>`;
+        ptsBadge = `<span class="${cls}" style="font-weight:700">${pts}</span>`;
+      } else {
+        tipDisplay = `<span class="tip-noresult">${tip.home}:${tip.away}</span>`;
+        ptsBadge = '—';
+      }
+    }
+    const result = hasResult ? `${m.resultHome}:${m.resultAway}` : '?:?';
+    const date = m.date ? new Date(m.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.75rem">${date}</td>
+      <td>${flagTeam(m.home)} vs ${flagTeam(m.away)}</td>
+      <td style="color:var(--muted)">${result}</td>
+      <td>${tipDisplay}</td>
+      <td style="text-align:center">${ptsBadge}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('archiveTipsTitle').textContent = `${playerName} – Season ${w.week}`;
+  document.getElementById('archiveTipsContent').innerHTML = `
+    <table class="archive-tips-table">
+      <thead><tr><th>Datum</th><th>Spiel</th><th>Ergebnis</th><th>Tipp</th><th>Pkt</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  document.getElementById('archiveTipsModal').classList.add('open');
+}
+
 function renderGeschichte() {
   renderGesamtwertung();
   const el = document.getElementById('geschichteContent'); if (!el) return;
   if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
   const weeks = [...state.weekHistory].reverse();
-  el.innerHTML = weeks.map(w => {
+  const totalWeeks = state.weekHistory.length;
+  el.innerHTML = weeks.map((w, revIdx) => {
+    const realIdx = totalWeeks - 1 - revIdx; // index in state.weekHistory
     const sorted = [...w.scores].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
     const winner = sorted[0];
+    const hasTipData = !!(w.matches && w.matches.length);
     const detailRows = sorted.map((s,i) => `
       <tr>
         <td style="color:var(--muted)">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td style="font-weight:600">${s.name}</td>
+        <td class="${hasTipData?'clickable-player':''}" onclick="${hasTipData?`openArchiveTips(${realIdx},'${esc(s.name)}')`:''}">
+          ${s.name}${hasTipData?' <span style="font-size:0.7rem;opacity:0.5">↗</span>':''}
+        </td>
         <td style="color:var(--green-light);font-weight:700">${s.pts}</td>
         <td><span class="badge badge-exact">${s.exact}</span></td>
         <td style="color:var(--muted)">${s.diff??'—'}</td>
@@ -2433,11 +2542,13 @@ function closeWeek() {
     label: state.tournament,
     date: now,
     scores: stats.map(s=>({name:s.name, pts:s.pts, exact:s.exact, diff:s.diff, tendency:s.tendency, miss:s.miss, played:s.played})),
-    competitionScores
+    competitionScores,
+    matches: JSON.parse(JSON.stringify(state.matches)),
+    tips: JSON.parse(JSON.stringify(state.tips))
   });
   state.currentWeek++;
   state.matches = [];
-  state.tips = {};
+  // Tips bleiben erhalten – nicht löschen
   save();
   closeModal();
   renderAll();
@@ -3012,6 +3123,7 @@ function renderStatistik() {
 function esc(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
 // ===================== INIT =====================
+const WM_MATCHES_VERSION = 1; // Erhöhen wenn neue Spiele hinzugefügt werden
 const wmMatches = [
   // Donnerstag 11. Juni 2026
   {date:'2026-06-11T21:00', home:'Mexiko',            away:'Südafrika',           group:'A'},
@@ -3105,6 +3217,7 @@ const wmMatches = [
 
 // ===================== FIREBASE =====================
 let _fbSaving = false;
+let _wmMergeDone = false; // verhindert mehrfachen Merge pro Seitenladung
 
 // ===================== CHAT =====================
 let chatMessages = {};       // msgId → {sender, text, ts, reactions:{emoji:{user:true}}}
