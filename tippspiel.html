@@ -909,7 +909,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v99';
+const APP_VERSION = 'v100';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1992,8 +1992,12 @@ function renderTipps() {
     player = sel.value;
   }
   if (!player) { el.innerHTML = '<div class="alert alert-info">👆 Wähle oben einen Spieler aus.</div>'; return; }
+  const isAdmin = currentUser && currentUser.isAdmin;
   const open = state.matches.filter(m=>m.resultHome==null).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  if (!open.length) { el.innerHTML = '<div class="empty">✅ Alle Spiele haben ein Ergebnis.</div>'; return; }
+  const done = state.matches.filter(m=>m.resultHome!=null).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if (!open.length && !isAdmin) { el.innerHTML = '<div class="empty">✅ Alle Spiele haben ein Ergebnis.</div>'; return; }
+  if (!open.length && isAdmin && !done.length) { el.innerHTML = '<div class="empty">Keine Spiele vorhanden.</div>'; return; }
+  const showDone = window._adminShowDoneTipps || false;
 
   if (_tipRefreshTimer) clearInterval(_tipRefreshTimer);
   _tipRefreshTimer = setInterval(() => renderTipps(), 30000);
@@ -2083,6 +2087,67 @@ function renderTipps() {
       </div>`;
     });
   });
+
+  // Admin: beendete Spiele
+  if (isAdmin) {
+    html += `<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+      <button onclick="window._adminShowDoneTipps=!window._adminShowDoneTipps;renderTipps()"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:10px;cursor:pointer;font-size:0.85rem;font-weight:600">
+        ${showDone ? '▲ Beendete Spiele ausblenden' : `▼ Beendete Spiele anzeigen (${done.length})`}
+      </button>
+    </div>`;
+
+    if (showDone && done.length) {
+      html += `<div style="margin-top:12px">`;
+      const doneGrouped = {};
+      done.forEach(m => {
+        const day = (m.date||'').substring(0,10);
+        if (!doneGrouped[day]) doneGrouped[day] = [];
+        doneGrouped[day].push(m);
+      });
+
+      Object.entries(doneGrouped).forEach(([day, matches]) => {
+        const dayLabel = day ? new Date(day+'T12:00:00').toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'}) : '—';
+        html += `<div class="tipps-day-header" style="color:var(--muted)">${dayLabel} · Beendet</div>`;
+
+        matches.forEach(m => {
+          const tip = (state.tips[m.id]||{})[player]||{};
+          const saved = tip.home !== undefined;
+          const d = m.date ? new Date(m.date).toLocaleString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+          const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()]||'';
+          const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()]||'';
+          const result = `${m.resultHome}:${m.resultAway}`;
+
+          html += `<div class="tip-match" style="opacity:0.85;border-color:var(--border)">
+            <div class="tip-match-info">
+              <div>
+                <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
+                <div style="font-size:0.72rem;color:var(--green);margin-top:3px;font-weight:600">✅ Ergebnis: ${result}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                ${saved ? '<span class="tip-saved">✓ Gespeichert</span>' : '<span style="font-size:0.75rem;color:var(--muted)">Kein Tipp</span>'}
+              </div>
+            </div>
+            <div class="tip-inputs">
+              <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
+              <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
+                value="${tip.home!==undefined?tip.home:''}"
+                onchange="autoSaveTip('${m.id}','${esc(player)}')"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}" />
+              <span class="tip-vs" style="font-size:1.1rem;font-weight:700">:</span>
+              <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
+                value="${tip.away!==undefined?tip.away:''}"
+                onchange="autoSaveTip('${m.id}','${esc(player)}')"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();autoSaveTip('${m.id}','${esc(player)}');}" />
+              <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
+            </div>
+          </div>`;
+        });
+      });
+      html += `</div>`;
+    }
+  }
 
   el.innerHTML = html;
 }
