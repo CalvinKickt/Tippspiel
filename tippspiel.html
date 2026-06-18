@@ -179,8 +179,10 @@
   .overview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   .overview-table th { padding: 8px 10px; text-align: center; font-size: 0.75rem; color: var(--muted); border-bottom: 1px solid var(--border); }
   .overview-table th.left { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--surface); }
+  .overview-table th.right { position: sticky; right: 0; z-index: 2; background: var(--surface); border-left: 1px solid var(--border); }
   .overview-table td { padding: 8px 10px; text-align: center; border-bottom: 1px solid rgba(71,85,105,0.3); }
   .overview-table td.left { text-align: left; font-weight: 500; position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .overview-table td.right { position: sticky; right: 0; z-index: 1; background: var(--surface); border-left: 1px solid var(--border); }
   .tip-exact { background: rgba(22,163,74,0.2); color: var(--green-light); border-radius: 4px; padding: 2px 6px; font-weight: 700; }
   .tip-diff { background: rgba(167,139,250,0.2); color: #c4b5fd; border-radius: 4px; padding: 2px 6px; font-weight: 700; }
   .tip-tendency { background: rgba(59,130,246,0.15); color: #93c5fd; border-radius: 4px; padding: 2px 6px; }
@@ -511,7 +513,10 @@
       <button class="btn btn-gold" onclick="openCloseWeekModal()">🏁 Saison abschließen</button>
     </div>
     <div class="card">
-      <h2>🏆 Aktuelle Saisonwertung</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">🏆 Aktuelle Saisonwertung</h2>
+        <button id="ranglisteEditBtn" class="btn btn-ghost btn-sm" style="display:none" onclick="toggleRanglisteEdit()">✏️ Bearbeiten</button>
+      </div>
       <div id="ranglisteContent"></div>
     </div>
     <div class="card">
@@ -560,6 +565,15 @@
             <button class="tab-btn active" onclick="filterMatches('open', this)">Offen</button>
             <button class="tab-btn" onclick="filterMatches('done', this)">Beendet</button>
           </div>
+        </div>
+        <div id="deleteDateRangePanel" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+          <div style="font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:8px">📅 Spiele nach Datum löschen</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div><label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:3px">Von</label><input type="date" id="deleteFromDate" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:5px 8px;font-size:0.85rem" /></div>
+            <div><label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:3px">Bis</label><input type="date" id="deleteToDate" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:5px 8px;font-size:0.85rem" /></div>
+            <button class="btn btn-danger btn-sm" onclick="confirmDeleteByDateRange()">Löschen</button>
+          </div>
+          <div id="deleteDateRangeHint" style="font-size:0.78rem;color:var(--muted);margin-top:6px"></div>
         </div>
         <div id="spieleContent"></div>
       </div>
@@ -895,7 +909,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v81';
+const APP_VERSION = 'v90';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1036,6 +1050,7 @@ function applyDefaults() {
     typeof c === 'string' ? {name: c, icon: defaultCompIcon(c)} : c
   );
   // Gelöschte Spiele dauerhaft herausfiltern — egal was andere Clients gespeichert haben
+  state.playerBonusPts = state.playerBonusPts || {};
   state.deletedMatchIds = state.deletedMatchIds || {};
   const _delIds = Object.keys(state.deletedMatchIds);
   if (_delIds.length) {
@@ -1098,6 +1113,7 @@ function renderAll() {
   renderPlayers();
   renderCompetitions();
   renderPasswordList();
+  renderBonusPtsList();
   renderGeschichte();
   renderMeisterschaften();
   renderStatistik();
@@ -1264,7 +1280,7 @@ function addPlayer() {
   if (state.players.includes(name)) { alert('Name existiert bereits.'); return; }
   state.players.push(name); save();
   document.getElementById('newPlayerName').value = '';
-  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList();
+  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList(); renderBonusPtsList();
 }
 
 function removePlayer(name) {
@@ -1272,7 +1288,7 @@ function removePlayer(name) {
   state.players = state.players.filter(p => p !== name);
   delete state.passwords[name];
   save();
-  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList();
+  renderPlayers(); updateTipperSelect(); updateLoginSelect(); renderPasswordList(); renderBonusPtsList();
 }
 
 function renderPlayers() {
@@ -1800,6 +1816,40 @@ function confirmDeleteMatch() {
   renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
 }
 
+function confirmDeleteByDateRange() {
+  const from = document.getElementById('deleteFromDate').value;
+  const to = document.getElementById('deleteToDate').value;
+  const hint = document.getElementById('deleteDateRangeHint');
+  if (!from || !to) { hint.textContent = '⚠️ Bitte Von- und Bis-Datum auswählen.'; hint.style.color = 'var(--danger)'; return; }
+  if (from > to) { hint.textContent = '⚠️ Von-Datum muss vor Bis-Datum liegen.'; hint.style.color = 'var(--danger)'; return; }
+
+  const toDelete = state.matches.filter(m => m.date && m.date >= from && m.date <= to);
+  if (!toDelete.length) { hint.textContent = 'Keine Spiele in diesem Zeitraum gefunden.'; hint.style.color = 'var(--muted)'; return; }
+
+  if (!confirm(`${toDelete.length} Spiel(e) vom ${from} bis ${to} löschen?`)) return;
+
+  if (!state.deletedMatchIds) state.deletedMatchIds = {};
+  const updates = {};
+  toDelete.forEach(m => {
+    state.deletedMatchIds[m.id] = true;
+    delete state.tips[m.id];
+    if (window._fbDb) {
+      updates['tippspiel/deletedMatchIds/' + m.id] = true;
+      updates['tippspiel/tips/' + m.id] = null;
+    }
+  });
+  state.matches = state.matches.filter(m => !toDelete.find(d => d.id === m.id));
+
+  if (window._fbDb) {
+    updates['tippspiel/matches'] = JSON.parse(JSON.stringify(state.matches));
+    window._fbDb.ref().update(updates).catch(e => console.error('Bulk-Lösch-Fehler:', e));
+  }
+
+  hint.textContent = `✅ ${toDelete.length} Spiel(e) gelöscht.`;
+  hint.style.color = 'var(--green)';
+  renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
+}
+
 // ===================== MATCHES =====================
 let matchFilter = 'open';
 
@@ -1829,6 +1879,8 @@ function filterMatches(f, btn) {
 
 function renderSpiele() {
   const el = document.getElementById('spieleContent'); if (!el) return;
+  const panel = document.getElementById('deleteDateRangePanel');
+  if (panel) panel.style.display = (currentUser && currentUser.isAdmin) ? '' : 'none';
   let ms = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   if (matchFilter==='open') ms = ms.filter(m=>m.resultHome==null);
   if (matchFilter==='done') { ms = ms.filter(m=>m.resultHome!=null); ms.reverse(); }
@@ -2087,6 +2139,7 @@ function calcPoints(tipH, tipA, resH, resA) {
 
 function getPlayerStats(player) {
   let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
+  pts += (state.playerBonusPts && state.playerBonusPts[player]) ? state.playerBonusPts[player] : 0;
   state.matches.forEach(m => {
     if (m.resultHome==null) return;
     const tip = (state.tips[m.id]||{})[player];
@@ -2103,8 +2156,20 @@ function getPlayerStats(player) {
 }
 
 // ===================== RANGLISTE =====================
+let ranglisteEditMode = false;
+
+function toggleRanglisteEdit() {
+  ranglisteEditMode = !ranglisteEditMode;
+  const btn = document.getElementById('ranglisteEditBtn');
+  if (btn) btn.textContent = ranglisteEditMode ? '✅ Fertig' : '✏️ Bearbeiten';
+  renderRangliste();
+}
+
 function renderRangliste() {
   const el = document.getElementById('ranglisteContent'); if (!el) return;
+  const isAdmin = currentUser && currentUser.isAdmin;
+  const editBtn = document.getElementById('ranglisteEditBtn');
+  if (editBtn) editBtn.style.display = isAdmin ? '' : 'none';
   if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler. Gehe zu ⚙️ Einstellungen.</div>'; return; }
   const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.diff-a.diff);
@@ -2112,14 +2177,23 @@ function renderRangliste() {
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
+      const bonus = (state.playerBonusPts && state.playerBonusPts[s.name]) || 0;
+      const bonusBadge = bonus > 0 ? `<span style="font-size:0.65rem;color:var(--green);margin-left:4px">+${bonus}</span>` : '';
+      const ptsCell = (isAdmin && ranglisteEditMode)
+        ? `<td class="pts" style="padding:4px 8px">
+             <input type="number" value="${s.pts}" min="0"
+               style="width:60px;text-align:center;font-size:1.1rem;font-weight:700;background:var(--surface2);border:1px solid var(--green);border-radius:6px;color:var(--fg);padding:2px 4px"
+               onchange="saveRanglistePts('${esc(s.name)}', this.value, ${s.pts - bonus})" />
+           </td>`
+        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}</td>`;
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td onclick="openPlayerStats('${esc(s.name)}')" style="cursor:pointer">
+        <td onclick="${isAdmin && ranglisteEditMode ? '' : `openPlayerStats('${esc(s.name)}')`}" style="${isAdmin && ranglisteEditMode ? '' : 'cursor:pointer'}">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
-          <span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>
+          ${isAdmin && ranglisteEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
         </td>
-        <td class="pts" style="font-size:1.4rem">${s.pts}</td>
+        ${ptsCell}
         <td><span class="badge ${s.exact > 0 ? 'badge-exact' : ''}" style="${s.exact === 0 ? 'color:var(--muted)' : ''}">${s.exact}</span></td>
         <td style="color:var(--muted);font-size:0.82rem">${s.diff}</td>
         <td style="color:var(--muted);font-size:0.82rem">${s.tendency}</td>
@@ -2128,6 +2202,17 @@ function renderRangliste() {
       </tr>`;
     }).join('')}
     </tbody></table></div>`;
+}
+
+function saveRanglistePts(player, newTotalStr, calculated) {
+  const newTotal = parseInt(newTotalStr, 10);
+  if (isNaN(newTotal) || newTotal < 0) return;
+  const newBonus = newTotal - calculated;
+  if (!state.playerBonusPts) state.playerBonusPts = {};
+  if (newBonus <= 0) delete state.playerBonusPts[player];
+  else state.playerBonusPts[player] = newBonus;
+  save();
+  renderUebersicht();
 }
 
 // ===================== ÜBERSICHT =====================
@@ -2139,10 +2224,14 @@ function renderUebersicht() {
   const header = `<tr>
     <th class="left">Spieler</th>
     ${sorted.map((m,i)=>`<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
-    <th>Pkt.</th></tr>`;
+    <th class="right">Pkt.</th></tr>`;
   const isAdmin = currentUser && currentUser.isAdmin;
   const myName = currentUser && !currentUser.isAdmin ? currentUser.name : null;
-  const rows = state.players.map(p=>{
+  const sortedPlayers = [...state.players].sort((a,b) => {
+    const sa = getPlayerStats(a), sb = getPlayerStats(b);
+    return sb.pts - sa.pts || sb.exact - sa.exact || sb.diff - sb.diff;
+  });
+  const rows = sortedPlayers.map(p=>{
     const cells = sorted.map(m=>{
       const tip = (state.tips[m.id]||{})[p];
       const hasResult = m.resultHome != null;
@@ -2168,7 +2257,7 @@ function renderUebersicht() {
       return `<td><span class="tip-miss">${ts}</span></td>`;
     }).join('');
     const s = getPlayerStats(p);
-    return `<tr><td class="left">${p}</td>${cells}<td><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
+    return `<tr><td class="left">${p}</td>${cells}<td class="right"><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
   }).join('');
   const legend = document.getElementById('uebersichtLegend');
   if (legend) legend.innerHTML = `<span class="tip-exact">3 Pkt Ergebnis</span>
@@ -2324,6 +2413,24 @@ function renderGesamtwertung() {
 
 // ===================== MEISTERSCHAFTEN =====================
 let selectedMeisterComp = null;
+let meisterEditMode = false;
+
+function toggleMeisterEdit() {
+  meisterEditMode = !meisterEditMode;
+  renderMeisterschaften();
+}
+
+function saveMeisterBonusPts(compName, player, newTotalStr, calculated) {
+  const newTotal = parseInt(newTotalStr, 10);
+  if (isNaN(newTotal) || newTotal < 0) return;
+  const newBonus = newTotal - calculated;
+  if (!state.compBonusPts) state.compBonusPts = {};
+  if (!state.compBonusPts[compName]) state.compBonusPts[compName] = {};
+  if (newBonus <= 0) delete state.compBonusPts[compName][player];
+  else state.compBonusPts[compName][player] = newBonus;
+  save();
+  renderMeisterschaften();
+}
 
 function renderMeisterschaften() {
   const tabsEl = document.getElementById('meisterCompTabs');
@@ -2378,6 +2485,13 @@ function renderMeisterschaften() {
     totals[s.name].tendency += s.tendency;
   });
 
+  // Add competition-specific bonus points
+  if (state.compBonusPts && state.compBonusPts[selectedMeisterComp]) {
+    Object.entries(state.compBonusPts[selectedMeisterComp]).forEach(([name, bonus]) => {
+      if (totals[name]) totals[name].pts += bonus;
+    });
+  }
+
   const sorted = Object.entries(totals)
     .map(([name, t]) => ({name, ...t}))
     .sort((a,b) => b.pts-a.pts || b.exact-a.exact || b.diff-a.diff);
@@ -2388,18 +2502,29 @@ function renderMeisterschaften() {
   const [p1, p2, p3] = sorted;
 
   // Full table
+  const isAdmin = currentUser && currentUser.isAdmin;
   const tableHtml = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${sorted.map((s,i) => {
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
+      const bonus = (state.compBonusPts && state.compBonusPts[selectedMeisterComp] && state.compBonusPts[selectedMeisterComp][s.name]) || 0;
+      const calculatedPts = s.pts - bonus;
+      const bonusBadge = bonus > 0 ? `<span style="font-size:0.65rem;color:var(--green);margin-left:4px">+${bonus}</span>` : '';
+      const ptsCell = (isAdmin && meisterEditMode)
+        ? `<td class="pts" style="padding:4px 8px">
+             <input type="number" value="${s.pts}" min="0"
+               style="width:60px;text-align:center;font-size:1.1rem;font-weight:700;background:var(--surface2);border:1px solid var(--green);border-radius:6px;color:var(--fg);padding:2px 4px"
+               onchange="saveMeisterBonusPts('${esc(selectedMeisterComp)}', '${esc(s.name)}', this.value, ${calculatedPts})" />
+           </td>`
+        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}</td>`;
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td onclick="openPlayerStats('${esc(s.name)}')" style="cursor:pointer">
+        <td onclick="${isAdmin && meisterEditMode ? '' : `openPlayerStats('${esc(s.name)}')`}" style="${isAdmin && meisterEditMode ? '' : 'cursor:pointer'}">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
-          <span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>
+          ${isAdmin && meisterEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
         </td>
-        <td class="pts" style="font-size:1.4rem">${s.pts}</td>
+        ${ptsCell}
         <td><span class="badge ${s.exact > 0 ? 'badge-exact' : ''}" style="${s.exact === 0 ? 'color:var(--muted)' : ''}">${s.exact}</span></td>
         <td style="color:var(--muted);font-size:0.82rem">${s.diff}</td>
         <td style="color:var(--muted);font-size:0.82rem">${s.tendency}</td>
@@ -2426,7 +2551,10 @@ function renderMeisterschaften() {
 
   contentEl.innerHTML = `
     <div class="card">
-      <h2>${comp ? comp.icon : '🏆'} ${selectedMeisterComp} – Gesamttabelle</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0">${comp ? comp.icon : '🏆'} ${selectedMeisterComp} – Gesamttabelle</h2>
+        ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="toggleMeisterEdit()">${meisterEditMode ? '✅ Fertig' : '✏️ Bearbeiten'}</button>` : ''}
+      </div>
       ${liveBannerHtml}
       ${!hasResults && !liveMatches.length ? '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">⏳ Noch keine Ergebnisse – alle starten bei 0 Punkten.</div>' : ''}
       ${tableHtml}
@@ -2507,6 +2635,54 @@ function resetAll() {
   if (!confirm('ALLES löschen inkl. Geschichte?')) return;
   state = {players: state.players, matches:[], tips:{}, tournament: state.tournament, currentWeek:1, weekHistory:[]};
   save(); renderAll();
+}
+
+function restoreSeason1Tips() {
+  const h = state.weekHistory && state.weekHistory[0];
+  if (!h || !h.scores) {
+    alert('Kein Saison-1-Archiv gefunden.');
+    return;
+  }
+  if (!state.playerBonusPts) state.playerBonusPts = {};
+  let applied = 0;
+  // Ensure all Season 1 players are in the current players list
+  h.scores.forEach(s => {
+    if (!state.players.includes(s.name)) {
+      state.players.push(s.name);
+    }
+  });
+  if (h.tips && h.matches) {
+    // Try to restore actual tips (only works if Season 1 was archived with new closeWeek)
+    let restored = 0;
+    h.matches.forEach(oldMatch => {
+      const curMatch = state.matches.find(m => m.home === oldMatch.home && m.away === oldMatch.away);
+      const matchId = curMatch ? curMatch.id : oldMatch.id;
+      const oldTips = h.tips[oldMatch.id] || {};
+      Object.keys(oldTips).forEach(player => {
+        if (!state.tips[matchId]) state.tips[matchId] = {};
+        if (!state.tips[matchId][player]) {
+          state.tips[matchId][player] = oldTips[player];
+          restored++;
+        }
+      });
+    });
+    applied = restored;
+    alert(`✅ ${restored} Tipp(s) aus Saison 1 importiert.`);
+  } else {
+    // Fallback: apply Season 1 scores as bonus pts for players who have 0 current tips
+    h.scores.forEach(s => {
+      if (s.pts > 0) {
+        const curPlayed = getPlayerStats(s.name).played;
+        if (curPlayed === 0 && !state.playerBonusPts[s.name]) {
+          state.playerBonusPts[s.name] = s.pts;
+          applied++;
+        }
+      }
+    });
+    alert(`✅ ${applied} Spieler mit Saison-1-Bonuspunkten versehen.\nKeine Tippdaten verfügbar – nutze "Bonuspunkte" für manuelle Korrekturen.`);
+  }
+  save();
+  renderAll();
 }
 
 function saveTournament() {
@@ -2825,6 +3001,36 @@ function setPassword(key, safeId) {
   state.passwords[key] = pass;
   save();
   renderPasswordList();
+}
+
+function renderBonusPtsList() {
+  const el = document.getElementById('bonusPtsList'); if (!el) return;
+  if (!state.players.length) { el.innerHTML = '<div class="empty">Keine Spieler vorhanden.</div>'; return; }
+  el.innerHTML = state.players.map(p => {
+    const safeId = p.replace(/[^a-zA-Z0-9]/g, '_');
+    const cur = state.playerBonusPts[p] || 0;
+    return `<div class="pw-row">
+      <div style="width:140px;font-size:0.9rem;font-weight:600;flex-shrink:0">${esc(p)}</div>
+      <input type="number" id="bonus_${safeId}" value="${cur}" min="0" max="999"
+        style="width:80px;text-align:center"
+        onkeydown="if(event.key==='Enter')setBonusPts('${esc(p)}','${safeId}')" />
+      <button class="btn btn-primary btn-sm" onclick="setBonusPts('${esc(p)}','${safeId}')">Setzen</button>
+      ${cur > 0 ? `<span style="color:var(--green);font-size:0.8rem">+${cur} Bonus</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setBonusPts(player, safeId) {
+  const input = document.getElementById('bonus_' + safeId); if (!input) return;
+  const val = parseInt(input.value, 10);
+  if (isNaN(val) || val < 0) { alert('Ungültiger Wert.'); return; }
+  if (!state.playerBonusPts) state.playerBonusPts = {};
+  if (val === 0) delete state.playerBonusPts[player];
+  else state.playerBonusPts[player] = val;
+  save();
+  renderBonusPtsList();
+  renderRangliste();
+  renderUebersicht();
 }
 
 // ===================== PLAYER STATS POPUP =====================
