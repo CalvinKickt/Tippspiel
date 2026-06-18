@@ -909,7 +909,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v92';
+const APP_VERSION = 'v99';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -967,7 +967,7 @@ function checkAutoWeekClose() {
       // Stats only for matches of this week
       const stats = state.players.map(p => {
         let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
-        oldMatches.filter(m => m.resultHome != null).forEach(m => {
+        oldMatches.filter(m => m.resultHome != null && !m.excluded).forEach(m => {
           const tip = (state.tips[m.id]||{})[p];
           if (!tip) return;
           const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
@@ -983,7 +983,7 @@ function checkAutoWeekClose() {
       (state.competitions||[]).forEach(c => {
         competitionScores[c.name] = state.players.map(p => {
           let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
-          oldMatches.filter(m => m.competition === c.name && m.resultHome != null).forEach(m => {
+          oldMatches.filter(m => m.competition === c.name && m.resultHome != null && !m.excluded).forEach(m => {
             const tip = (state.tips[m.id]||{})[p];
             if (!tip) return;
             const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
@@ -1052,6 +1052,8 @@ function applyDefaults() {
   // Gelöschte Spiele dauerhaft herausfiltern — egal was andere Clients gespeichert haben
   state.playerBonusPts = state.playerBonusPts || {};
   state.deletedMatchIds = state.deletedMatchIds || {};
+  state.seasonChampions = Array.isArray(state.seasonChampions) ? state.seasonChampions : [];
+  state.activeChampion = state.activeChampion || null;
   const _delIds = Object.keys(state.deletedMatchIds);
   if (_delIds.length) {
     const before = state.matches.length;
@@ -1171,7 +1173,13 @@ function renderErgebnisse() {
         ? `<button class="btn btn-ghost btn-sm" onclick="endLive('${m.id}')" title="Live beenden">✓ Beenden</button>`
         : '';
 
-      html += `<div class="erg-row${liveClass} ${filterClass}" data-erg-id="${m.id}">
+      const isExcluded = !!m.excluded;
+      const isAdmin = currentUser && currentUser.isAdmin;
+      const excludeBtn = isAdmin
+        ? `<button class="btn btn-ghost btn-sm" onclick="toggleMatchExcluded('${m.id}')" title="${isExcluded ? 'Wieder werten' : 'Nicht werten'}" style="font-size:0.7rem;padding:2px 7px;border:1px solid ${isExcluded ? 'var(--danger)' : 'var(--border)'};color:${isExcluded ? 'var(--danger)' : 'var(--muted)'}">${isExcluded ? '🚫 Nicht gewertet' : '⚖️ Werten'}</button>`
+        : '';
+
+      html += `<div class="erg-row${liveClass} ${filterClass}" data-erg-id="${m.id}" style="${isExcluded && isAdmin ? 'opacity:0.55;' : ''}">
         <div class="erg-teams">
           <div class="erg-date" style="display:flex;align-items:center;gap:6px">${m.competition || ''}${liveBadge}</div>
           ${flagTeam(m.home)} vs ${flagTeam(m.away)}
@@ -1185,6 +1193,7 @@ function renderErgebnisse() {
         ${hasResult ? `<button class="btn btn-ghost erg-save-btn" onclick="clearErgResult('${m.id}')" title="Zurücksetzen">✕</button>` : ''}
         ${liveEndBtn}
         ${liveBtn}
+        ${excludeBtn}
         ${scoreDisplay}
       </div>`;
     });
@@ -1241,6 +1250,12 @@ function clearErgResult(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   m.resultHome = null; m.resultAway = null; m.isLive = false;
   save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function toggleMatchExcluded(id) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  m.excluded = !m.excluded;
+  save(); renderErgebnisse(); renderRangliste(); renderUebersicht();
 }
 
 function startLive(id) {
@@ -1940,6 +1955,7 @@ function renderSpiele() {
 
 // ===================== TIPS =====================
 function isMatchLocked(m) {
+  if (currentUser && currentUser.isAdmin) return false; // Admin kann immer tippen
   if (!m.date) return false;
   return new Date(m.date) <= new Date();
 }
@@ -2147,6 +2163,7 @@ function getPlayerStats(player) {
   pts += (state.playerBonusPts && state.playerBonusPts[player]) ? state.playerBonusPts[player] : 0;
   state.matches.forEach(m => {
     if (m.resultHome==null) return;
+    if (m.excluded) return; // nicht gewertet
     const tip = (state.tips[m.id]||{})[player];
     if (!tip) return;
     const p = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
@@ -2178,6 +2195,9 @@ function renderRangliste() {
   if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler. Gehe zu ⚙️ Einstellungen.</div>'; return; }
   const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.diff-a.diff);
+  const champions = state.seasonChampions || [];
+  const activeChampion = state.activeChampion || null;
+
   el.innerHTML = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
@@ -2191,12 +2211,31 @@ function renderRangliste() {
                onchange="saveRanglistePts('${esc(s.name)}', this.value, ${s.pts - bonus})" />
            </td>`
         : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}</td>`;
+
+      // Admin edit controls for champion
+      const isActive = activeChampion === s.name;
+      const pastTitles = champions.filter(c => c.name === s.name);
+      let champEditHtml = '';
+      if (isAdmin && ranglisteEditMode) {
+        champEditHtml = `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
+          <button onclick="toggleActiveChampion('${esc(s.name)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid ${isActive ? 'var(--danger)' : '#ffd700'};background:transparent;color:${isActive ? 'var(--danger)' : '#ffd700'};cursor:pointer">
+            ${isActive ? '✕ Aktiv entfernen' : '👑 Als Aktiv setzen'}
+          </button>
+          <button onclick="addSeasonTitle('${esc(s.name)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer">+ Saison-Titel</button>
+          ${pastTitles.map(c => `<button onclick="removeSeasonTitle('${esc(s.name)}','${esc(c.season)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer">✕ ${esc(c.season)}</button>`).join('')}
+        </div>`;
+      }
+
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
         <td onclick="${isAdmin && ranglisteEditMode ? '' : `openPlayerStats('${esc(s.name)}')`}" style="${isAdmin && ranglisteEditMode ? '' : 'cursor:pointer'}">
-          <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
-          ${isAdmin && ranglisteEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
+          <div style="display:flex;align-items:center;gap:4px">
+            <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
+            ${isAdmin && ranglisteEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:3px;opacity:0.6">↗</span>`}
+          </div>
+          ${isActive ? `<div style="margin-top:3px"><span style="font-size:0.65rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:4px;padding:1px 6px">👑 Aktiver Meister</span></div>` : ''}
+          ${champEditHtml}
         </td>
         ${ptsCell}
         <td><span class="badge ${s.exact > 0 ? 'badge-exact' : ''}" style="${s.exact === 0 ? 'color:var(--muted)' : ''}">${s.exact}</span></td>
@@ -2218,6 +2257,30 @@ function saveRanglistePts(player, newTotalStr, calculated) {
   else state.playerBonusPts[player] = newBonus;
   save();
   renderUebersicht();
+}
+
+function toggleActiveChampion(name) {
+  state.activeChampion = (state.activeChampion === name) ? null : name;
+  save();
+  renderRangliste();
+}
+
+function addSeasonTitle(name) {
+  const season = prompt('Saison-Name eingeben (z.B. "Saison 1" oder "WM 2022"):');
+  if (!season || !season.trim()) return;
+  if (!state.seasonChampions) state.seasonChampions = [];
+  // Duplikat vermeiden
+  if (state.seasonChampions.find(c => c.name === name && c.season === season.trim())) return;
+  state.seasonChampions.push({name, season: season.trim()});
+  save();
+  renderRangliste();
+}
+
+function removeSeasonTitle(name, season) {
+  if (!state.seasonChampions) return;
+  state.seasonChampions = state.seasonChampions.filter(c => !(c.name === name && c.season === season));
+  save();
+  renderRangliste();
 }
 
 // ===================== ÜBERSICHT =====================
@@ -3157,7 +3220,19 @@ function openPlayerStats(name) {
   })();
 
   document.getElementById('playerStatsTitle').textContent = '📈 ' + name;
-  document.getElementById('playerStatsContent').innerHTML = hitHtml + teamHtml + recentHtml;
+
+  // Champion badges im Modal
+  const isActiveChamp = (state.activeChampion || null) === name;
+  const pastTitles = (state.seasonChampions || []).filter(c => c.name === name);
+  let champHtml = '';
+  if (isActiveChamp || pastTitles.length > 0) {
+    const badges = [];
+    if (isActiveChamp) badges.push(`<span style="font-size:0.75rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:5px;padding:2px 8px">👑 Aktiver Meister</span>`);
+    pastTitles.forEach(c => badges.push(`<span style="font-size:0.75rem;background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:5px;padding:2px 8px">🏆 ${esc(c.season)}</span>`));
+    champHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${badges.join('')}</div>`;
+  }
+
+  document.getElementById('playerStatsContent').innerHTML = champHtml + hitHtml + teamHtml + recentHtml;
   document.getElementById('playerStatsModal').classList.add('open');
 }
 
