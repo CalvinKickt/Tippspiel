@@ -487,7 +487,7 @@
   <button data-page="tipps" onclick="showPage('tipps', this)">✏️ Tipps</button>
   <button data-page="spiele" onclick="showPage('spiele', this)">📅 Spiele</button>
   <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
-  <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Rangliste</button>
+  <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Saison</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
   <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
   <button data-page="ergebnisse" onclick="showPage('ergebnisse', this)">🎯 Ergebnisse</button>
@@ -909,7 +909,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v90';
+const APP_VERSION = 'v92';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1797,20 +1797,17 @@ function confirmDeleteMatch() {
   const id = pendingDeleteMatchId;
   pendingDeleteMatchId = null;
 
-  // Lokal entfernen
   if (!state.deletedMatchIds) state.deletedMatchIds = {};
-  state.deletedMatchIds[id] = true;   // dauerhaft merken
+  state.deletedMatchIds[id] = true;
   state.matches = state.matches.filter(m => m.id !== id);
   delete state.tips[id];
 
+  // Vollständigen State atomar schreiben – kein update() mit Teil-Pfaden,
+  // damit kein Race Condition zwischen Listener und Zwischenstand entsteht
   if (window._fbDb) {
-    // Atomisches Update: deletedMatchIds-Eintrag + matches-Array + Tips
-    const updates = {};
-    updates['tippspiel/deletedMatchIds/' + id] = true;
-    updates['tippspiel/matches'] = JSON.parse(JSON.stringify(state.matches));
-    updates['tippspiel/tips/' + id] = null;
-    window._fbDb.ref().update(updates)
-      .catch(e => console.error('Lösch-Fehler:', e));
+    _fbSaving = true;
+    window._fbDb.ref('tippspiel').set(JSON.parse(JSON.stringify(state)))
+      .catch(e => { console.error('Lösch-Fehler:', e); alert('❌ Fehler beim Löschen! Bitte erneut versuchen.'); _fbSaving = false; });
   }
 
   renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
@@ -1829,24 +1826,32 @@ function confirmDeleteByDateRange() {
   if (!confirm(`${toDelete.length} Spiel(e) vom ${from} bis ${to} löschen?`)) return;
 
   if (!state.deletedMatchIds) state.deletedMatchIds = {};
-  const updates = {};
   toDelete.forEach(m => {
     state.deletedMatchIds[m.id] = true;
     delete state.tips[m.id];
-    if (window._fbDb) {
-      updates['tippspiel/deletedMatchIds/' + m.id] = true;
-      updates['tippspiel/tips/' + m.id] = null;
-    }
   });
   state.matches = state.matches.filter(m => !toDelete.find(d => d.id === m.id));
 
+  hint.textContent = '⏳ Wird dauerhaft gespeichert...';
+  hint.style.color = 'var(--muted)';
+
   if (window._fbDb) {
-    updates['tippspiel/matches'] = JSON.parse(JSON.stringify(state.matches));
-    window._fbDb.ref().update(updates).catch(e => console.error('Bulk-Lösch-Fehler:', e));
+    // Vollständigen State atomar schreiben – kein update() mit Teil-Pfaden,
+    // damit kein Race Condition zwischen Listener und Zwischenstand entsteht
+    _fbSaving = true;
+    window._fbDb.ref('tippspiel').set(JSON.parse(JSON.stringify(state)))
+      .then(() => {
+        hint.textContent = `✅ ${toDelete.length} Spiel(e) dauerhaft gelöscht und gespeichert.`;
+        hint.style.color = 'var(--green)';
+      })
+      .catch(e => {
+        console.error('Bulk-Lösch-Fehler:', e);
+        hint.textContent = '❌ Fehler beim Speichern! Bitte erneut versuchen.';
+        hint.style.color = 'var(--danger)';
+        _fbSaving = false;
+      });
   }
 
-  hint.textContent = `✅ ${toDelete.length} Spiel(e) gelöscht.`;
-  hint.style.color = 'var(--green)';
   renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); renderTipps(); updateHeader();
 }
 
