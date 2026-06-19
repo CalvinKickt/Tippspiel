@@ -909,7 +909,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v100';
+const APP_VERSION = 'v101';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2718,7 +2718,7 @@ function getCompetitionStats(compName) {
   // Points per player for matches belonging to a specific competition (current week only)
   return state.players.map(p => {
     let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
-    state.matches.filter(m => m.competition === compName && m.resultHome != null).forEach(m => {
+    state.matches.filter(m => m.competition === compName && m.resultHome != null && !m.excluded).forEach(m => {
       const tip = (state.tips[m.id]||{})[p];
       if (!tip) return;
       const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
@@ -3168,7 +3168,7 @@ function setBonusPts(player, safeId) {
 
 // ===================== PLAYER STATS POPUP =====================
 function openPlayerStats(name) {
-  const doneMatches = state.matches.filter(m => m.resultHome != null);
+  const doneMatches = state.matches.filter(m => m.resultHome != null && !m.excluded);
   let exact=0, diff=0, tendency=0, miss=0;
   const teamStats = {};
 
@@ -3315,7 +3315,7 @@ function renderStatistik() {
   if (!player && state.players.length) player = state.players[0];
   if (!player) { el.innerHTML = '<div class="empty">Noch keine Spieler.</div>'; return; }
 
-  const doneMatches = state.matches.filter(m => m.resultHome != null);
+  const doneMatches = state.matches.filter(m => m.resultHome != null && !m.excluded);
 
   // Own hit stats
   let exact=0, diff=0, tendency=0, miss=0;
