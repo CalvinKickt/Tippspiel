@@ -514,8 +514,14 @@
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <h2 style="margin:0">🏆 Aktuelle Saisonwertung</h2>
-        <button id="ranglisteEditBtn" class="btn btn-ghost btn-sm" style="display:none" onclick="toggleRanglisteEdit()">✏️ Bearbeiten</button>
+        <div>
+          <h2 style="margin:0">🏆 Aktuelle Saisonwertung</h2>
+          <div id="seasonEndDisplay" style="font-size:0.78rem;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="seasonEndBtn" class="btn btn-ghost btn-sm" style="display:none" onclick="openSeasonEndModal()">⏰ Saisonende</button>
+          <button id="ranglisteEditBtn" class="btn btn-ghost btn-sm" style="display:none" onclick="toggleRanglisteEdit()">✏️ Bearbeiten</button>
+        </div>
       </div>
       <div id="ranglisteContent"></div>
     </div>
@@ -830,6 +836,33 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="seasonTableModal" onclick="if(event.target===this)document.getElementById('seasonTableModal').classList.remove('open')">
+  <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <h3 id="seasonTableTitle" style="font-size:1.15rem;margin-bottom:16px"></h3>
+    <div id="seasonTableContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('seasonTableModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAISONENDE MODAL -->
+<div class="modal-overlay" id="seasonEndModal" onclick="if(event.target===this)document.getElementById('seasonEndModal').classList.remove('open')">
+  <div class="modal" style="max-width:380px">
+    <h3 style="font-size:1.1rem;margin-bottom:16px">⏰ Saisonende festlegen</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.82rem;color:var(--muted);display:block;margin-bottom:6px">Datum & Uhrzeit</label>
+      <input type="datetime-local" id="seasonEndInput"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:8px 12px;font-size:0.95rem" />
+    </div>
+    <div id="seasonEndHint" style="font-size:0.8rem;color:var(--muted);margin-bottom:16px"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="clearSeasonEnd()">🗑 Entfernen</button>
+      <button class="btn btn-primary" onclick="saveSeasonEnd()">💾 Speichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- ARCHIV SPIELER TIPPS MODAL -->
 <div class="modal-overlay" id="archiveTipsModal" onclick="if(event.target===this)document.getElementById('archiveTipsModal').classList.remove('open')">
   <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -909,7 +942,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v101';
+const APP_VERSION = 'v106';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1054,6 +1087,7 @@ function applyDefaults() {
   state.deletedMatchIds = state.deletedMatchIds || {};
   state.seasonChampions = Array.isArray(state.seasonChampions) ? state.seasonChampions : [];
   state.activeChampion = state.activeChampion || null;
+  state.seasonEndDate = state.seasonEndDate || null;
   const _delIds = Object.keys(state.deletedMatchIds);
   if (_delIds.length) {
     const before = state.matches.length;
@@ -2257,6 +2291,29 @@ function renderRangliste() {
   const isAdmin = currentUser && currentUser.isAdmin;
   const editBtn = document.getElementById('ranglisteEditBtn');
   if (editBtn) editBtn.style.display = isAdmin ? '' : 'none';
+  const endBtn = document.getElementById('seasonEndBtn');
+  if (endBtn) endBtn.style.display = isAdmin ? '' : 'none';
+
+  // Saisonende-Anzeige
+  const endDisplay = document.getElementById('seasonEndDisplay');
+  if (endDisplay) {
+    if (state.seasonEndDate) {
+      const endDate = new Date(state.seasonEndDate);
+      const now = new Date();
+      const diff = endDate - now;
+      if (diff > 0) {
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const countdown = days > 0 ? `${days}T ${hours}Std` : hours > 0 ? `${hours}Std ${mins}Min` : `${mins}Min`;
+        endDisplay.innerHTML = `⏰ Saison endet am ${endDate.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})} um ${endDate.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr &nbsp;·&nbsp; <span style="color:var(--green)">noch ${countdown}</span>`;
+      } else {
+        endDisplay.innerHTML = `⏰ Saison ist abgelaufen`;
+      }
+    } else {
+      endDisplay.innerHTML = '';
+    }
+  }
   if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Spieler. Gehe zu ⚙️ Einstellungen.</div>'; return; }
   const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.diff-a.diff);
@@ -2345,6 +2402,38 @@ function removeSeasonTitle(name, season) {
   if (!state.seasonChampions) return;
   state.seasonChampions = state.seasonChampions.filter(c => !(c.name === name && c.season === season));
   save();
+  renderRangliste();
+}
+
+function openSeasonEndModal() {
+  const input = document.getElementById('seasonEndInput');
+  const hint = document.getElementById('seasonEndHint');
+  if (state.seasonEndDate) {
+    // Format for datetime-local input: YYYY-MM-DDTHH:MM
+    const d = new Date(state.seasonEndDate);
+    const pad = n => String(n).padStart(2,'0');
+    input.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    hint.textContent = `Aktuell: ${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})} ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr`;
+  } else {
+    input.value = '';
+    hint.textContent = 'Noch kein Saisonende festgelegt.';
+  }
+  document.getElementById('seasonEndModal').classList.add('open');
+}
+
+function saveSeasonEnd() {
+  const val = document.getElementById('seasonEndInput').value;
+  if (!val) { document.getElementById('seasonEndHint').textContent = '⚠️ Bitte Datum und Uhrzeit eingeben.'; return; }
+  state.seasonEndDate = new Date(val).toISOString();
+  save();
+  document.getElementById('seasonEndModal').classList.remove('open');
+  renderRangliste();
+}
+
+function clearSeasonEnd() {
+  state.seasonEndDate = null;
+  save();
+  document.getElementById('seasonEndModal').classList.remove('open');
   renderRangliste();
 }
 
@@ -2653,7 +2742,7 @@ function renderMeisterschaften() {
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td onclick="${isAdmin && meisterEditMode ? '' : `openPlayerStats('${esc(s.name)}')`}" style="${isAdmin && meisterEditMode ? '' : 'cursor:pointer'}">
+        <td onclick="${isAdmin && meisterEditMode ? '' : `openPlayerStats('${esc(s.name)}', '${esc(selectedMeisterComp)}')`}" style="${isAdmin && meisterEditMode ? '' : 'cursor:pointer'}">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
           ${isAdmin && meisterEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
         </td>
@@ -3167,8 +3256,11 @@ function setBonusPts(player, safeId) {
 }
 
 // ===================== PLAYER STATS POPUP =====================
-function openPlayerStats(name) {
-  const doneMatches = state.matches.filter(m => m.resultHome != null && !m.excluded);
+function openPlayerStats(name, competition) {
+  const doneMatches = state.matches.filter(m =>
+    m.resultHome != null && !m.excluded &&
+    (!competition || m.competition === competition)
+  );
   let exact=0, diff=0, tendency=0, miss=0;
   const teamStats = {};
 
@@ -3187,12 +3279,21 @@ function openPlayerStats(name) {
 
   const total = exact+diff+tendency+miss;
   const pct = n => total>0 ? Math.round(n/total*100) : 0;
-  const s = getPlayerStats(name);
+
+  // Punkte aus gefilterten Spielen berechnen
+  let filteredPts = 0;
+  doneMatches.forEach(m => {
+    const tip = (state.tips[m.id]||{})[name];
+    if (!tip) return;
+    const p = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+    if (p !== null) filteredPts += p;
+  });
+  const contextLabel = competition ? competition : 'Saison';
 
   // Trefferquote
   const hitHtml = total===0
     ? `<div style="color:var(--muted);font-size:0.88rem;padding:4px 0 12px">Noch keine bewerteten Spiele.</div>`
-    : `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">${total} Spiel${total!==1?'e':''} bewertet · <strong style="color:var(--green-light)">${s.pts} Punkte</strong></div>
+    : `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">${total} Spiel${total!==1?'e':''} bewertet (${contextLabel}) · <strong style="color:var(--green-light)">${filteredPts} Punkte</strong></div>
     <div class="stat-bar-row">
       <div class="stat-bar-label">🎯 Genau</div>
       <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(exact)}%;background:#22c55e"></div></div>
@@ -3284,7 +3385,7 @@ function openPlayerStats(name) {
     </div>`;
   })();
 
-  document.getElementById('playerStatsTitle').textContent = '📈 ' + name;
+  document.getElementById('playerStatsTitle').textContent = '📈 ' + name + (competition ? ' · ' + competition : '');
 
   // Champion badges im Modal
   const isActiveChamp = (state.activeChampion || null) === name;
@@ -3293,12 +3394,53 @@ function openPlayerStats(name) {
   if (isActiveChamp || pastTitles.length > 0) {
     const badges = [];
     if (isActiveChamp) badges.push(`<span style="font-size:0.75rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:5px;padding:2px 8px">👑 Aktiver Meister</span>`);
-    pastTitles.forEach(c => badges.push(`<span style="font-size:0.75rem;background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:5px;padding:2px 8px">🏆 ${esc(c.season)}</span>`));
+    pastTitles.forEach(c => badges.push(`<span onclick="openSeasonTable('${esc(c.season)}')" style="font-size:0.75rem;background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:5px;padding:2px 8px;cursor:pointer" title="Tabelle anzeigen">🏆 ${esc(c.season)} ↗</span>`));
     champHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${badges.join('')}</div>`;
   }
 
   document.getElementById('playerStatsContent').innerHTML = champHtml + hitHtml + teamHtml + recentHtml;
   document.getElementById('playerStatsModal').classList.add('open');
+}
+
+function openSeasonTable(seasonName) {
+  // Versuche passendes weekHistory-Eintrag zu finden:
+  // 1. Exakter Label-Match, 2. Nummer aus "Saison X" → w.week
+  let entry = state.weekHistory.find(w => w.label === seasonName);
+  if (!entry) {
+    const num = parseInt((seasonName.match(/\d+/) || [])[0]);
+    if (!isNaN(num)) entry = state.weekHistory.find(w => w.week === num);
+  }
+
+  const modal = document.getElementById('seasonTableModal');
+  const title = document.getElementById('seasonTableTitle');
+  const content = document.getElementById('seasonTableContent');
+  if (!modal || !title || !content) return;
+
+  title.textContent = '🏆 ' + seasonName;
+
+  if (!entry) {
+    content.innerHTML = `<div style="color:var(--muted);padding:12px 0">Kein Tabellen-Eintrag für "${seasonName}" gefunden.<br>
+      <small>Tipp: Der Saison-Name muss mit dem Wochen-Label übereinstimmen oder eine Zahl enthalten (z.B. "Saison 1" → Woche 1).</small></div>`;
+  } else {
+    const sorted = [...entry.scores].sort((a,b) => b.pts-a.pts || b.exact-a.exact);
+    content.innerHTML = `
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">${entry.date || ''}</div>
+      <table class="rank-table" style="width:100%;font-size:0.8rem">
+        <thead><tr><th style="font-size:0.7rem">#</th><th style="font-size:0.7rem">Spieler</th><th style="font-size:0.7rem">Pkt</th><th style="font-size:0.7rem">Genau</th><th style="font-size:0.7rem;color:var(--muted)">Diff</th><th style="font-size:0.7rem;color:var(--muted)">Tend.</th><th style="font-size:0.7rem;color:var(--muted)">Sp.</th></tr></thead>
+        <tbody>${sorted.map((s,i) => `
+          <tr style="line-height:1.3">
+            <td class="rank-num" style="font-size:0.85rem;padding:4px 6px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+            <td style="padding:4px 6px"><span style="font-weight:700;font-size:0.85rem">${s.name}</span></td>
+            <td class="pts" style="font-size:1rem;padding:4px 6px">${s.pts}</td>
+            <td style="padding:4px 6px"><span class="badge ${s.exact>0?'badge-exact':''}" style="${s.exact===0?'color:var(--muted)':''}; font-size:0.72rem">${s.exact}</span></td>
+            <td style="color:var(--muted);padding:4px 6px;font-size:0.78rem">${s.diff??'—'}</td>
+            <td style="color:var(--muted);padding:4px 6px;font-size:0.78rem">${s.tendency??'—'}</td>
+            <td style="color:var(--muted);padding:4px 6px;font-size:0.78rem">${s.played??'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+  modal.classList.add('open');
 }
 
 // ===================== STATISTIK =====================
