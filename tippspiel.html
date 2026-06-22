@@ -39,7 +39,7 @@
   .header-week { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
 
   .layout { display: flex; min-height: calc(100vh - 56px); }
-  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; }
+  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; position: relative; z-index: 10; }
   nav button { background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 10px 14px; cursor: pointer; font-size: 0.88rem; white-space: nowrap; text-align: left; transition: all 0.2s; margin: 3px 10px; width: calc(100% - 20px); }
   nav button:hover { color: var(--text); border-color: var(--text); }
   nav button.active { color: var(--green-light); border-color: var(--green-light); background: rgba(22,163,74,0.1); font-weight: 600; }
@@ -272,6 +272,13 @@
   .cal-day:hover .cal-add-btn { color: var(--muted); }
 
   /* MEISTERSCHAFTEN */
+  /* WM Animated Background */
+  #wmBgCanvas { position: fixed; top: 0; left: 220px; width: calc(100% - 220px); height: 100%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.8s ease; }
+  #wmBgCanvas.active { opacity: 1; }
+  #page-meisterschaften .meister-comp-tabs,
+  #page-meisterschaften #meisterContent { position: relative; z-index: 1; }
+  .meister-comp-tab.wm-tab.active { border-color: #d4a820; background: rgba(212,168,32,0.14); color: #f0c842; font-weight: 700; box-shadow: 0 0 16px rgba(212,168,32,0.30); }
+  @media (max-width: 768px) { #wmBgCanvas { left: 0; width: 100%; } }
   .meister-comp-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .meister-comp-tab { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
   .meister-comp-tab:hover { border-color: var(--border); }
@@ -597,6 +604,7 @@
 
   <!-- MEISTERSCHAFTEN -->
   <div id="page-meisterschaften" class="page active">
+    <canvas id="wmBgCanvas"></canvas>
     <div id="meisterCompTabs" class="meister-comp-tabs"></div>
     <div id="meisterContent"></div>
   </div>
@@ -942,7 +950,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v106';
+const APP_VERSION = 'v112';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2671,9 +2679,12 @@ function renderMeisterschaften() {
   }
 
   // Tabs
-  tabsEl.innerHTML = state.competitions.map(c =>
-    `<button class="meister-comp-tab ${selectedMeisterComp===c.name?'active':''}" onclick="selectMeisterComp('${esc(c.name)}')">${c.icon} ${c.name}</button>`
-  ).join('');
+  tabsEl.innerHTML = state.competitions.map(c => {
+    const isWm = c.name.toUpperCase().includes('WM');
+    const extraClass = isWm ? ' wm-tab' : '';
+    return `<button class="meister-comp-tab${extraClass} ${selectedMeisterComp===c.name?'active':''}" onclick="selectMeisterComp('${esc(c.name)}')">${c.icon} ${c.name}</button>`;
+  }).join('');
+  updateWmBackground();
 
   // Aggregate scores for selected competition across all closed weeks + current live
   const totals = {};
@@ -2786,6 +2797,225 @@ function renderMeisterschaften() {
 function selectMeisterComp(name) {
   selectedMeisterComp = name;
   renderMeisterschaften();
+  updateWmBackground();
+}
+
+// ===================== WM BACKGROUND ANIMATION =====================
+let wmAnimFrame = null;
+let wmParticles = [];
+
+function isWmComp() {
+  return selectedMeisterComp && selectedMeisterComp.toUpperCase().includes('WM');
+}
+
+function updateWmBackground() {
+  const canvas = document.getElementById('wmBgCanvas');
+  if (!canvas) return;
+  if (isWmComp()) {
+    canvas.classList.add('active');
+    startWmAnimation(canvas);
+  } else {
+    canvas.classList.remove('active');
+    stopWmAnimation();
+  }
+}
+
+function stopWmAnimation() {
+  if (wmAnimFrame) { cancelAnimationFrame(wmAnimFrame); wmAnimFrame = null; }
+}
+
+function startWmAnimation(canvas) {
+  stopWmAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Goldene Partikel
+  const particles = Array.from({length: 55}, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    size: 1 + Math.random() * 2.5,
+    speedY: -(0.00015 + Math.random() * 0.0003),
+    speedX: (Math.random() - 0.5) * 0.00012,
+    opacity: 0.1 + Math.random() * 0.5,
+    twinkle: Math.random() * Math.PI * 2,
+    twinkleSpeed: 0.02 + Math.random() * 0.03,
+  }));
+
+  // Sternschnuppen
+  function newMeteor(w, h) {
+    const side = Math.random() < 0.7; // mostly top, sometimes left
+    return {
+      x:      side ? Math.random() * w * 1.2 : -10,
+      y:      side ? -10 : Math.random() * h * 0.5,
+      angle:  Math.PI * (0.18 + Math.random() * 0.18), // 32–64° diagonal
+      speed:  (w * 0.004) + Math.random() * (w * 0.003),
+      len:    80 + Math.random() * 160,
+      width:  1 + Math.random() * 1.8,
+      alpha:  0,
+      maxAlpha: 0.45 + Math.random() * 0.40,
+      life:   0,
+      maxLife: 55 + Math.floor(Math.random() * 50),
+      active: false,
+    };
+  }
+
+  const meteors = [];
+  let meteorTimer = 0;
+  let meteorInterval = 90 + Math.random() * 120; // frames between spawns
+
+  function resize() {
+    canvas.width = canvas.offsetWidth || (window.innerWidth - 220);
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function draw() {
+    if (!isWmComp()) return;
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis: tiefdunkles Blau-Schwarz ===
+    ctx.fillStyle = 'rgba(4,8,18,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    // === Goldener Schimmer von unten (Flutlicht) ===
+    const floodLight = ctx.createRadialGradient(w*0.5, h*1.05, h*0.02, w*0.5, h*0.85, h*0.8);
+    floodLight.addColorStop(0,   'rgba(210,155,20,0.45)');
+    floodLight.addColorStop(0.4, 'rgba(160,110,15,0.22)');
+    floodLight.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = floodLight;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Pulsierender goldener Glanz in der Mitte ===
+    const pulse = 0.5 + 0.5 * Math.sin(T * 0.6);
+    const glow = ctx.createRadialGradient(w*0.5, h*0.40, 0, w*0.5, h*0.40, w*0.52);
+    glow.addColorStop(0,   `rgba(230,185,50,${0.18 + pulse * 0.12})`);
+    glow.addColorStop(0.5, `rgba(180,130,25,${0.09 + pulse * 0.06})`);
+    glow.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Goldene Lichtstreifen (Trophäen-Glanz) ===
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI + T * 0.07;
+      const cx = w * 0.5 + Math.cos(T * 0.13 + i) * w * 0.08;
+      const cy = h * 0.32 + Math.sin(T * 0.10 + i) * h * 0.07;
+      const len = Math.max(w, h) * 1.1;
+      const x1 = cx + Math.cos(angle) * len;
+      const y1 = cy + Math.sin(angle) * len;
+      const x2 = cx - Math.cos(angle) * len;
+      const y2 = cy - Math.sin(angle) * len;
+      const beam = ctx.createLinearGradient(x1, y1, x2, y2);
+      const bAlpha = 0.07 + pulse * 0.06;
+      beam.addColorStop(0,    'rgba(230,180,40,0)');
+      beam.addColorStop(0.44, 'rgba(230,180,40,0)');
+      beam.addColorStop(0.5,  `rgba(245,200,70,${bAlpha})`);
+      beam.addColorStop(0.56, 'rgba(230,180,40,0)');
+      beam.addColorStop(1,    'rgba(230,180,40,0)');
+      ctx.fillStyle = beam;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // === Goldene Partikel mit Glühen ===
+    particles.forEach(p => {
+      p.twinkle += p.twinkleSpeed;
+      p.y += p.speedY;
+      p.x += p.speedX;
+      if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+      if (p.x < 0 || p.x > 1) p.speedX *= -1;
+
+      const tw = 0.4 + 0.6 * Math.abs(Math.sin(p.twinkle));
+      const alpha = p.opacity * tw;
+      const px = p.x * w, py = p.y * h;
+
+      // Äußeres Glühen
+      const glowR = ctx.createRadialGradient(px, py, 0, px, py, p.size * 5);
+      glowR.addColorStop(0,   `rgba(255,210,60,${alpha * 0.55})`);
+      glowR.addColorStop(0.4, `rgba(220,170,30,${alpha * 0.20})`);
+      glowR.addColorStop(1,   'rgba(200,140,10,0)');
+      ctx.beginPath();
+      ctx.arc(px, py, p.size * 5, 0, Math.PI * 2);
+      ctx.fillStyle = glowR;
+      ctx.fill();
+
+      // Heller Kern
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,235,140,${Math.min(alpha * 1.4, 1)})`;
+      ctx.fill();
+    });
+
+    // === Sternschnuppen ===
+    meteorTimer++;
+    if (meteorTimer >= meteorInterval) {
+      meteorTimer = 0;
+      meteorInterval = 80 + Math.random() * 130;
+      const m = newMeteor(w, h);
+      m.active = true;
+      meteors.push(m);
+    }
+    // Max 5 gleichzeitig
+    while (meteors.length > 5) meteors.shift();
+
+    meteors.forEach((m, idx) => {
+      if (!m.active) return;
+      m.life++;
+      const progress = m.life / m.maxLife;
+      // fade in first 20%, full middle, fade out last 30%
+      if (progress < 0.2)       m.alpha = m.maxAlpha * (progress / 0.2);
+      else if (progress < 0.7)  m.alpha = m.maxAlpha;
+      else                       m.alpha = m.maxAlpha * (1 - (progress - 0.7) / 0.3);
+
+      const dx = Math.cos(m.angle) * m.speed;
+      const dy = Math.sin(m.angle) * m.speed;
+      m.x += dx;
+      m.y += dy;
+
+      // Tail gradient
+      const tailX = m.x - Math.cos(m.angle) * m.len;
+      const tailY = m.y - Math.sin(m.angle) * m.len;
+      const streak = ctx.createLinearGradient(tailX, tailY, m.x, m.y);
+      streak.addColorStop(0,    'rgba(255,230,100,0)');
+      streak.addColorStop(0.6,  `rgba(255,215,60,${m.alpha * 0.35})`);
+      streak.addColorStop(0.88, `rgba(255,235,140,${m.alpha * 0.85})`);
+      streak.addColorStop(1,    `rgba(255,255,200,${m.alpha})`);
+
+      ctx.save();
+      ctx.lineWidth = m.width;
+      ctx.strokeStyle = streak;
+      ctx.shadowColor = 'rgba(255,200,50,0.7)';
+      ctx.shadowBlur  = 8;
+      ctx.beginPath();
+      ctx.moveTo(tailX, tailY);
+      ctx.lineTo(m.x, m.y);
+      ctx.stroke();
+      // Bright tip dot
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.width * 1.4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,245,180,${m.alpha})`;
+      ctx.fill();
+      ctx.restore();
+
+      if (m.life >= m.maxLife || m.x > w + 100 || m.y > h + 100) {
+        meteors.splice(idx, 1);
+      }
+    });
+
+    // === Vignette für Lesbarkeit ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.5, h*0.05, w*0.5, h*0.5, h*0.9);
+    vig.addColorStop(0, 'rgba(4,8,18,0)');
+    vig.addColorStop(1, 'rgba(4,8,18,0.52)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    time++;
+    wmAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
 }
 
 // ===================== WEEK CLOSE =====================
