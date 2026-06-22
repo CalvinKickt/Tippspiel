@@ -341,8 +341,9 @@
     .week-banner-info p { font-size: 0.75rem; }
 
     /* Rangliste – hide less important columns on mobile */
-    .rank-table th:nth-child(5), .rank-table th:nth-child(6), .rank-table th:nth-child(7),
-    .rank-table td:nth-child(5), .rank-table td:nth-child(6), .rank-table td:nth-child(7) { display: none; }
+    .rank-table th:nth-child(5), .rank-table th:nth-child(6),
+    .rank-table td:nth-child(5), .rank-table td:nth-child(6),
+    .rank-table .col-hide-mobile { display: none; }
     .pts { font-size: 1.1rem !important; }
 
     /* Calendar */
@@ -950,7 +951,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v113';
+const APP_VERSION = 'v114';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2329,7 +2330,7 @@ function renderRangliste() {
   const activeChampion = state.activeChampion || null;
 
   el.innerHTML = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
+    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th class="col-hide-mobile" style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
       const bonus = (state.playerBonusPts && state.playerBonusPts[s.name]) || 0;
@@ -2371,7 +2372,7 @@ function renderRangliste() {
         <td><span class="badge ${s.exact > 0 ? 'badge-exact' : ''}" style="${s.exact === 0 ? 'color:var(--muted)' : ''}">${s.exact}</span></td>
         <td style="color:var(--muted);font-size:0.82rem">${s.diff}</td>
         <td style="color:var(--muted);font-size:0.82rem">${s.tendency}</td>
-        <td style="color:var(--muted);font-size:0.82rem">${s.miss}</td>
+        <td class="col-hide-mobile" style="color:var(--muted);font-size:0.82rem">${s.miss}</td>
         <td style="color:var(--muted);font-size:0.82rem">${s.played}</td>
       </tr>`;
     }).join('')}
@@ -2583,7 +2584,7 @@ function renderGeschichte() {
         <td><span class="badge ${s.exact > 0 ? 'badge-exact' : ''}" style="${s.exact === 0 ? 'color:var(--muted)' : ''}">${s.exact}</span></td>
         <td style="color:var(--muted)">${s.diff??'—'}</td>
         <td style="color:var(--muted)">${s.tendency??'—'}</td>
-        <td style="color:var(--muted)">${s.miss??'—'}</td>
+        <td class="col-hide-mobile" style="color:var(--muted)">${s.miss??'—'}</td>
         <td style="color:var(--muted)">${s.played??'—'}</td>
       </tr>`).join('');
     return `<div class="week-card">
@@ -2596,7 +2597,7 @@ function renderGeschichte() {
       </div>
       <div class="week-detail-table">
         <table>
-          <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th>Differenz</th><th>Tendenz</th><th>Fehler</th><th>Spiele</th></tr></thead>
+          <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th>Differenz</th><th>Tendenz</th><th class="col-hide-mobile">Fehler</th><th>Spiele</th></tr></thead>
           <tbody>${detailRows}</tbody>
         </table>
       </div>
