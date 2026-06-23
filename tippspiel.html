@@ -11,7 +11,7 @@
     --green: #16a34a;
     --green-light: #22c55e;
     --green-dark: #14532d;
-    --bg: #070d18;
+    --bg: #040812;
     --surface: #0d1623;
     --surface2: #16233a;
     --border: #253348;
@@ -39,12 +39,12 @@
   .header-week { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
 
   .layout { display: flex; min-height: calc(100vh - 56px); }
-  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; z-index: 10; }
+  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; position: fixed; top: 56px; left: 0; height: calc(100vh - 56px); overflow-y: auto; z-index: 10; }
   nav button { background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 10px 14px; cursor: pointer; font-size: 0.88rem; white-space: nowrap; text-align: left; transition: all 0.2s; margin: 3px 10px; width: calc(100% - 20px); }
   nav button:hover { color: var(--text); border-color: var(--text); }
   nav button.active { color: var(--green-light); border-color: var(--green-light); background: rgba(22,163,74,0.1); font-weight: 600; }
 
-  main { padding: 24px; flex: 1; min-width: 0; }
+  main { padding: 24px; flex: 1; min-width: 0; margin-left: 220px; }
   main > * { max-width: 860px; margin-left: auto; margin-right: auto; }
 
   /* HAMBURGER BUTTON */
@@ -71,6 +71,7 @@
       box-shadow: 4px 0 20px rgba(0,0,0,0.5); overflow-y: auto;
     }
     #mainNav.open { left: 0; }
+    main { margin-left: 0; }
     #mainNav .nav-drawer-header { display: block; }
     #mainNav button[data-page] { border: 1px solid var(--border); border-radius: 6px; margin: 3px 10px; padding: 12px 14px; white-space: nowrap; width: calc(100% - 20px); color: var(--muted); background: transparent; }
     #mainNav button[data-page]:hover { border-color: var(--text); color: var(--text); }
@@ -273,12 +274,12 @@
 
   /* MEISTERSCHAFTEN */
   /* WM Animated Background */
-  #wmBgCanvas { position: fixed; top: 0; left: 220px; width: calc(100% - 220px); height: 100%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.8s ease; }
+  #wmBgCanvas { position: fixed; top: 0; left: 220px; width: calc(100% - 220px); height: 100dvh; min-height: 100%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.8s ease; }
   #wmBgCanvas.active { opacity: 1; }
   #page-meisterschaften .meister-comp-tabs,
   #page-meisterschaften #meisterContent { position: relative; z-index: 1; }
   .meister-comp-tab.wm-tab.active { border-color: #d4a820; background: rgba(212,168,32,0.14); color: #f0c842; font-weight: 700; box-shadow: 0 0 16px rgba(212,168,32,0.30); }
-  @media (max-width: 768px) { #wmBgCanvas { left: 0; width: 100%; } }
+  @media (max-width: 768px) { #wmBgCanvas { left: 0; width: 100%; height: 100dvh; } }
 
   /* Liquid Glass – nur im WM-Kontext */
   .wm-glass .card {
@@ -974,7 +975,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v122';
+const APP_VERSION = 'v133';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1121,6 +1122,7 @@ function applyDefaults() {
   state.deletedMatchIds = state.deletedMatchIds || {};
   state.seasonChampions = Array.isArray(state.seasonChampions) ? state.seasonChampions : [];
   state.activeChampion = state.activeChampion || null;
+  state.podiumTitles = Array.isArray(state.podiumTitles) ? state.podiumTitles : [];
   state.seasonEndDate = state.seasonEndDate || null;
   const _delIds = Object.keys(state.deletedMatchIds);
   if (_delIds.length) {
@@ -2390,19 +2392,24 @@ function renderRangliste() {
            </td>`
         : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}</td>`;
 
-      // Admin edit controls for champion
+      // Admin edit controls for champion + podium
       const isActive = activeChampion === s.name;
       const pastTitles = champions.filter(c => c.name === s.name);
+      const pastPodium = (state.podiumTitles||[]).filter(c => c.name === s.name);
       let champEditHtml = '';
       if (isAdmin && ranglisteEditMode) {
         champEditHtml = `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
           <button onclick="toggleActiveChampion('${esc(s.name)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid ${isActive ? 'var(--danger)' : '#ffd700'};background:transparent;color:${isActive ? 'var(--danger)' : '#ffd700'};cursor:pointer">
-            ${isActive ? '✕ Aktiv entfernen' : '👑 Als Aktiv setzen'}
+            ${isActive ? '✕ 👑 entfernen' : '👑 Als Aktiv setzen'}
           </button>
           <button onclick="addSeasonTitle('${esc(s.name)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer">+ Saison-Titel</button>
-          ${pastTitles.map(c => `<button onclick="removeSeasonTitle('${esc(s.name)}','${esc(c.season)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer">✕ ${esc(c.season)}</button>`).join('')}
+          <button onclick="addPodiumTitle('${esc(s.name)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer">+ Podium-Titel</button>
+          ${pastTitles.map(c => `<button onclick="removeSeasonTitle('${esc(s.name)}','${esc(c.season)}')" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer">✕ 🏆 ${esc(c.season)}</button>`).join('')}
+          ${pastPodium.map(c => `<button onclick="removePodiumTitle('${esc(s.name)}','${esc(c.season)}',${c.place})" style="font-size:0.6rem;padding:2px 6px;border-radius:4px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer">✕ ${c.place===2?'🥈':'🥉'} ${esc(c.season)}</button>`).join('')}
         </div>`;
       }
+
+      const activeBadges = isActive ? `<span style="font-size:0.65rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:4px;padding:1px 6px">👑 Aktiver Meister</span>` : '';
 
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
@@ -2412,7 +2419,7 @@ function renderRangliste() {
             <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
             ${isAdmin && ranglisteEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:3px;opacity:0.6">↗</span>`}
           </div>
-          ${isActive ? `<div style="margin-top:3px"><span style="font-size:0.65rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:4px;padding:1px 6px">👑 Aktiver Meister</span></div>` : ''}
+          ${activeBadges ? `<div style="margin-top:3px">${activeBadges}</div>` : ''}
           ${champEditHtml}
         </td>
         ${ptsCell}
@@ -2441,6 +2448,24 @@ function toggleActiveChampion(name) {
   state.activeChampion = (state.activeChampion === name) ? null : name;
   save();
   renderRangliste();
+}
+
+function addPodiumTitle(name) {
+  const season = prompt('Saison-Name (z.B. "Saison 1" oder "WM 2026"):');
+  if (!season || !season.trim()) return;
+  const placeStr = prompt('Platz (2 oder 3):');
+  const place = parseInt(placeStr);
+  if (place !== 2 && place !== 3) { alert('Nur 2 oder 3 möglich.'); return; }
+  if (!state.podiumTitles) state.podiumTitles = [];
+  if (state.podiumTitles.find(c => c.name === name && c.season === season.trim() && c.place === place)) return;
+  state.podiumTitles.push({name, season: season.trim(), place});
+  save(); renderRangliste();
+}
+
+function removePodiumTitle(name, season, place) {
+  if (!state.podiumTitles) return;
+  state.podiumTitles = state.podiumTitles.filter(c => !(c.name === name && c.season === season && c.place === place));
+  save(); renderRangliste();
 }
 
 function addSeasonTitle(name) {
@@ -2678,14 +2703,24 @@ function renderGesamtwertung() {
 
   el.innerHTML = `<table class="overall-table">
     <thead><tr><th>#</th><th>Spieler</th><th>🏆 Saisonsiege</th><th>Top 3</th><th>Gesamtpunkte</th></tr></thead>
-    <tbody>${rows.map((r,i)=>`
-      <tr>
+    <tbody>${rows.map((r,i)=>{
+      const nameKey = r.name.replace(/'/g,"\\'");
+      const isChamp = (state.activeChampion||null) === r.name;
+      const podTitles = (state.podiumTitles||[]).filter(c=>c.name===r.name);
+      const silver2 = podTitles.filter(c=>c.place===2).length;
+      const bronze3 = podTitles.filter(c=>c.place===3).length;
+      const titleBadges = isChamp ? `<span style="font-size:0.62rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:3px;padding:1px 5px">👑 Aktiv</span>` : '';
+      return `<tr>
         <td style="font-weight:700;width:40px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
-        <td><strong>${r.name}</strong></td>
-        <td>${r.wins > 0 ? `<span class="badge badge-wins">${r.wins}</span>` : `<span style="color:var(--muted)">${r.wins}</span>`}</td>
+        <td>
+          <strong style="cursor:pointer;color:var(--text)" onclick="openPlayerStats('${nameKey}',null,true)" title="Statistik anzeigen">${r.name} <span style="font-size:0.7rem;opacity:0.45">↗</span></strong>
+          ${titleBadges ? `<div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap">${titleBadges}</div>` : ''}
+        </td>
+        <td>${r.wins > 0 ? `<span class="badge badge-wins">${r.wins}</span>` : `<span style="color:var(--muted)">0</span>`}</td>
         <td style="color:var(--muted)">${r.top3}</td>
         <td class="pts">${r.totalPts}</td>
-      </tr>`).join('')}
+      </tr>`;
+    }).join('')}
     </tbody></table>`;
 }
 
@@ -2925,7 +2960,7 @@ function startWmAnimation(canvas) {
   }
   const ripples = [];
   let rippleTimer = 0;
-  let rippleInterval = 35 + Math.random() * 50;
+  let rippleInterval = 15 + Math.random() * 20;
 
   // Rotierende Goldsterne
   function newGoldStar(w, h, randomY) {
@@ -2945,11 +2980,11 @@ function startWmAnimation(canvas) {
   }
   const goldStars = Array.from({length: 18}, () => newGoldStar(0, 0, true));
   let meteorTimer = 0;
-  let meteorInterval = 50 + Math.random() * 70; // frames between spawns
+  let meteorInterval = 20 + Math.random() * 30; // frames between spawns
 
   function resize() {
     canvas.width = canvas.offsetWidth || (window.innerWidth - 220);
-    canvas.height = window.innerHeight;
+    canvas.height = canvas.offsetHeight || window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
@@ -3039,7 +3074,7 @@ function startWmAnimation(canvas) {
     rippleTimer++;
     if (rippleTimer >= rippleInterval) {
       rippleTimer = 0;
-      rippleInterval = 55 + Math.random() * 85;
+      rippleInterval = 18 + Math.random() * 25;
       ripples.push(newRipple(w, h));
     }
     for (let i = ripples.length - 1; i >= 0; i--) {
@@ -3100,13 +3135,13 @@ function startWmAnimation(canvas) {
     meteorTimer++;
     if (meteorTimer >= meteorInterval) {
       meteorTimer = 0;
-      meteorInterval = 80 + Math.random() * 130;
+      meteorInterval = 25 + Math.random() * 45;
       const m = newMeteor(w, h);
       m.active = true;
       meteors.push(m);
     }
-    // Max 5 gleichzeitig
-    while (meteors.length > 5) meteors.shift();
+    // Max 12 gleichzeitig
+    while (meteors.length > 12) meteors.shift();
 
     meteors.forEach((m, idx) => {
       if (!m.active) return;
@@ -3640,7 +3675,7 @@ function setBonusPts(player, safeId) {
 }
 
 // ===================== PLAYER STATS POPUP =====================
-function openPlayerStats(name, competition) {
+function openPlayerStats(name, competition, fromGeschichte) {
   const doneMatches = state.matches.filter(m =>
     m.resultHome != null && !m.excluded &&
     (!competition || m.competition === competition)
@@ -3771,18 +3806,109 @@ function openPlayerStats(name, competition) {
 
   document.getElementById('playerStatsTitle').textContent = '📈 ' + name + (competition ? ' · ' + competition : '');
 
-  // Champion badges im Modal
+  // Champion + Podium badges im Modal
   const isActiveChamp = (state.activeChampion || null) === name;
   const pastTitles = (state.seasonChampions || []).filter(c => c.name === name);
+  const pastPodiumModal = (state.podiumTitles || []).filter(c => c.name === name).sort((a,b)=>a.place-b.place);
   let champHtml = '';
-  if (isActiveChamp || pastTitles.length > 0) {
+  {
     const badges = [];
     if (isActiveChamp) badges.push(`<span style="font-size:0.75rem;background:linear-gradient(90deg,#b8860b,#ffd700);color:#000;font-weight:700;border-radius:5px;padding:2px 8px">👑 Aktiver Meister</span>`);
     pastTitles.forEach(c => badges.push(`<span onclick="openSeasonTable('${esc(c.season)}')" style="font-size:0.75rem;background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.4);border-radius:5px;padding:2px 8px;cursor:pointer" title="Tabelle anzeigen">🏆 ${esc(c.season)} ↗</span>`));
-    champHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${badges.join('')}</div>`;
+    pastPodiumModal.forEach(c => {
+      const col = c.place===2 ? {bg:'rgba(148,163,184,0.15)',text:'#94a3b8',border:'rgba(148,163,184,0.4)'} : {bg:'rgba(180,83,9,0.15)',text:'#b45309',border:'rgba(180,83,9,0.4)'};
+      badges.push(`<span onclick="openSeasonTable('${esc(c.season)}')" style="font-size:0.75rem;background:${col.bg};color:${col.text};border:1px solid ${col.border};border-radius:5px;padding:2px 8px;cursor:pointer">${c.place===2?'🥈':'🥉'} ${esc(c.season)} ↗</span>`);
+    });
+    if (badges.length) champHtml = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${badges.join('')}</div>`;
   }
 
-  document.getElementById('playerStatsContent').innerHTML = champHtml + hitHtml + teamHtml + recentHtml;
+  // ===== GESCHICHTE-SEKTION (nur ohne Competition-Filter) =====
+  let geschichteHtml = '';
+  if (!competition && state.weekHistory && state.weekHistory.length > 0) {
+    // Alle Seasons in denen der Spieler dabei war
+    const seasons = state.weekHistory.map(w => {
+      const sorted = [...w.scores].sort((a,b) => b.pts-a.pts || b.exact-a.exact);
+      const myScore = w.scores.find(s => s.name === name);
+      if (!myScore) return null;
+      const placement = sorted.findIndex(s => s.name === name) + 1;
+      return { week: w.week, label: w.label, date: w.date, pts: myScore.pts, exact: myScore.exact||0, played: myScore.played||0, placement, total: sorted.length };
+    }).filter(Boolean);
+
+    if (seasons.length > 0) {
+      const wins = seasons.filter(s => s.placement === 1).length;
+      const top3 = seasons.filter(s => s.placement <= 3).length;
+      const totalPts = seasons.reduce((sum,s) => sum+s.pts, 0);
+      const totalPlayed = seasons.reduce((sum,s) => sum+(s.played||0), 0);
+      const avgPts = totalPlayed > 0 ? (totalPts / totalPlayed).toFixed(2) : '—';
+      const bestSeason = [...seasons].sort((a,b) => a.placement-b.placement || b.pts-a.pts)[0];
+      const bestPts = [...seasons].sort((a,b) => b.pts-a.pts)[0];
+      const avgPlacement = (seasons.reduce((sum,s) => sum+s.placement, 0) / seasons.length).toFixed(1);
+
+      // Übersichts-Zahlen
+      const statsRow = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;text-align:center">
+          <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:8px;padding:10px 4px">
+            <div style="font-size:1.4rem;font-weight:800;color:#ffd700">${wins}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">🏆 Siege</div>
+          </div>
+          <div style="background:rgba(148,163,184,0.08);border:1px solid rgba(148,163,184,0.2);border-radius:8px;padding:10px 4px">
+            <div style="font-size:1.4rem;font-weight:800;color:#94a3b8">${top3}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">🎖 Top 3</div>
+          </div>
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 4px">
+            <div style="font-size:1.4rem;font-weight:800;color:var(--green-light)">${avgPts}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">⌀ Pkt/Spiel</div>
+          </div>
+          <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:10px 4px">
+            <div style="font-size:1.4rem;font-weight:800;color:#60a5fa">${avgPlacement}</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">⌀ Platz</div>
+          </div>
+        </div>`;
+
+      // Beste Resultate
+      const highlights = [];
+      if (bestPts) highlights.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="font-size:0.83rem">🔥 Bestes Ergebnis <span style="color:var(--muted);font-size:0.75rem">${bestPts.label||'Season '+bestPts.week}</span></div>
+        <div style="font-weight:800;color:var(--green-light)">${bestPts.pts} Pkt <span style="font-size:0.75rem;color:var(--muted)">· Platz ${bestPts.placement}</span></div>
+      </div>`);
+      if (bestSeason && bestSeason !== bestPts) highlights.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="font-size:0.83rem">🥇 Beste Platzierung <span style="color:var(--muted);font-size:0.75rem">${bestSeason.label||'Season '+bestSeason.week}</span></div>
+        <div style="font-weight:800;color:#ffd700">Platz ${bestSeason.placement} <span style="font-size:0.75rem;color:var(--muted)">· ${bestSeason.pts} Pkt</span></div>
+      </div>`);
+
+      // Alle Seasons-Zeilen
+      const seasonRows = seasons.map(s => {
+        const medal = s.placement===1?'🥇':s.placement===2?'🥈':s.placement===3?'🥉':`${s.placement}.`;
+        const ptsColor = s.pts === bestPts.pts ? 'var(--green-light)' : 'var(--text)';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem">
+          <div style="width:28px;text-align:center;font-size:0.88rem">${medal}</div>
+          <div style="flex:1;color:var(--muted)">${s.label||'Season '+s.week}</div>
+          <div style="font-weight:700;color:${ptsColor};min-width:32px;text-align:right">${s.pts}</div>
+          <div style="font-size:0.72rem;color:var(--muted);min-width:38px;text-align:right">🎯 ${s.exact}</div>
+        </div>`;
+      });
+
+      const allSeasonsId = 'gs_all_' + name.replace(/\s/g,'_');
+      const hasMany = seasons.length > 5;
+      const visibleRows = hasMany ? seasonRows.slice(0,5) : seasonRows;
+      const hiddenRows = hasMany ? seasonRows.slice(5) : [];
+
+      geschichteHtml = `
+        <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:14px;margin-bottom:14px">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">📊 Geschichte & Bestleistungen</div>
+          ${statsRow}
+          ${highlights.join('')}
+          <div style="margin-top:10px">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Alle Saisons</div>
+            ${visibleRows.join('')}
+            ${hasMany ? `<div id="${allSeasonsId}" style="display:none">${hiddenRows.join('')}</div>
+            <button onclick="var d=document.getElementById('${allSeasonsId}');var open=d.style.display!=='none';d.style.display=open?'none':'block';this.textContent=open?'Alle ${seasons.length} anzeigen ▾':'Weniger ▴'" style="background:none;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;padding:6px 0 0;width:100%;text-align:left">Alle ${seasons.length} anzeigen ▾</button>` : ''}
+          </div>
+        </div>`;
+    }
+  }
+
+  document.getElementById('playerStatsContent').innerHTML = champHtml + geschichteHtml + hitHtml + teamHtml + (fromGeschichte ? '' : recentHtml);
   document.getElementById('playerStatsModal').classList.add('open');
 }
 
@@ -3832,25 +3958,29 @@ function renderStatistik() {
   const el = document.getElementById('statistikContent'); if (!el) return;
   if (!currentUser) { el.innerHTML = '<div class="empty">Bitte einloggen.</div>'; return; }
 
-  const isAdmin = currentUser.isAdmin;
-  // Alle Spieler dürfen in der Statistik zwischen Spielern wechseln
   let player = document.getElementById('statistikPlayerSel')
     ? document.getElementById('statistikPlayerSel').value
     : currentUser.name;
-
   if (!player && state.players.length) player = state.players[0];
   if (!player) { el.innerHTML = '<div class="empty">Noch keine Spieler.</div>'; return; }
 
-  const doneMatches = state.matches.filter(m => m.resultHome != null && !m.excluded);
+  let h2hPlayer = document.getElementById('statistikH2HSel')
+    ? document.getElementById('statistikH2HSel').value
+    : (state.players.find(p => p !== player) || '');
 
-  // Own hit stats
+  const doneMatches = state.matches.filter(m => m.resultHome != null && !m.excluded)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  // ---- Basis-Stats ----
   let exact=0, diff=0, tendency=0, miss=0;
   const teamStats = {};
+  const tippedMatches = []; // {m, pts}
   doneMatches.forEach(m => {
     const tip = (state.tips[m.id]||{})[player];
-    if (!tip) return;
+    if (!tip || tip.home == null) return;
     const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
     if (pts===null) return;
+    tippedMatches.push({m, pts, tip});
     if (pts===3) exact++; else if (pts===2) diff++; else if (pts===1) tendency++; else miss++;
     [m.home, m.away].forEach(team => {
       if (!teamStats[team]) teamStats[team] = {tipped:0, pts:0};
@@ -3860,89 +3990,228 @@ function renderStatistik() {
   });
   const total = exact+diff+tendency+miss;
   const pct = n => total>0 ? Math.round(n/total*100) : 0;
+  const totalPts = tippedMatches.reduce((s,x)=>s+x.pts,0);
 
-  // Player selector — für alle sichtbar
+  // ---- Selektoren ----
   const selectorHtml = `
-    <div class="player-selector" style="margin-bottom:14px;display:flex;align-items:center;gap:10px">
-      <label style="font-size:0.85rem;color:var(--muted)">Spieler:</label>
-      <select id="statistikPlayerSel" onchange="renderStatistik()" style="max-width:200px">
-        ${state.players.map(p=>`<option value="${esc(p)}" ${p===player?'selected':''}>${p}</option>`).join('')}
-      </select>
+    <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:0.85rem;color:var(--muted)">Spieler:</label>
+        <select id="statistikPlayerSel" onchange="renderStatistik()" style="max-width:200px">
+          ${state.players.map(p=>`<option value="${esc(p)}" ${p===player?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
     </div>`;
 
-  // Trefferquote
-  const hitHtml = `<div class="stat-card">
-    <h2>📊 Trefferquote</h2>
-    ${total===0 ? '<div class="empty" style="padding:6px 0">Noch keine bewerteten Spiele.</div>' : `
-    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">${total} Spiel${total!==1?'e':''} bewertet</div>
-    <div class="stat-bar-row">
-      <div class="stat-bar-label">🎯 Genau</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(exact)}%;background:#22c55e"></div></div>
-      <div class="stat-bar-val" style="color:#22c55e">${exact}</div>
-      <div class="stat-bar-pct">${pct(exact)}%</div>
-    </div>
-    <div class="stat-bar-row">
-      <div class="stat-bar-label">✌️ Differenz</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(diff)}%;background:#a78bfa"></div></div>
-      <div class="stat-bar-val" style="color:#a78bfa">${diff}</div>
-      <div class="stat-bar-pct">${pct(diff)}%</div>
-    </div>
-    <div class="stat-bar-row">
-      <div class="stat-bar-label">👍 Tendenz</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(tendency)}%;background:#60a5fa"></div></div>
-      <div class="stat-bar-val" style="color:#60a5fa">${tendency}</div>
-      <div class="stat-bar-pct">${pct(tendency)}%</div>
-    </div>
-    <div class="stat-bar-row">
-      <div class="stat-bar-label">❌ Falsch</div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct(miss)}%;background:#f87171"></div></div>
-      <div class="stat-bar-val" style="color:#f87171">${miss}</div>
-      <div class="stat-bar-pct">${pct(miss)}%</div>
-    </div>
-    `}
-  </div>`;
+  // ---- Donut Trefferquote ----
+  const donutData = [
+    {val:exact,   color:'#22c55e', label:'🎯 Genau'},
+    {val:diff,    color:'#a78bfa', label:'✌️ Differenz'},
+    {val:tendency,color:'#60a5fa', label:'👍 Tendenz'},
+    {val:miss,    color:'#f87171', label:'❌ Falsch'},
+  ];
+  const donutSvg = (() => {
+    if (total === 0) return '<div class="empty" style="padding:6px 0">Noch keine bewerteten Spiele.</div>';
+    const cx=70, cy=70, r=52, sw=18, circ=2*Math.PI*r;
+    let cum=0;
+    const segs = donutData.map(d=>{
+      const frac=d.val/total;
+      const dash=frac*circ;
+      const offset=-(cum/total)*circ;
+      cum+=d.val;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="${sw}"
+        stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${offset}"
+        transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dasharray 0.6s"/>`;
+    }).join('');
+    const avgPts = total>0?(totalPts/total).toFixed(2):'—';
+    return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        ${segs}
+        <text x="70" y="65" text-anchor="middle" font-size="18" font-weight="700" fill="white">${total}</text>
+        <text x="70" y="82" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.4)">Spiele</text>
+      </svg>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">${totalPts} Pkt · Ø ${avgPts} p/Spiel</div>
+        ${donutData.map(d=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+            <span style="width:12px;height:12px;border-radius:50%;background:${d.color};flex-shrink:0;display:inline-block"></span>
+            <span style="font-size:0.82rem;flex:1">${d.label}</span>
+            <span style="font-weight:700;color:${d.color};min-width:22px;text-align:right">${d.val}</span>
+            <span style="font-size:0.75rem;color:var(--muted);min-width:36px;text-align:right">${pct(d.val)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  })();
+  const hitHtml = `<div class="stat-card"><h2>📊 Trefferquote</h2>${donutSvg}</div>`;
 
-  // Comparison
-  const allStats = state.players.map(p=>({name:p,...getPlayerStats(p)})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
-  const maxPts = Math.max(...allStats.map(s=>s.pts), 1);
-  const cmpHtml = `<div class="stat-card">
-    <h2>🆚 Vergleich</h2>
-    ${allStats.length===0 ? '<div class="empty" style="padding:6px 0">Keine Daten.</div>' :
-    allStats.map(s=>`
-      <div class="stat-cmp-row">
-        <div class="stat-cmp-name" style="${s.name===player?'color:var(--green-light);font-weight:700':'font-weight:600'}">${s.name===player?'👤 ':''}${s.name}</div>
-        <div class="stat-cmp-bar"><div class="stat-cmp-fill" style="width:${Math.round(s.pts/maxPts*100)}%;background:${s.name===player?'linear-gradient(90deg,var(--green),var(--green-light))':'#253348'}"></div></div>
-        <div class="stat-cmp-pts">${s.pts}</div>
-        <div class="stat-cmp-sub">${s.played>0?Math.round(s.pts/s.played*10)/10+' p/S':'—'}</div>
-      </div>`).join('')}
-  </div>`;
+  // ---- Punkte pro Spieltag (Balkendiagramm) ----
+  const barHtml = (() => {
+    const last20 = tippedMatches.slice(-20);
+    if (last20.length < 2) return `<div class="stat-card"><h2>📅 Punkte pro Spiel</h2><div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div></div>`;
+    const W=560, H=120, PL=20, PB=22, PT=10, PR=10;
+    const iW=W-PL-PR, iH=H-PT-PB;
+    const barW = Math.min(22, iW/last20.length - 3);
+    const xStep = iW / last20.length;
+    const ptColor = p => p===3?'#22c55e':p===2?'#a78bfa':p===1?'#60a5fa':'#f87171';
+    const bars = last20.map((x,i) => {
+      const bH = (x.pts / 3) * iH;
+      const bX = PL + i * xStep + (xStep-barW)/2;
+      const bY = PT + iH - bH;
+      const label = (x.m.home||'').slice(0,3)+'-'+(x.m.away||'').slice(0,3);
+      return `<rect x="${bX}" y="${bY}" width="${barW}" height="${Math.max(bH,2)}" fill="${ptColor(x.pts)}" rx="3" opacity="0.85"/>
+        <text x="${bX+barW/2}" y="${H-6}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.25)" transform="rotate(-45 ${bX+barW/2} ${H-6})">${label}</text>
+        ${x.pts>0?`<text x="${bX+barW/2}" y="${bY-3}" text-anchor="middle" font-size="9" font-weight="700" fill="${ptColor(x.pts)}">${x.pts}</text>`:''}`;
+    }).join('');
+    // Y-grid
+    const yGrid = [0,1,2,3].map(v=>{
+      const y=PT+iH-(v/3)*iH;
+      return `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <text x="${PL-3}" y="${y+4}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.25)">${v}</text>`;
+    }).join('');
+    return `<div class="stat-card"><h2>📅 Punkte pro Spiel <span style="font-size:0.75rem;color:var(--muted);font-weight:400">— letzte ${last20.length} Spiele</span></h2>
+      <div style="overflow-x:auto">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block">${yGrid}${bars}</svg>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:0.72rem">
+        ${[['#22c55e','🎯 Genau (3)'],['#a78bfa','✌️ Differenz (2)'],['#60a5fa','👍 Tendenz (1)'],['#f87171','❌ Falsch (0)']].map(([c,l])=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block"></span>${l}</span>`).join('')}
+      </div>
+    </div>`;
+  })();
 
-  // Lieblingsmannschaft
-  const teamEntries = Object.entries(teamStats)
-    .filter(([,t])=>t.tipped>=2)
-    .map(([team,t])=>({team,tipped:t.tipped,pts:t.pts,avg:t.pts/t.tipped}))
-    .sort((a,b)=>b.avg-a.avg||b.tipped-a.tipped)
-    .slice(0,8);
-  const teamHtml = `<div class="stat-card">
-    <h2>⭐ Lieblingsmannschaften</h2>
-    <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Ø Punkte pro Spiel (mind. 2 Spiele)</div>
-    ${teamEntries.length===0 ? '<div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div>' :
-    teamEntries.map((t,i)=>`
-      <div class="stat-team-row">
-        <div style="width:22px;font-size:0.9rem">${i<3?['🥇','🥈','🥉'][i]:''}</div>
-        <div style="width:28px;text-align:center">${(COUNTRY_FLAGS[(t.team||'').toLowerCase()]||'⚽')}</div>
-        <div style="flex:1;font-weight:${t.avg>=2?'700':'400'}">${t.team}</div>
-        <div style="font-size:0.82rem;font-weight:700;color:${t.avg>=2?'var(--green-light)':t.avg>=1?'#60a5fa':'var(--muted)'}">${t.avg.toFixed(2)}</div>
-        <div style="font-size:0.75rem;color:var(--muted);min-width:30px;text-align:right">${t.tipped}×</div>
-      </div>`).join('')}
-  </div>`;
+  // ---- Streak-Analyse ----
+  const streakHtml = (() => {
+    if (tippedMatches.length === 0) return `<div class="stat-card"><h2>🔥 Serien</h2><div class="empty" style="padding:6px 0">Noch keine Daten.</div></div>`;
+    // Treffer = pts >= 1; Genau = pts === 3
+    let curHit=0, maxHit=0, curExact=0, maxExact=0;
+    let curMiss=0, maxMiss=0;
+    let curHitStart=null, maxHitStart=null, maxHitEnd=null;
+    tippedMatches.forEach(({m,pts}) => {
+      if (pts >= 1) { curHit++; curMiss=0; if(curHit>maxHit){maxHit=curHit;} } else { curHit=0; curMiss++; if(curMiss>maxMiss) maxMiss=curMiss; }
+      if (pts === 3) { curExact++; if(curExact>maxExact) maxExact=curExact; } else curExact=0;
+    });
+    const lastPts = tippedMatches[tippedMatches.length-1]?.pts;
+    const streakItems = [
+      {icon:'🎯', label:'Längste Genau-Serie', val:maxExact, unit:'in Folge'},
+      {icon:'✅', label:'Längste Treffer-Serie', val:maxHit, unit:'Treffer in Folge'},
+      {icon:'❌', label:'Längste Fehler-Serie', val:maxMiss, unit:'Fehler in Folge'},
+      {icon:'🔥', label:'Aktuelle Treffer-Serie', val:curHit, unit:'laufend', color: curHit>=3?'#22c55e':curHit>=1?'#60a5fa':'var(--muted)'},
+      {icon:'🧊', label:'Aktuelle Fehler-Serie', val:curMiss, unit:'laufend', color: curMiss>=3?'#f87171':curMiss>=1?'#fb923c':'var(--muted)'},
+    ];
+    return `<div class="stat-card"><h2>🔥 Serien & Streaks</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${streakItems.map(s=>`<div style="background:var(--surface2);border-radius:8px;padding:10px 12px">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px">${s.icon} ${s.label}</div>
+          <div style="font-size:1.6rem;font-weight:800;color:${s.color||'var(--text)'}">${s.val}</div>
+          <div style="font-size:0.7rem;color:var(--muted)">${s.unit}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  })();
+
+  // ---- Wochentag-Analyse ----
+  const wochentag = (() => {
+    const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const dayData = Array.from({length:7}, (_,i)=>({day:days[i],pts:[],total:0,count:0}));
+    tippedMatches.forEach(({m,pts}) => {
+      if (!m.date) return;
+      const d = new Date(m.date).getDay();
+      dayData[d].pts.push(pts);
+      dayData[d].total += pts;
+      dayData[d].count++;
+    });
+    if (tippedMatches.length < 3) return `<div class="stat-card"><h2>📆 Wochentag-Analyse</h2><div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div></div>`;
+    const maxAvg = Math.max(...dayData.map(d=>d.count?d.total/d.count:0), 1);
+    const W=340,H=100,PL=24,PB=20,PT=6,PR=6;
+    const iW=W-PL-PR, iH=H-PT-PB;
+    const bW=Math.floor(iW/7)-4;
+    const xStep=iW/7;
+    const bars = dayData.map((d,i)=>{
+      const avg=d.count?d.total/d.count:0;
+      const bH=d.count?((avg/maxAvg)*iH):0;
+      const bX=PL+i*xStep+(xStep-bW)/2;
+      const bY=PT+iH-bH;
+      const col = avg>=2?'#22c55e':avg>=1?'#60a5fa':'#475569';
+      return `<rect x="${bX}" y="${bY}" width="${bW}" height="${Math.max(bH,2)}" fill="${col}" rx="3" opacity="${d.count?0.85:0.2}"/>
+        <text x="${bX+bW/2}" y="${H-5}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">${d.day}</text>
+        ${d.count?`<text x="${bX+bW/2}" y="${bY-3}" text-anchor="middle" font-size="9" font-weight="700" fill="${col}">${avg.toFixed(1)}</text>`:''}`;
+    }).join('');
+    const list = dayData.filter(d=>d.count>0).sort((a,b)=>(b.total/b.count)-(a.total/a.count))
+      .map((d,i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;padding:4px 0">
+        <span style="color:var(--muted);width:16px">${['🥇','🥈','🥉'][i]||''}</span>
+        <span style="font-weight:600;width:20px">${d.day}</span>
+        <span style="color:var(--green-light);font-weight:700;min-width:30px">${(d.total/d.count).toFixed(2)}</span>
+        <span style="color:var(--muted);font-size:0.72rem">Ø Pkt · ${d.count} Spiele</span>
+      </div>`).join('');
+    return `<div class="stat-card"><h2>📆 Wochentag-Analyse</h2>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;flex:1;min-width:200px">${bars}</svg>
+        <div style="min-width:160px">${list}</div>
+      </div>
+    </div>`;
+  })();
+
+  // ---- Head-to-Head ----
+  const h2hHtml = (() => {
+    const others = state.players.filter(p=>p!==player);
+    if (!others.length) return '';
+    const sel = h2hPlayer && others.includes(h2hPlayer) ? h2hPlayer : others[0];
+    const sharedMatches = tippedMatches.filter(({m}) => {
+      const tip2 = (state.tips[m.id]||{})[sel];
+      return tip2 && tip2.home != null;
+    });
+    if (sharedMatches.length === 0) {
+      return `<div class="stat-card"><h2>🆚 Head-to-Head</h2>
+        <div style="margin-bottom:12px"><select id="statistikH2HSel" onchange="renderStatistik()" style="max-width:200px">
+          ${others.map(p=>`<option value="${esc(p)}" ${p===sel?'selected':''}>${p}</option>`).join('')}
+        </select></div>
+        <div class="empty" style="padding:6px 0">Noch keine gemeinsamen Spiele.</div></div>`;
+    }
+    let w1=0,w2=0,draw=0;
+    let pts1=0, pts2=0, exact1=0, exact2=0;
+    sharedMatches.forEach(({m,pts:p1})=>{
+      const tip2=(state.tips[m.id]||{})[sel];
+      const p2=calcPoints(tip2.home,tip2.away,m.resultHome,m.resultAway)??0;
+      pts1+=p1; pts2+=p2;
+      if(p1===3)exact1++; if(p2===3)exact2++;
+      if(p1>p2)w1++; else if(p2>p1)w2++; else draw++;
+    });
+    const n=sharedMatches.length;
+    const pBar=(v,tot)=>Math.round(v/tot*100);
+    const statRow=(l1,v1,v2,l2,c1='var(--green-light)',c2='#60a5fa')=>{
+      const tot=Math.max(v1+v2,1);
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:4px">
+          <span style="font-weight:700;color:${c1}">${v1} ${l1}</span>
+          <span style="font-weight:700;color:${c2}">${l2} ${v2}</span>
+        </div>
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--surface2)">
+          <div style="width:${pBar(v1,tot)}%;background:${c1};border-radius:4px 0 0 4px"></div>
+          <div style="width:${pBar(v2,tot)}%;background:${c2};border-radius:0 4px 4px 0;margin-left:auto"></div>
+        </div>
+      </div>`;
+    };
+    return `<div class="stat-card"><h2>🆚 Head-to-Head</h2>
+      <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:0.85rem;color:var(--muted)">Gegen:</span>
+        <select id="statistikH2HSel" onchange="renderStatistik()" style="max-width:200px">
+          ${others.map(p=>`<option value="${esc(p)}" ${p===sel?'selected':''}>${p}</option>`).join('')}
+        </select>
+        <span style="font-size:0.75rem;color:var(--muted)">${n} gemeinsame Spiele</span>
+      </div>
+      <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px">
+        <div><div style="font-size:2rem;font-weight:800;color:var(--green-light)">${w1}</div><div style="font-size:0.72rem;color:var(--muted)">Siege ${player}</div></div>
+        <div><div style="font-size:2rem;font-weight:800;color:var(--muted)">${draw}</div><div style="font-size:0.72rem;color:var(--muted)">Unentsch.</div></div>
+        <div><div style="font-size:2rem;font-weight:800;color:#60a5fa">${w2}</div><div style="font-size:0.72rem;color:var(--muted)">Siege ${sel}</div></div>
+      </div>
+      ${statRow('Punkte', pts1, pts2, 'Punkte')}
+      ${statRow('🎯 Genau', exact1, exact2, '🎯 Genau')}
+      ${statRow('Trefferquote', Math.round((n-sharedMatches.filter(({pts})=>pts===0).length)/n*100), Math.round(sharedMatches.filter(({m})=>{const t=(state.tips[m.id]||{})[sel];const p=calcPoints(t?.home,t?.away,m.resultHome,m.resultAway)??0;return p>0;}).length/n*100), 'Trefferquote', 'var(--green-light)', '#60a5fa')}
+    </div>`;
+  })();
 
   // ---- Formkurve ----
   const CURVE_COLORS = ['#22c55e','#60a5fa','#f59e0b','#f87171','#a78bfa','#34d399','#fb923c','#e879f9','#38bdf8','#facc15','#4ade80','#f472b6','#818cf8','#2dd4bf','#fbbf24','#c084fc','#94a3b8'];
-  const sortedDone = state.matches.filter(m => m.resultHome != null).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const lastN = sortedDone.slice(-10);
-
-  // Build per-player series (cumulative pts over lastN)
+  const lastN = doneMatches.slice(-10);
   const allPlayersSeries = state.players.map((p, pi) => {
     let cum = 0;
     const points = lastN.map(m => {
@@ -3953,89 +4222,56 @@ function renderStatistik() {
     });
     return { name: p, points, color: CURVE_COLORS[pi % CURVE_COLORS.length] };
   });
-
-  let curveHtml = `<div class="stat-card">
-    <h2>📈 Formkurve <span style="font-size:0.75rem;color:var(--muted);font-weight:400">— letzte ${lastN.length} Spiele (kumulierte Punkte)</span></h2>`;
-
+  let curveHtml = `<div class="stat-card"><h2>📈 Formkurve <span style="font-size:0.75rem;color:var(--muted);font-weight:400">— letzte ${lastN.length} Spiele (kumulierte Punkte)</span></h2>`;
   if (lastN.length < 2) {
     curveHtml += `<div class="empty" style="padding:6px 0">Noch zu wenig abgeschlossene Spiele.</div>`;
   } else {
-    const W = 560, H = 180, PL = 36, PR = 12, PT = 12, PB = 28;
-    const iW = W - PL - PR, iH = H - PT - PB;
-    const maxCum = Math.max(...allPlayersSeries.map(s => s.points.length ? Math.max(...s.points.map(p => p.cum)) : 0), 1);
-    const xStep = iW / (lastN.length - 1);
-    const yScale = v => iH - (v / maxCum) * iH;
-
-    // Grid lines
-    const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => {
-      const y = PT + yScale(f * maxCum);
-      const val = Math.round(f * maxCum);
-      return `<line x1="${PL}" y1="${y}" x2="${PL+iW}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-              <text x="${PL-4}" y="${y+4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.3)">${val}</text>`;
-    }).join('');
-
-    // X labels (match abbreviations)
-    const xLabels = lastN.map((m, i) => {
-      const x = PL + i * xStep;
-      const label = (m.home||'').slice(0,3) + '-' + (m.away||'').slice(0,3);
-      return `<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)">${label}</text>`;
-    }).join('');
-
-    // Lines per player (dim others, highlight selected)
-    const lines = allPlayersSeries.map(s => {
-      const isSelected = s.name === player;
-      const pts = s.points.map((p, i) => `${PL + i * xStep},${PT + yScale(p.cum)}`).join(' ');
-      const opacity = isSelected ? 1 : 0.18;
-      const strokeW = isSelected ? 2.5 : 1.2;
-      return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round" opacity="${opacity}"/>
-              ${isSelected ? s.points.map((p, i) => `<circle cx="${PL + i * xStep}" cy="${PT + yScale(p.cum)}" r="3.5" fill="${s.color}"/>`).join('') : ''}`;
-    }).join('');
-
-    // Legend (top 8 players to avoid clutter)
-    const legend = allPlayersSeries.slice(0,8).map(s =>
-      `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;margin-bottom:4px;font-size:0.72rem;opacity:${s.name===player?1:0.5};font-weight:${s.name===player?700:400}">
-        <span style="display:inline-block;width:18px;height:3px;background:${s.color};border-radius:2px"></span>${s.name}
-      </span>`
-    ).join('');
-
-    curveHtml += `
-      <div style="overflow-x:auto">
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block">
-          ${gridLines}${xLabels}${lines}
-        </svg>
-      </div>
-      <div style="margin-top:10px;display:flex;flex-wrap:wrap">${legend}</div>`;
+    const W=560,H=180,PL=36,PR=12,PT=12,PB=28;
+    const iW=W-PL-PR,iH=H-PT-PB;
+    const maxCum=Math.max(...allPlayersSeries.map(s=>s.points.length?Math.max(...s.points.map(p=>p.cum)):0),1);
+    const xStep=iW/(lastN.length-1);
+    const yScale=v=>iH-(v/maxCum)*iH;
+    const gridLines=[0,0.25,0.5,0.75,1].map(f=>{const y=PT+yScale(f*maxCum);return`<line x1="${PL}" y1="${y}" x2="${PL+iW}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><text x="${PL-4}" y="${y+4}" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.3)">${Math.round(f*maxCum)}</text>`;}).join('');
+    const xLabels=lastN.map((m,i)=>`<text x="${PL+i*xStep}" y="${H-4}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)">${(m.home||'').slice(0,3)+'-'+(m.away||'').slice(0,3)}</text>`).join('');
+    const lines=allPlayersSeries.map(s=>{const isSel=s.name===player;const pts=s.points.map((p,i)=>`${PL+i*xStep},${PT+yScale(p.cum)}`).join(' ');return`<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${isSel?2.5:1.2}" stroke-linecap="round" stroke-linejoin="round" opacity="${isSel?1:0.18}"/>${isSel?s.points.map((p,i)=>`<circle cx="${PL+i*xStep}" cy="${PT+yScale(p.cum)}" r="3.5" fill="${s.color}"/>`).join(''):''}`;}).join('');
+    const legend=allPlayersSeries.slice(0,8).map(s=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;margin-bottom:4px;font-size:0.72rem;opacity:${s.name===player?1:0.5};font-weight:${s.name===player?700:400}"><span style="display:inline-block;width:18px;height:3px;background:${s.color};border-radius:2px"></span>${s.name}</span>`).join('');
+    curveHtml+=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block">${gridLines}${xLabels}${lines}</svg></div><div style="margin-top:10px;display:flex;flex-wrap:wrap">${legend}</div>`;
   }
-  curveHtml += `</div>`;
+  curveHtml+=`</div>`;
 
-  // ---- Letzte Spiele (Einzelpunkte) ----
+  // ---- Vergleich ----
+  const allStats=state.players.map(p=>({name:p,...getPlayerStats(p)})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+  const maxPts=Math.max(...allStats.map(s=>s.pts),1);
+  const cmpHtml=`<div class="stat-card"><h2>🆚 Alle Spieler – Punktevergleich</h2>${allStats.length===0?'<div class="empty" style="padding:6px 0">Keine Daten.</div>':allStats.map(s=>`<div class="stat-cmp-row"><div class="stat-cmp-name" style="${s.name===player?'color:var(--green-light);font-weight:700':'font-weight:600'}">${s.name===player?'👤 ':''}${s.name}</div><div class="stat-cmp-bar"><div class="stat-cmp-fill" style="width:${Math.round(s.pts/maxPts*100)}%;background:${s.name===player?'linear-gradient(90deg,var(--green),var(--green-light))':'#253348'}"></div></div><div class="stat-cmp-pts">${s.pts}</div><div class="stat-cmp-sub">${s.played>0?Math.round(s.pts/s.played*10)/10+' p/S':'—'}</div></div>`).join('')}</div>`;
+
+  // ---- Lieblingsmannschaften ----
+  const teamEntries=Object.entries(teamStats).filter(([,t])=>t.tipped>=2).map(([team,t])=>({team,tipped:t.tipped,pts:t.pts,avg:t.pts/t.tipped})).sort((a,b)=>b.avg-a.avg||b.tipped-a.tipped).slice(0,8);
+  const teamHtml=`<div class="stat-card"><h2>⭐ Lieblingsmannschaften</h2><div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Ø Punkte pro Spiel (mind. 2 Spiele)</div>${teamEntries.length===0?'<div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div>':teamEntries.map((t,i)=>`<div class="stat-team-row"><div style="width:22px;font-size:0.9rem">${i<3?['🥇','🥈','🥉'][i]:''}</div><div style="width:28px;text-align:center">${(COUNTRY_FLAGS[(t.team||'').toLowerCase()]||'⚽')}</div><div style="flex:1;font-weight:${t.avg>=2?'700':'400'}">${t.team}</div><div style="font-size:0.82rem;font-weight:700;color:${t.avg>=2?'var(--green-light)':t.avg>=1?'#60a5fa':'var(--muted)'}">${t.avg.toFixed(2)}</div><div style="font-size:0.75rem;color:var(--muted);min-width:30px;text-align:right">${t.tipped}×</div></div>`).join('')}</div>`;
+
+  // ---- Letzte Spiele ----
   const lastGamesHtml = (() => {
-    const last8 = sortedDone.slice(-8).reverse();
+    const last8 = tippedMatches.slice(-8).reverse();
     if (!last8.length) return '';
-    const rows = last8.map(m => {
-      const tip = (state.tips[m.id]||{})[player];
-      const pts = tip ? calcPoints(tip.home, tip.away, m.resultHome, m.resultAway) : null;
-      const ptsColor = pts===3?'#22c55e':pts===2?'#a78bfa':pts===1?'#60a5fa':pts===0?'#f87171':'var(--muted)';
-      const ptsLabel = pts===3?'🎯 3':pts===2?'✌️ 2':pts===1?'👍 1':pts===0?'❌ 0':'—';
-      const tipLabel = tip ? `${tip.home}:${tip.away}` : '—';
+    const rows=last8.map(({m,pts,tip})=>{
+      const ptsColor=pts===3?'#22c55e':pts===2?'#a78bfa':pts===1?'#60a5fa':'#f87171';
+      const ptsLabel=pts===3?'🎯 3':pts===2?'✌️ 2':pts===1?'👍 1':'❌ 0';
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;font-size:0.82rem">${flagTeam(m.home)} <span style="color:var(--muted)">vs</span> ${flagTeam(m.away)}</div>
         <div style="font-size:0.78rem;color:var(--muted);min-width:36px;text-align:center">${m.resultHome}:${m.resultAway}</div>
-        <div style="font-size:0.78rem;color:var(--muted);min-width:32px;text-align:center">${tipLabel}</div>
+        <div style="font-size:0.78rem;color:var(--muted);min-width:32px;text-align:center">${tip.home}:${tip.away}</div>
         <div style="font-size:0.85rem;font-weight:700;color:${ptsColor};min-width:40px;text-align:right">${ptsLabel}</div>
       </div>`;
     }).join('');
-    return `<div class="stat-card">
-      <h2>🕒 Letzte Spiele</h2>
+    return `<div class="stat-card"><h2>🕒 Letzte Spiele</h2>
       <div style="display:flex;font-size:0.72rem;color:var(--muted);padding-bottom:4px;gap:8px">
         <div style="flex:1">Spiel</div><div style="min-width:36px;text-align:center">Ergebnis</div>
         <div style="min-width:32px;text-align:center">Tipp</div><div style="min-width:40px;text-align:right">Punkte</div>
-      </div>
-      ${rows}
-    </div>`;
+      </div>${rows}</div>`;
   })();
 
-  el.innerHTML = selectorHtml + curveHtml + lastGamesHtml + hitHtml + cmpHtml + teamHtml;
+  el.innerHTML = selectorHtml + curveHtml + barHtml +
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">` + hitHtml + streakHtml + `</div>` +
+    wochentag + h2hHtml + cmpHtml + teamHtml + lastGamesHtml;
 }
 
 // ===================== UTILS =====================
