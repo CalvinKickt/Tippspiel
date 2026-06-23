@@ -39,7 +39,7 @@
   .header-week { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
 
   .layout { display: flex; min-height: calc(100vh - 56px); }
-  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; position: relative; z-index: 10; }
+  nav { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; width: 220px; flex-shrink: 0; padding: 12px 0; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; z-index: 10; }
   nav button { background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 10px 14px; cursor: pointer; font-size: 0.88rem; white-space: nowrap; text-align: left; transition: all 0.2s; margin: 3px 10px; width: calc(100% - 20px); }
   nav button:hover { color: var(--text); border-color: var(--text); }
   nav button.active { color: var(--green-light); border-color: var(--green-light); background: rgba(22,163,74,0.1); font-weight: 600; }
@@ -974,7 +974,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v119';
+const APP_VERSION = 'v122';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1037,7 +1037,8 @@ function checkAutoWeekClose() {
           if (!tip) return;
           const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
           if (pt === null) return;
-          played++; pts += pt;
+          const mult = m.multiplier || 1;
+          played++; pts += pt * mult;
           if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
         });
         return {name:p, pts, exact, diff, tendency, miss, played};
@@ -1053,7 +1054,8 @@ function checkAutoWeekClose() {
             if (!tip) return;
             const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
             if (pt === null) return;
-            played++; pts += pt;
+            const mult = m.multiplier || 1;
+            played++; pts += pt * mult;
             if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
           });
           return {name:p, pts, exact, diff, tendency, miss, played};
@@ -1998,7 +2000,17 @@ function renderSpiele() {
     const diff = m.date ? new Date(m.date) - new Date() : Infinity;
     const urgent = !done && !locked && diff > 0 && diff < 24*60*60*1000;
     const urgentBorder = urgent ? 'border-color:#f59e0b;' : locked && !done ? 'border-color:rgba(239,68,68,0.4);' : '';
-    return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer;${urgentBorder}">
+    const mult = m.multiplier || 1;
+    const isAdmin = currentUser && currentUser.isAdmin;
+    const multColor = mult===3?'#a855f7':mult===2?'#3b82f6':'#f59e0b';
+    const multColorBg = mult===3?'rgba(168,85,247,0.2)':mult===2?'rgba(59,130,246,0.2)':'rgba(245,158,11,0.2)';
+    const multGrad = mult===3?'linear-gradient(135deg,#7e22ce,#a855f7)':mult===2?'linear-gradient(135deg,#1d4ed8,#3b82f6)':'linear-gradient(135deg,#d97706,#f59e0b)';
+    const multBadge = mult > 1 ? `<span style="background:${multGrad};color:#fff;font-size:0.7rem;font-weight:800;border-radius:6px;padding:2px 7px;letter-spacing:0.03em">${mult}x</span>` : '';
+    const multButtons = isAdmin ? `
+      <div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
+        ${[1,2,3].map(v=>{const vc=v===3?'#a855f7':v===2?'#3b82f6':'#9ca3af';const vbg=v===3?'rgba(168,85,247,0.2)':v===2?'rgba(59,130,246,0.2)':'rgba(156,163,175,0.15)';return`<button onclick="event.stopPropagation();setMatchMultiplier('${m.id}',${v})" style="padding:2px 8px;font-size:0.72rem;font-weight:700;border-radius:5px;border:1px solid ${mult===v?vc:'var(--border)'};background:${mult===v?vbg:'transparent'};color:${mult===v?vc:'var(--muted)'};cursor:pointer">${v}x</button>`;}).join('')}
+      </div>` : '';
+    return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer;${urgentBorder}${mult>1?`border-color:${multColor};`:''}">
       <div class="match-header">
         <div>
           <span class="match-meta">${d}</span>
@@ -2007,6 +2019,7 @@ function renderSpiele() {
           ${m.isLive ? `<div style="margin-top:2px"><span class="live-badge"><span class="live-dot"></span>LIVE</span></div>` : ''}
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          ${multBadge}
           ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}</span>` : ''}
           ${m.isLive ? '<span style="font-size:0.75rem;color:#f87171;font-weight:700">Live</span>' : done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : locked ? '<span style="font-size:0.75rem;color:#f87171">Läuft</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
         </div>
@@ -2015,8 +2028,18 @@ function renderSpiele() {
         <span>${flagTeam(m.home)}</span><span class="match-vs">vs</span><span>${flagTeam(m.away)}</span>
         ${m.isLive ? `<span style="margin-left:auto;color:#f87171;font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : done ? `<span style="margin-left:auto;color:var(--green-light);font-weight:700;font-size:1.2rem">${m.resultHome}:${m.resultAway}</span>` : ''}
       </div>
+      ${isAdmin ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:0.72rem;color:var(--muted)">Punktemultiplikator:</span>${multButtons}</div>` : ''}
     </div>`;
   }).join('');
+}
+
+// ===================== MULTIPLIKATOR =====================
+function setMatchMultiplier(id, val) {
+  const m = state.matches.find(m => m.id === id);
+  if (!m) return;
+  m.multiplier = val;
+  save();
+  renderSpiele(); renderRangliste(); renderMeisterschaften(); renderUebersicht();
 }
 
 // ===================== TIPS =====================
@@ -2294,12 +2317,13 @@ function getPlayerStats(player) {
   pts += (state.playerBonusPts && state.playerBonusPts[player]) ? state.playerBonusPts[player] : 0;
   state.matches.forEach(m => {
     if (m.resultHome==null) return;
-    if (m.excluded) return; // nicht gewertet
+    if (m.excluded) return;
     const tip = (state.tips[m.id]||{})[player];
     if (!tip) return;
     const p = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
     if (p===null) return;
-    played++; pts+=p;
+    const mult = m.multiplier || 1;
+    played++; pts += p * mult;
     if (p===3) exact++;
     else if (p===2) diff++;
     else if (p===1) tendency++;
@@ -3171,7 +3195,8 @@ function getCompetitionStats(compName) {
       if (!tip) return;
       const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
       if (pt === null) return;
-      played++; pts += pt;
+      const mult = m.multiplier || 1;
+      played++; pts += pt * mult;
       if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
     });
     return {name:p, pts, exact, diff, tendency, miss, played};
