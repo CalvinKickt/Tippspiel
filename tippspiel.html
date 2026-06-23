@@ -279,6 +279,25 @@
   #page-meisterschaften #meisterContent { position: relative; z-index: 1; }
   .meister-comp-tab.wm-tab.active { border-color: #d4a820; background: rgba(212,168,32,0.14); color: #f0c842; font-weight: 700; box-shadow: 0 0 16px rgba(212,168,32,0.30); }
   @media (max-width: 768px) { #wmBgCanvas { left: 0; width: 100%; } }
+
+  /* Liquid Glass – nur im WM-Kontext */
+  .wm-glass .card {
+    background: rgba(12, 20, 40, 0.38) !important;
+    backdrop-filter: blur(22px) saturate(160%) brightness(1.08);
+    -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(1.08);
+    border: 1px solid rgba(212, 175, 55, 0.22) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,215,0,0.10) !important;
+  }
+  .wm-glass .rank-table th {
+    background: rgba(8, 15, 32, 0.55) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .wm-glass .rank-table tr:hover td { background: rgba(212,175,55,0.06) !important; }
+  .wm-glass .rank-table tr.rank-1 td { background: rgba(245,158,11,0.08) !important; }
+  .wm-glass .rank-table tr.rank-2 td { background: rgba(148,163,184,0.05) !important; }
+  .wm-glass .rank-table tr.rank-3 td { background: rgba(180,83,9,0.05) !important; }
+  .wm-glass .rank-table td { background: transparent !important; }
   .meister-comp-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .meister-comp-tab { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
   .meister-comp-tab:hover { border-color: var(--border); }
@@ -951,7 +970,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v114';
+const APP_VERSION = 'v115';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2811,12 +2830,15 @@ function isWmComp() {
 
 function updateWmBackground() {
   const canvas = document.getElementById('wmBgCanvas');
+  const page = document.getElementById('page-meisterschaften');
   if (!canvas) return;
   if (isWmComp()) {
     canvas.classList.add('active');
+    if (page) page.classList.add('wm-glass');
     startWmAnimation(canvas);
   } else {
     canvas.classList.remove('active');
+    if (page) page.classList.remove('wm-glass');
     stopWmAnimation();
   }
 }
