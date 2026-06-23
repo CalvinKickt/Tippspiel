@@ -79,7 +79,7 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); overflow: clip; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
   .card h2 { font-size: 1.05rem; margin-bottom: 16px; color: var(--green-light); display: flex; align-items: center; gap: 8px; }
 
   .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -282,22 +282,26 @@
 
   /* Liquid Glass – nur im WM-Kontext */
   .wm-glass .card {
-    background: rgba(12, 20, 40, 0.38) !important;
-    backdrop-filter: blur(22px) saturate(160%) brightness(1.08);
-    -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(1.08);
-    border: 1px solid rgba(212, 175, 55, 0.22) !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,215,0,0.10) !important;
+    background: rgba(6, 10, 22, 0.08) !important;
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    border: 1px solid rgba(212, 175, 55, 0.32) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,215,0,0.18), inset 0 -1px 0 rgba(255,215,0,0.08) !important;
+    overflow: hidden !important;
   }
   .wm-glass .rank-table th {
-    background: rgba(8, 15, 32, 0.55) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(4, 8, 18, 0.45) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(212,175,55,0.22) !important;
   }
-  .wm-glass .rank-table tr:hover td { background: rgba(212,175,55,0.06) !important; }
-  .wm-glass .rank-table tr.rank-1 td { background: rgba(245,158,11,0.08) !important; }
-  .wm-glass .rank-table tr.rank-2 td { background: rgba(148,163,184,0.05) !important; }
-  .wm-glass .rank-table tr.rank-3 td { background: rgba(180,83,9,0.05) !important; }
   .wm-glass .rank-table td { background: transparent !important; }
+  .wm-glass .rank-table tr { background: transparent !important; }
+  .wm-glass .rank-table tbody tr:hover td { background: rgba(212,175,55,0.08) !important; }
+  .wm-glass .rank-table tr.rank-1 td { background: rgba(245,158,11,0.07) !important; }
+  .wm-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .wm-glass .rank-table tr.rank-3 td { background: transparent !important; }
+  .wm-glass .card h2 { color: #f0c842 !important; text-shadow: 0 0 20px rgba(212,175,55,0.4); }
   .meister-comp-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .meister-comp-tab { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
   .meister-comp-tab:hover { border-color: var(--border); }
@@ -970,7 +974,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v115';
+const APP_VERSION = 'v119';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2348,7 +2352,7 @@ function renderRangliste() {
   const champions = state.seasonChampions || [];
   const activeChampion = state.activeChampion || null;
 
-  el.innerHTML = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th class="col-hide-mobile" style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
@@ -2756,7 +2760,7 @@ function renderMeisterschaften() {
 
   // Full table
   const isAdmin = currentUser && currentUser.isAdmin;
-  const tableHtml = `<div style="overflow-y:auto;max-height:calc(100vh - 180px);"><table class="rank-table">
+  const tableHtml = `<div style="overflow-x:auto;"><table class="rank-table">
     <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${sorted.map((s,i) => {
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
@@ -2853,31 +2857,31 @@ function startWmAnimation(canvas) {
   let time = 0;
 
   // Goldene Partikel
-  const particles = Array.from({length: 55}, () => ({
+  const particles = Array.from({length: 70}, () => ({
     x: Math.random(),
     y: Math.random(),
-    size: 1 + Math.random() * 2.5,
-    speedY: -(0.00015 + Math.random() * 0.0003),
-    speedX: (Math.random() - 0.5) * 0.00012,
-    opacity: 0.1 + Math.random() * 0.5,
+    size: 0.7 + Math.random() * 1.6,
+    speedY: -(0.0002 + Math.random() * 0.0004),
+    speedX: (Math.random() - 0.5) * 0.00015,
+    opacity: 0.30 + Math.random() * 0.50,
     twinkle: Math.random() * Math.PI * 2,
-    twinkleSpeed: 0.02 + Math.random() * 0.03,
+    twinkleSpeed: 0.025 + Math.random() * 0.04,
   }));
 
   // Sternschnuppen
   function newMeteor(w, h) {
-    const side = Math.random() < 0.7; // mostly top, sometimes left
+    const side = Math.random() < 0.7;
     return {
       x:      side ? Math.random() * w * 1.2 : -10,
-      y:      side ? -10 : Math.random() * h * 0.5,
-      angle:  Math.PI * (0.18 + Math.random() * 0.18), // 32–64° diagonal
-      speed:  (w * 0.004) + Math.random() * (w * 0.003),
-      len:    80 + Math.random() * 160,
-      width:  1 + Math.random() * 1.8,
+      y:      side ? -10 : Math.random() * h * 0.4,
+      angle:  Math.PI * (0.18 + Math.random() * 0.18),
+      speed:  (w * 0.006) + Math.random() * (w * 0.004),
+      len:    140 + Math.random() * 220,
+      width:  1.8 + Math.random() * 2.5,
       alpha:  0,
-      maxAlpha: 0.45 + Math.random() * 0.40,
+      maxAlpha: 0.85 + Math.random() * 0.15,
       life:   0,
-      maxLife: 55 + Math.floor(Math.random() * 50),
+      maxLife: 50 + Math.floor(Math.random() * 40),
       active: false,
     };
   }
@@ -2887,17 +2891,17 @@ function startWmAnimation(canvas) {
   // Gold-Ripples (Wasserring-Effekt)
   function newRipple(w, h) {
     return {
-      x: 0.1 + Math.random() * 0.8,
-      y: 0.15 + Math.random() * 0.7,
+      x: 0.08 + Math.random() * 0.84,
+      y: 0.08 + Math.random() * 0.84,
       r: 0,
-      maxR: 80 + Math.random() * 120,
-      alpha: 0.55 + Math.random() * 0.3,
-      speed: 0.6 + Math.random() * 0.7,
+      maxR: 130 + Math.random() * 180,
+      alpha: 0.85 + Math.random() * 0.15,
+      speed: 1.0 + Math.random() * 1.0,
     };
   }
   const ripples = [];
   let rippleTimer = 0;
-  let rippleInterval = 60 + Math.random() * 90;
+  let rippleInterval = 35 + Math.random() * 50;
 
   // Rotierende Goldsterne
   function newGoldStar(w, h, randomY) {
@@ -2917,7 +2921,7 @@ function startWmAnimation(canvas) {
   }
   const goldStars = Array.from({length: 18}, () => newGoldStar(0, 0, true));
   let meteorTimer = 0;
-  let meteorInterval = 90 + Math.random() * 120; // frames between spawns
+  let meteorInterval = 50 + Math.random() * 70; // frames between spawns
 
   function resize() {
     canvas.width = canvas.offsetWidth || (window.innerWidth - 220);
@@ -2987,21 +2991,24 @@ function startWmAnimation(canvas) {
       const alpha = p.opacity * tw;
       const px = p.x * w, py = p.y * h;
 
-      // Äußeres Glühen
-      const glowR = ctx.createRadialGradient(px, py, 0, px, py, p.size * 5);
-      glowR.addColorStop(0,   `rgba(255,210,60,${alpha * 0.55})`);
-      glowR.addColorStop(0.4, `rgba(220,170,30,${alpha * 0.20})`);
+      // Großes äußeres Glühen
+      const glowR = ctx.createRadialGradient(px, py, 0, px, py, p.size * 6);
+      glowR.addColorStop(0,   `rgba(255,220,70,${alpha * 0.75})`);
+      glowR.addColorStop(0.3, `rgba(230,180,30,${alpha * 0.35})`);
       glowR.addColorStop(1,   'rgba(200,140,10,0)');
       ctx.beginPath();
-      ctx.arc(px, py, p.size * 5, 0, Math.PI * 2);
+      ctx.arc(px, py, p.size * 6, 0, Math.PI * 2);
       ctx.fillStyle = glowR;
       ctx.fill();
 
       // Heller Kern
+      ctx.shadowColor = 'rgba(255,230,80,0.9)';
+      ctx.shadowBlur = p.size * 6;
       ctx.beginPath();
       ctx.arc(px, py, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,235,140,${Math.min(alpha * 1.4, 1)})`;
+      ctx.fillStyle = `rgba(255,248,180,${Math.min(alpha * 1.6, 1)})`;
       ctx.fill();
+      ctx.shadowBlur = 0;
     });
 
     // === Gold-Ripples ===
@@ -3018,17 +3025,18 @@ function startWmAnimation(canvas) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(rp.x * w, rp.y * h, rp.r, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(220,175,45,${rp.alpha * fade * fade})`;
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = 'rgba(255,200,60,0.5)';
-      ctx.shadowBlur = 6;
+      ctx.strokeStyle = `rgba(255,210,60,${rp.alpha * fade * fade})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = 'rgba(255,210,50,0.9)';
+      ctx.shadowBlur = 12;
       ctx.stroke();
-      // Inner smaller ring slightly offset
-      if (rp.r > 12) {
+      // Inner ring
+      if (rp.r > 18) {
         ctx.beginPath();
-        ctx.arc(rp.x * w, rp.y * h, rp.r * 0.65, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,220,80,${rp.alpha * fade * fade * 0.5})`;
-        ctx.lineWidth = 0.8;
+        ctx.arc(rp.x * w, rp.y * h, rp.r * 0.62, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,235,100,${rp.alpha * fade * fade * 0.65})`;
+        ctx.lineWidth = 1.2;
+        ctx.shadowBlur = 8;
         ctx.stroke();
       }
       ctx.restore();
@@ -3102,17 +3110,22 @@ function startWmAnimation(canvas) {
       ctx.save();
       ctx.lineWidth = m.width;
       ctx.strokeStyle = streak;
-      ctx.shadowColor = 'rgba(255,200,50,0.7)';
-      ctx.shadowBlur  = 8;
+      ctx.shadowColor = 'rgba(255,220,80,1)';
+      ctx.shadowBlur  = 18;
       ctx.beginPath();
       ctx.moveTo(tailX, tailY);
       ctx.lineTo(m.x, m.y);
       ctx.stroke();
-      // Bright tip dot
-      ctx.shadowBlur = 14;
+      // Second pass for extra glow
+      ctx.lineWidth = m.width * 3;
+      ctx.globalAlpha = 0.15;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // Bright tip
+      ctx.shadowBlur = 24;
       ctx.beginPath();
-      ctx.arc(m.x, m.y, m.width * 1.4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,245,180,${m.alpha})`;
+      ctx.arc(m.x, m.y, m.width * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,252,200,${m.alpha})`;
       ctx.fill();
       ctx.restore();
 
