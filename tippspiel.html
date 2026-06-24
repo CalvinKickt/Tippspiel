@@ -987,7 +987,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v136';
+const APP_VERSION = 'v144';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1190,6 +1190,44 @@ function closeDrawer() {
   document.getElementById('mainNav').classList.remove('open');
   document.getElementById('navBackdrop').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+// ===================== AUTO-LIVE =====================
+// Automatisch Spiele auf Live setzen wenn Anstoßzeit erreicht ist (nur Admin)
+let _autoLiveTimer = null;
+
+function checkAutoLive() {
+  if (!currentUser || !currentUser.isAdmin) return;
+  const now = new Date();
+  // Window: match kickoff bis 3h danach
+  const windowMs = 3 * 60 * 60 * 1000;
+  let changed = false;
+  state.matches.forEach(m => {
+    if (!m.date || m.isLive || m.resultHome != null) return;
+    const kickoff = new Date(m.date);
+    const elapsed = now - kickoff;
+    if (elapsed >= 0 && elapsed <= windowMs) {
+      m.isLive = true;
+      m.resultHome = m.resultHome ?? 0;
+      m.resultAway = m.resultAway ?? 0;
+      changed = true;
+    }
+  });
+  if (changed) {
+    save();
+    renderMeisterschaften();
+    renderErgebnisse();
+    renderSpiele();
+    renderRangliste();
+    renderUebersicht();
+    updateHeader();
+  }
+}
+
+function startAutoLiveTimer() {
+  if (_autoLiveTimer) clearInterval(_autoLiveTimer);
+  checkAutoLive(); // sofort beim Start prüfen
+  _autoLiveTimer = setInterval(checkAutoLive, 60 * 1000); // jede Minute
 }
 
 function renderAll() {
@@ -2873,6 +2911,32 @@ function renderMeisterschaften() {
 
   const hasResults = sorted.some(s => s.played > 0);
 
+  // Live-Punkte pro Spieler (aus allen aktuellen Live-Matches dieser Competition)
+  const liveMatchesCur = state.matches.filter(m => m.isLive && m.competition === selectedMeisterComp);
+  const livePtsMap = {};
+  if (liveMatchesCur.length) {
+    state.players.forEach(p => {
+      let lp = 0;
+      liveMatchesCur.forEach(m => {
+        const tip = (state.tips[m.id]||{})[p];
+        if (tip && tip.home != null) {
+          const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+          if (pts !== null) lp += pts * (m.multiplier || 1);
+        }
+      });
+      livePtsMap[p] = lp;
+    });
+  }
+
+  // Baseline-Rang OHNE Live-Punkte (s.pts enthält bereits Live-Beitrag → rausrechnen)
+  const baselineRankMap = {};
+  if (liveMatchesCur.length) {
+    const baselineSorted = sorted
+      .map(s => ({name: s.name, basePts: s.pts - (livePtsMap[s.name] || 0), exact: s.exact, diff: s.diff}))
+      .sort((a,b) => b.basePts - a.basePts || b.exact - a.exact || b.diff - a.diff);
+    baselineSorted.forEach((s, i) => { baselineRankMap[s.name] = i + 1; });
+  }
+
   // Podium (top 3)
   const [p1, p2, p3] = sorted;
 
@@ -2885,16 +2949,30 @@ function renderMeisterschaften() {
       const bonus = (state.compBonusPts && state.compBonusPts[selectedMeisterComp] && state.compBonusPts[selectedMeisterComp][s.name]) || 0;
       const calculatedPts = s.pts - bonus;
       const bonusBadge = bonus > 0 ? `<span style="font-size:0.65rem;color:var(--green);margin-left:4px">+${bonus}</span>` : '';
+      const lp = livePtsMap[s.name];
+      const liveBadge = liveMatchesCur.length && lp != null
+        ? `<span style="font-size:0.72rem;font-weight:700;color:${lp>0?'#22c55e':'#f87171'};margin-left:5px;opacity:0.9">${lp>0?'+'+lp:lp===0?'+0':''}</span>`
+        : '';
       const ptsCell = (isAdmin && meisterEditMode)
         ? `<td class="pts" style="padding:4px 8px">
              <input type="number" value="${s.pts}" min="0"
                style="width:60px;text-align:center;font-size:1.1rem;font-weight:700;background:var(--surface2);border:1px solid var(--green);border-radius:6px;color:var(--fg);padding:2px 4px"
                onchange="saveMeisterBonusPts('${esc(selectedMeisterComp)}', '${esc(s.name)}', this.value, ${calculatedPts})" />
            </td>`
-        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}</td>`;
+        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}${liveBadge}</td>`;
+      const curRank = i + 1;
+      // rankDelta: wie viele Plätze durch Live-Punkte gewonnen/verloren (positiv = aufgestiegen)
+      const baseRank = baselineRankMap[s.name];
+      const rankDelta = liveMatchesCur.length && baseRank != null ? baseRank - curRank : 0;
+      const rankArrow = rankDelta > 0
+        ? `<span style="font-size:0.62rem;color:#22c55e;font-weight:700;line-height:1;display:block">▲${rankDelta}</span>`
+        : rankDelta < 0
+          ? `<span style="font-size:0.62rem;color:#f87171;font-weight:700;line-height:1;display:block">▼${Math.abs(rankDelta)}</span>`
+          : liveMatchesCur.length ? `<span style="font-size:0.6rem;color:var(--muted);line-height:1;display:block">–</span>` : '';
+      const rankDisplay = curRank===1?'🥇':curRank===2?'🥈':curRank===3?'🥉':curRank;
       return `
-      <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
-        <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+      <tr class="rank-${curRank}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
+        <td class="rank-num" style="line-height:1.2">${rankDisplay}${rankArrow}</td>
         <td onclick="${isAdmin && meisterEditMode ? '' : `openPlayerStats('${esc(s.name)}', '${esc(selectedMeisterComp)}')`}" style="${isAdmin && meisterEditMode ? '' : 'cursor:pointer'}">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
           ${isAdmin && meisterEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
@@ -3442,6 +3520,7 @@ function doLogin() {
   applyAccessControl();
   updateHeaderUser();
   renderAll();
+  startAutoLiveTimer();
 }
 
 function doLogout() {
@@ -4299,6 +4378,154 @@ function renderStatistik() {
   }
   curveHtml+=`</div>`;
 
+  // ---- Ranglistenverlauf ----
+  const rankHtml = (() => {
+    const mode = window._statRankMode || 'wm';
+    const availComps = state.competitions || [];
+    let wmComp = window._statRankComp;
+    if (!wmComp || !availComps.find(c => c.name === wmComp)) wmComp = availComps[0]?.name || '';
+
+    // Saison: available seasons = past + current
+    const allSeasons = [
+      ...state.weekHistory.map(w => ({week: w.week, label: `Saison ${w.week}`, matches: w.matches, tips: w.tips, scores: w.scores, isCurrent: false})),
+      {week: state.currentWeek, label: `Saison ${state.currentWeek} (aktuell)`, matches: state.matches, tips: state.tips, scores: null, isCurrent: true}
+    ].filter(s => s.matches && s.matches.length > 0);
+
+    let selWeek = window._statRankSeason != null ? window._statRankSeason : (allSeasons.length ? allSeasons[allSeasons.length-1].week : null);
+    const selSeason = allSeasons.find(s => s.week === selWeek) || allSeasons[allSeasons.length-1];
+
+    let data = []; // [{label, ranks: {name: rank}}]
+
+    if (mode === 'wm' && wmComp) {
+      const compMatches = state.matches
+        .filter(m => m.competition === wmComp && m.resultHome != null && !m.excluded)
+        .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+      const cumPts = {};
+      state.players.forEach(p => { cumPts[p] = 0; });
+      compMatches.forEach(m => {
+        const mult = m.multiplier || 1;
+        state.players.forEach(p => {
+          const tip = (state.tips[m.id]||{})[p];
+          if (tip && tip.home != null) {
+            const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+            if (pts !== null) cumPts[p] += pts * mult;
+          }
+        });
+        const sorted = [...state.players].sort((a,b) => cumPts[b]-cumPts[a]);
+        const ranks = {}; sorted.forEach((p,i) => { ranks[p] = i+1; });
+        const label = (m.home||'').slice(0,3)+'-'+(m.away||'').slice(0,3);
+        data.push({label, ranks});
+      });
+    } else if (mode === 'saison' && selSeason) {
+      // Match-by-match ranking within the selected season
+      const sMatches = [...(selSeason.matches||[])]
+        .filter(m => m.resultHome != null && !m.excluded)
+        .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+      const sTips = selSeason.tips || {};
+      const allPlayers = selSeason.isCurrent ? state.players
+        : [...new Set((selSeason.scores||[]).map(s=>s.name))];
+      const cumPts = {};
+      allPlayers.forEach(p => { cumPts[p] = 0; });
+      sMatches.forEach(m => {
+        const mult = m.multiplier || 1;
+        allPlayers.forEach(p => {
+          const tip = (sTips[m.id]||{})[p];
+          if (!tip) {
+            // For current season tips are in state.tips
+            const t2 = selSeason.isCurrent ? (state.tips[m.id]||{})[p] : null;
+            if (t2 && t2.home != null) {
+              const pts = calcPoints(t2.home, t2.away, m.resultHome, m.resultAway);
+              if (pts !== null) cumPts[p] += pts * mult;
+            }
+          } else if (tip.home != null) {
+            const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+            if (pts !== null) cumPts[p] += pts * mult;
+          }
+        });
+        const sorted = [...allPlayers].sort((a,b) => cumPts[b]-cumPts[a]);
+        const ranks = {}; sorted.forEach((p,i) => { ranks[p] = i+1; });
+        const label = (m.home||'').slice(0,3)+'-'+(m.away||'').slice(0,3);
+        data.push({label, ranks});
+      });
+    }
+
+    const saisonSelHtml = mode === 'saison' && allSeasons.length > 0
+      ? `<select id="statRankSeason" onchange="window._statRankSeason=parseInt(this.value);renderStatistik()" style="font-size:0.78rem;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          ${allSeasons.map(s=>`<option value="${s.week}" ${s.week===selWeek?'selected':''}>${s.label}</option>`).join('')}
+        </select>` : '';
+
+    const toggleBtns = `
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${availComps.length > 0 && mode==='wm' ? `<select id="statRankComp" onchange="window._statRankComp=this.value;renderStatistik()" style="font-size:0.78rem;padding:3px 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+          ${availComps.map(c=>`<option value="${esc(c.name)}" ${c.name===wmComp?'selected':''}>${c.icon||''} ${c.name}</option>`).join('')}
+        </select>` : saisonSelHtml}
+        <button onclick="window._statRankMode='wm';renderStatistik()" style="font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:${mode==='wm'?'var(--green)':'var(--surface2)'};color:${mode==='wm'?'#000':'var(--text)'}">🌍 WM</button>
+        <button onclick="window._statRankMode='saison';renderStatistik()" style="font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:${mode==='saison'?'var(--green)':'var(--surface2)'};color:${mode==='saison'?'#000':'var(--text)'}">📅 Saison</button>
+      </div>`;
+
+    if (data.length < 2) {
+      return `<div class="stat-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <h2 style="margin:0">📉 Ranglistenverlauf</h2>${toggleBtns}
+        </div>
+        <div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div>
+      </div>`;
+    }
+
+    // For saison mode, use players who appear in that season's data
+    const players = (mode === 'saison' && selSeason && !selSeason.isCurrent)
+      ? [...new Set((selSeason.scores||[]).map(s=>s.name))]
+      : state.players;
+    const numP = players.length;
+    const W=560, H=Math.max(160, numP*22+40), PL=28, PR=12, PT=16, PB=26;
+    const iW=W-PL-PR, iH=H-PT-PB;
+    const xStep = data.length>1 ? iW/(data.length-1) : iW;
+    const yStep = numP>1 ? iH/(numP-1) : iH;
+    const xPos = i => PL + i*xStep;
+    const yPos = rank => PT + (rank-1)*yStep;
+
+    const hGrid = Array.from({length:numP},(_,i)=>{
+      const y=yPos(i+1);
+      return `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+        <text x="${PL-4}" y="${y+3.5}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.22)">${i+1}</text>`;
+    }).join('');
+
+    const xLabels = data.map((d,i)=>
+      `<text x="${xPos(i)}" y="${H-5}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.22)" transform="rotate(-40 ${xPos(i)} ${H-5})">${d.label}</text>`
+    ).join('');
+
+    const lines = players.map((p,pi) => {
+      const isSel = p === player;
+      const col = isSel ? CURVE_COLORS[pi % CURVE_COLORS.length] : 'rgba(255,255,255,0.10)';
+      const validPts = data.map((d,i)=>({i, rank:d.ranks[p]})).filter(x=>x.rank!=null);
+      if (validPts.length < 2) return '';
+      const polyPts = validPts.map(x=>`${xPos(x.i)},${yPos(x.rank)}`).join(' ');
+      const dots = isSel ? validPts.map(x=>`<circle cx="${xPos(x.i)}" cy="${yPos(x.rank)}" r="3.5" fill="${col}"/>
+        <text x="${xPos(x.i)}" y="${yPos(x.rank)-6}" text-anchor="middle" font-size="9" font-weight="700" fill="${col}">${x.rank}</text>`).join('') : '';
+      return `<polyline points="${polyPts}" fill="none" stroke="${col}" stroke-width="${isSel?2.5:1}" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+    }).join('');
+
+    // Legend: alle Spieler, selected hervorgehoben, klickbar
+    const legend = players.map((p,pi)=>{
+      const col = CURVE_COLORS[pi % CURVE_COLORS.length];
+      const isSel = p === player;
+      return `<span onclick="const s=document.getElementById('statistikPlayerSel');if(s){s.value='${esc(p)}';renderStatistik();}" style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;margin-bottom:4px;font-size:0.72rem;opacity:${isSel?1:0.4};font-weight:${isSel?700:400};cursor:pointer;border-radius:4px;padding:2px 4px;transition:opacity 0.15s${isSel?';background:rgba(255,255,255,0.06)':''}" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isSel?1:0.4}'">
+        <span style="display:inline-block;width:18px;height:3px;background:${col};border-radius:2px"></span>${p}
+      </span>`;
+    }).join('');
+
+    return `<div class="stat-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <h2 style="margin:0">📉 Ranglistenverlauf</h2>${toggleBtns}
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px">Platzierung im Verlauf — oben = Platz 1</div>
+      <div style="overflow-x:auto">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block">${hGrid}${xLabels}${lines}</svg>
+      </div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap">${legend}</div>
+    </div>`;
+  })();
+
   // ---- Vergleich ----
   const allStats=state.players.map(p=>({name:p,...getPlayerStats(p)})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
   const maxPts=Math.max(...allStats.map(s=>s.pts),1);
@@ -4329,7 +4556,7 @@ function renderStatistik() {
       </div>${rows}</div>`;
   })();
 
-  el.innerHTML = selectorHtml + curveHtml + barHtml +
+  el.innerHTML = selectorHtml + curveHtml + rankHtml + barHtml +
     `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">` + hitHtml + streakHtml + `</div>` +
     wochentag + h2hHtml + cmpHtml + teamHtml + lastGamesHtml;
 }
@@ -4630,12 +4857,14 @@ window.addEventListener('load', function() {
         if (lo) lo.style.display = 'none';
         initLogin();
         renderAll();
+        startAutoLiveTimer();
         initChat();
       }, err => {
         console.error('Firebase read error:', err);
         if (lo) lo.style.display = 'none';
         initLogin();
         renderAll();
+        startAutoLiveTimer();
         initChat();
       });
     } catch(e) {
