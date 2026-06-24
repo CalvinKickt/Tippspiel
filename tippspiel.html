@@ -907,6 +907,18 @@
   </div>
 </div>
 
+<!-- LIVE EDIT MODAL -->
+<div class="modal-overlay" id="liveEditModal" onclick="if(event.target===this)document.getElementById('liveEditModal').classList.remove('open')">
+  <div class="modal" style="max-width:420px">
+    <h3 style="font-size:1.1rem;margin-bottom:4px">🔴 Live-Ergebnis aktualisieren</h3>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px">Spiel beenden → Ergebnis endgültig speichern</p>
+    <div id="liveEditContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('liveEditModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px">
   <div style="font-size:3.5rem">⚽</div>
@@ -975,17 +987,24 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v133';
+const APP_VERSION = 'v136';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
   const lv = document.getElementById('loginVersion');
   if (lv) lv.textContent = APP_VERSION;
 
-  // Dynamically set body padding-top to match fixed header height
+  // Dynamically set body padding-top and nav top to match fixed header height
   function syncHeaderOffset() {
     const h = document.querySelector('header');
-    if (h) document.body.style.paddingTop = h.offsetHeight + 'px';
+    if (!h) return;
+    const hh = h.offsetHeight;
+    document.body.style.paddingTop = hh + 'px';
+    const nav = document.getElementById('mainNav');
+    if (nav) {
+      nav.style.top = hh + 'px';
+      nav.style.height = `calc(100vh - ${hh}px)`;
+    }
   }
   syncHeaderOffset();
   window.addEventListener('resize', syncHeaderOffset);
@@ -1342,6 +1361,44 @@ function endLive(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   m.isLive = false;
   save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+}
+
+function openLiveEditModal() {
+  const liveMatches = state.matches.filter(m => m.isLive);
+  if (!liveMatches.length) return;
+  const el = document.getElementById('liveEditContent');
+  el.innerHTML = liveMatches.map(m => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:700;font-size:1rem">
+        ${flagTeam(m.home)} vs ${flagTeam(m.away)}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <input id="live_h_${m.id}" type="number" min="0" max="99" value="${m.resultHome??0}"
+          style="width:64px;text-align:center;font-size:1.4rem;font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 4px">
+        <span style="font-size:1.2rem;color:var(--muted)">:</span>
+        <input id="live_a_${m.id}" type="number" min="0" max="99" value="${m.resultAway??0}"
+          style="width:64px;text-align:center;font-size:1.4rem;font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 4px">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" style="background:#22c55e;color:#fff;font-weight:700" onclick="saveLiveFromModal('${m.id}',false)">✅ Spiel beenden & speichern</button>
+        <button class="btn btn-sm btn-ghost" onclick="saveLiveFromModal('${m.id}',true)">💾 Nur Zwischenstand</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('liveEditModal').classList.add('open');
+}
+
+function saveLiveFromModal(id, keepLive) {
+  const m = state.matches.find(m => m.id === id); if (!m) return;
+  const h = document.getElementById('live_h_' + id)?.value;
+  const a = document.getElementById('live_a_' + id)?.value;
+  if (h === '' || a === '') return;
+  m.resultHome = parseInt(h);
+  m.resultAway = parseInt(a);
+  m.isLive = keepLive;
+  save();
+  renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderMeisterschaften(); renderUebersicht(); updateHeader();
+  if (!keepLive) document.getElementById('liveEditModal').classList.remove('open');
+  else openLiveEditModal(); // refresh modal content
 }
 
 function updateHeader() {
@@ -2682,14 +2739,15 @@ function renderGesamtwertung() {
   if (!state.players.length) { el.innerHTML = '<div class="empty">Noch keine Daten.</div>'; return; }
 
   const overall = {};
-  state.players.forEach(p => { overall[p] = {wins:0, top3:0, totalPts:0, weeks:0}; });
+  state.players.forEach(p => { overall[p] = {wins:0, top3:0, totalPts:0, weeks:0, played:0}; });
 
   state.weekHistory.forEach(w => {
     const sorted = [...w.scores].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
     sorted.forEach((s,i) => {
-      if (!overall[s.name]) overall[s.name] = {wins:0, top3:0, totalPts:0, weeks:0};
+      if (!overall[s.name]) overall[s.name] = {wins:0, top3:0, totalPts:0, weeks:0, played:0};
       overall[s.name].totalPts += s.pts;
       overall[s.name].weeks++;
+      overall[s.name].played += s.played || 0;
       if (i===0) overall[s.name].wins++;
       if (i<3) overall[s.name].top3++;
     });
@@ -2702,7 +2760,7 @@ function renderGesamtwertung() {
   if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
 
   el.innerHTML = `<table class="overall-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>🏆 Saisonsiege</th><th>Top 3</th><th>Gesamtpunkte</th></tr></thead>
+    <thead><tr><th>#</th><th>Spieler</th><th>🏆 Saisonsiege</th><th>Top 3</th><th>Gesamtpunkte</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${rows.map((r,i)=>{
       const nameKey = r.name.replace(/'/g,"\\'");
       const isChamp = (state.activeChampion||null) === r.name;
@@ -2719,6 +2777,7 @@ function renderGesamtwertung() {
         <td>${r.wins > 0 ? `<span class="badge badge-wins">${r.wins}</span>` : `<span style="color:var(--muted)">0</span>`}</td>
         <td style="color:var(--muted)">${r.top3}</td>
         <td class="pts">${r.totalPts}</td>
+        <td style="color:var(--muted);font-size:0.82rem">${r.played||'—'}</td>
       </tr>`;
     }).join('')}
     </tbody></table>`;
@@ -2854,7 +2913,7 @@ function renderMeisterschaften() {
   // Live matches for this competition
   const liveMatches = state.matches.filter(m => m.isLive && m.competition === selectedMeisterComp);
   const liveBannerHtml = liveMatches.length ? `
-    <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+    <div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:10px 14px;margin-bottom:14px;${isAdmin?'cursor:pointer;':''}" ${isAdmin?`onclick="openLiveEditModal()"` : ''} title="${isAdmin?'Ergebnis live aktualisieren':''}">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;row-gap:6px">
         <span class="live-badge"><span class="live-dot"></span>LIVE</span>
         ${liveMatches.map(m => `
@@ -2862,6 +2921,7 @@ function renderMeisterschaften() {
             ${flagTeam(m.home)} <strong style="color:#f87171">${m.resultHome}:${m.resultAway}</strong> ${flagTeam(m.away)}
           </span>
         `).join('<span style="color:var(--border)">·</span>')}
+        ${isAdmin ? `<span style="margin-left:auto;font-size:0.72rem;color:rgba(248,113,113,0.7)">✏️ aktualisieren</span>` : ''}
       </div>
     </div>` : '';
 
