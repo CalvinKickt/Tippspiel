@@ -902,13 +902,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="shirtEditorModal" onclick="if(event.target===this)document.getElementById('shirtEditorModal').classList.remove('open')" style="z-index:200">
+  <div class="modal" style="max-width:300px;width:100%">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div id="shirtEditorPreview" style="flex-shrink:0"></div>
+      <div>
+        <div id="shirtEditorName" style="font-size:1.1rem;font-weight:700"></div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Trikot bearbeiten</div>
+      </div>
+    </div>
+    <div id="shirtEditorContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('shirtEditorModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="sonderEditorModal" onclick="if(event.target===this)document.getElementById('sonderEditorModal').classList.remove('open')" style="z-index:200">
   <div class="modal" style="max-width:320px;width:100%">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
       <div id="sonderEditorPreview" style="flex-shrink:0"></div>
       <div>
         <div id="sonderEditorName" style="font-size:1.1rem;font-weight:700"></div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Sonderrahmen</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Rahmen bearbeiten</div>
       </div>
     </div>
     <div id="sonderEditorContent"></div>
@@ -1047,7 +1062,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v186';
+const APP_VERSION = 'v195';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -3942,7 +3957,7 @@ function renderAvatar(name, size) {
   const skinColors = {light:'#FDDBB4',medium:'#D4956A',dark:'#8D5524'};
   const h = hairColors[hair] || hairColors.brown;
   const s = skinColors[skin] || skinColors.light;
-  const bodyColor = gender === 'f' ? '#7C3AED' : '#1D4ED8';
+  const bodyColor = cfg.shirt || (gender === 'f' ? '#7C3AED' : '#1D4ED8');
 
   const frame = cfg.frame || 'schwarz';
   const frameColors = {schwarz:'#1C1C1C',blau:'#3B82F6',gruen:'#22C55E',lila:'#A855F7',rot:'#EF4444'};
@@ -3980,6 +3995,8 @@ function renderAvatar(name, size) {
     stacheln: { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<polygon points="14,13 16,5 18,13" fill="${h}"/><polygon points="18,12 20,4 22,12" fill="${h}"/><polygon points="22,13 24,5 26,13" fill="${h}"/>` },
     glatze:   { b:`<ellipse cx="20" cy="14" r="9" fill="${s}"/>`,           f:`` },
     zopf:     { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<ellipse cx="20" cy="9" rx="4" ry="5" fill="${h}"/><circle cx="20" cy="4" r="2.5" fill="${h}"/>` },
+    seitlich: { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<path d="M11 14 C11 6 18 5 24 6 C29 7 30 11 28 14 C24 11 17 10 11 14Z" fill="${h}"/>` },
+    buzzcut:  { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<path d="M12 15 C11 7 29 7 28 15 C24 13 16 13 12 15Z" fill="${h}"/>` },
   };
   const hs = hsMap[hairstyle] || hsMap.kurz;
 
@@ -4002,6 +4019,40 @@ function openSonderEditor(name) {
   document.getElementById('sonderEditorPreview').innerHTML = renderAvatar(name, 72);
   document.getElementById('sonderEditorContent').innerHTML = buildSonderEditor(name);
   document.getElementById('sonderEditorModal').classList.add('open');
+}
+function openShirtEditor(name) {
+  document.getElementById('shirtEditorName').textContent = name;
+  document.getElementById('shirtEditorPreview').innerHTML = renderAvatar(name, 72);
+  document.getElementById('shirtEditorContent').innerHTML = buildShirtEditor(name);
+  document.getElementById('shirtEditorModal').classList.add('open');
+}
+function buildShirtEditor(name) {
+  const cfg = (state.playerAvatars || {})[name] || {};
+  const gender = cfg.gender || 'm';
+  const current = cfg.shirt || (gender === 'f' ? '#7C3AED' : '#1D4ED8');
+  const colors = [
+    {col:'#1D4ED8', label:'Blau'},
+    {col:'#2563EB', label:'Hellblau'},
+    {col:'#0891B2', label:'Türkis'},
+    {col:'#059669', label:'Grün'},
+    {col:'#16A34A', label:'Hellgrün'},
+    {col:'#DC2626', label:'Rot'},
+    {col:'#EA580C', label:'Orange'},
+    {col:'#CA8A04', label:'Gelb'},
+    {col:'#7C3AED', label:'Lila'},
+    {col:'#DB2777', label:'Pink'},
+    {col:'#1C1C1C', label:'Schwarz'},
+    {col:'#374151', label:'Dunkelgrau'},
+    {col:'#6B7280', label:'Grau'},
+    {col:'#D1D5DB', label:'Hellgrau'},
+    {col:'#F9FAFB', label:'Weiß'},
+    {col:'#92400E', label:'Braun'},
+  ];
+  const swatch = ({col, label}) => `<div onclick="savePlayerAvatar('${esc(name)}','shirt','${col}');document.getElementById('shirtEditorPreview').innerHTML=renderAvatar('${esc(name)}',72);document.getElementById('shirtEditorContent').innerHTML=buildShirtEditor('${esc(name)}')" title="${label}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
+    <span style="display:inline-block;width:36px;height:36px;border-radius:8px;background:${col};border:2px solid rgba(0,0,0,0.3);box-shadow:${current===col?'0 0 0 2px var(--green)':'none'}"></span>
+    <span style="font-size:0.6rem;color:${current===col?'var(--green)':'var(--muted)'}">${label}</span>
+  </div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${colors.map(swatch).join('')}</div>`;
 }
 // Katalog aller verleihbaren Sonderrahmen
 const SPECIAL_FRAMES_CATALOG = [
@@ -4041,14 +4092,39 @@ function revokeSpecialFrame(name, frameKey) {
 function buildSonderEditor(name) {
   const cfg = (state.playerAvatars || {})[name] || {};
   const frame = cfg.frame || 'schwarz';
+  const triColors = (cfg.frameTri || '#EF4444,#3B82F6,#22C55E').split(',');
   const granted = Array.isArray(cfg.grantedFrames) ? cfg.grantedFrames : [];
   const isAdm = currentUser && currentUser.isAdmin;
+
+  // ── Einfarbig ──
+  const solidOpts = [
+    {k:'none',    col:'transparent', label:'Kein'},
+    {k:'schwarz', col:'#1C1C1C',     label:'Schwarz'},
+    {k:'blau',    col:'#3B82F6',     label:'Blau'},
+    {k:'gruen',   col:'#22C55E',     label:'Grün'},
+    {k:'lila',    col:'#A855F7',     label:'Lila'},
+    {k:'rot',     col:'#EF4444',     label:'Rot'},
+    {k:'regenbogen', col:'linear-gradient(135deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)', label:'Regenbogen'},
+  ];
+  const fSwatch = ({k,col,label}) => `<span onclick="savePlayerAvatar('${esc(name)}','frame','${k}')" title="${label}" style="display:inline-block;width:24px;height:24px;border-radius:50%;background:${k==='none'?'transparent':col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${frame===k?'0 0 0 2px var(--green)':'none'};position:relative">${k==='none'?'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">–</span>':''}</span>`;
+  const triBtn = `<span onclick="savePlayerAvatar('${esc(name)}','frame','tri')" title="3 Farben" style="display:inline-block;width:24px;height:24px;border-radius:50%;background:linear-gradient(to right,${triColors[0]} 0% 33%,${triColors[1]} 33% 66%,${triColors[2]} 66% 100%);cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${frame==='tri'?'0 0 0 2px var(--green)':'none'}"></span>`;
+  const triPalette = ['#EF4444','#F97316','#EAB308','#22C55E','#06B6D4','#3B82F6','#A855F7','#EC4899','#FFFFFF','#1C1C1C'];
+  const triPickerRow = (idx) => {
+    const label = ['Farbe 1','Farbe 2','Farbe 3'][idx];
+    const swatches = triPalette.map(c => `<span onclick="saveFrameTriColor('${esc(name)}',${idx},'${c}')" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${c};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${triColors[idx]===c?'0 0 0 2px var(--green)':'none'}"></span>`).join('');
+    return `<div style="display:flex;align-items:center;gap:4px;margin-top:4px"><span style="font-size:0.7rem;color:var(--muted);width:60px">${label}</span>${swatches}</div>`;
+  };
+  const triRows = frame === 'tri' ? `${triPickerRow(0)}${triPickerRow(1)}${triPickerRow(2)}` : '';
+
+  // ── Sonderrahmen ──
   const baseSonder = [
     {k:'feuer', label:'Feuer 🔥', svg:`<defs><linearGradient id="fe_se" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F97316"/><stop offset="100%" stop-color="#EAB308"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#fe_se)" stroke-width="2"/>`},
     {k:'eis',   label:'Eis ❄️',  svg:`<defs><linearGradient id="ei_se" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06B6D4"/><stop offset="50%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#BAE6FD"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#ei_se)" stroke-width="2"/>`},
     ...SPECIAL_FRAMES_CATALOG.filter(f => granted.includes(f.k)),
   ];
   const sw = ({k,label,svg}) => `<div onclick="savePlayerAvatar('${esc(name)}','frame','${k}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;background:${frame===k?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.03)'};border:1px solid ${frame===k?'var(--green)':'rgba(255,255,255,0.08)'}"><svg viewBox="0 0 20 20" width="32" height="32">${svg}</svg><span style="font-size:0.85rem;color:var(--text)">${label}</span>${frame===k?'<span style="margin-left:auto;color:var(--green);font-size:0.8rem">✓</span>':''}</div>`;
+
+  // ── Admin Vergabe ──
   let adminSection = '';
   if (isAdm) {
     const rows = SPECIAL_FRAMES_CATALOG.map(f => {
@@ -4067,7 +4143,15 @@ function buildSonderEditor(name) {
       ${rows}
     </div>`;
   }
-  return `<div><div style="display:flex;flex-direction:column;gap:6px">${baseSonder.map(sw).join('')}</div>${adminSection}</div>`;
+
+  return `<div>
+    <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Einfarbig</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${solidOpts.map(fSwatch).join('')}${triBtn}</div>
+    ${triRows}
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Sonderrahmen</div>
+    <div style="display:flex;flex-direction:column;gap:6px">${baseSonder.map(sw).join('')}</div>
+    ${adminSection}
+  </div>`;
 }
 function buildFrameEditor(name) {
   const cfg = (state.playerAvatars || {})[name] || {};
@@ -4161,14 +4245,14 @@ function buildAvatarEditor(name) {
   const hairstyle = cfg.hairstyle || 'kurz';
   const hairMap = {blonde:'#F5C518',brown:'#6B3A2A',black:'#1C1C1C',red:'#C0392B',gray:'#9CA3AF',white:'#E5E7EB',auburn:'#92400E'};
   const skinMap = {light:'#FDDBB4',medium:'#D4956A',dark:'#5C3317'};
-  const hairstyleOpts = [{k:'kurz',icon:'〰',label:'Kurz'},{k:'lang',icon:'↓',label:'Lang'},{k:'locken',icon:'∿',label:'Locken'},{k:'stacheln',icon:'∧',label:'Stacheln'},{k:'glatze',icon:'○',label:'Glatze'},{k:'zopf',icon:'↑',label:'Zopf'}];
+  const hairstyleOpts = [{k:'kurz',icon:'〰',label:'Kurz'},{k:'lang',icon:'↓',label:'Lang'},{k:'locken',icon:'∿',label:'Locken'},{k:'stacheln',icon:'∧',label:'Stacheln'},{k:'glatze',icon:'○',label:'Glatze'},{k:'zopf',icon:'↑',label:'Zopf'},{k:'seitlich',icon:'↗',label:'Seitlich'},{k:'buzzcut',icon:'',label:'Buzzcut'}];
   const gBtn = (g, label) => `<button onclick="savePlayerAvatar('${esc(name)}','gender','${g}')" style="padding:3px 10px;border-radius:6px;border:2px solid ${gender===g?'var(--green)':'var(--border)'};background:${gender===g?'rgba(34,197,94,0.15)':'var(--surface2)'};color:var(--text);cursor:pointer;font-size:0.78rem">${label}</button>`;
   const hSwatch = (k, col) => `<span onclick="savePlayerAvatar('${esc(name)}','hair','${k}')" title="${k}" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${hair===k?'0 0 0 2px var(--green)':'none'}"></span>`;
   const sSwatch = (k, col) => `<span onclick="savePlayerAvatar('${esc(name)}','skin','${k}')" title="${k}" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${skin===k?'0 0 0 2px var(--green)':'none'}"></span>`;
-  const iconBtn = (field, cur) => ({k,icon,label}) => `<button onclick="savePlayerAvatar('${esc(name)}','${field}','${k}')" title="${label}" style="width:30px;height:26px;border-radius:6px;border:2px solid ${cur===k?'var(--green)':'var(--border)'};background:${cur===k?'rgba(34,197,94,0.15)':'var(--surface2)'};color:var(--text);cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center">${icon}</button>`;
+  const iconBtn = (field, cur) => ({k,label}) => `<button onclick="savePlayerAvatar('${esc(name)}','${field}','${k}')" style="padding:2px 7px;height:26px;border-radius:6px;border:2px solid ${cur===k?'var(--green)':'var(--border)'};background:${cur===k?'rgba(34,197,94,0.15)':'var(--surface2)'};color:${cur===k?'var(--green)':'var(--text)'};cursor:pointer;font-size:0.72rem;white-space:nowrap">${label}</button>`;
   return `<div style="display:flex;flex-direction:column;gap:6px">
     <div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Geschlecht</span>${gBtn('m','♂ Mann')}${gBtn('f','♀ Frau')}</div>
-    <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Frisur</span>${hairstyleOpts.map(iconBtn('hairstyle', hairstyle)).join('')}</div>
+    <div style="display:flex;align-items:flex-start;gap:5px;flex-wrap:wrap"><span style="font-size:0.7rem;color:var(--muted);width:60px;padding-top:4px">Frisur</span><div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${hairstyleOpts.map(iconBtn('hairstyle', hairstyle)).join('')}</div></div>
     <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Haarfarbe</span>${Object.entries(hairMap).map(([k,v])=>hSwatch(k,v)).join('')}</div>
     <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Hautton</span>${Object.entries(skinMap).map(([k,v])=>sSwatch(k,v)).join('')}</div>
   </div>`;
@@ -4305,8 +4389,9 @@ function openPlayerStats(name, competition, fromGeschichte) {
   })();
 
   const isAdminStats = currentUser && currentUser.isAdmin;
-  const avatarEditBtn = isAdminStats
-    ? `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap"><button onclick="openAvatarEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🎨 Avatar</button><button onclick="openFrameEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🖼️ Rahmen</button><button onclick="openSonderEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">✨ Sonder</button></div>`
+  const isOwnProfile = currentUser && !currentUser.isAdmin && currentUser.name === name;
+  const avatarEditBtn = (isAdminStats || isOwnProfile)
+    ? `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap"><button onclick="openAvatarEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🎨 Avatar</button><button onclick="openShirtEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">👕 Trikot</button><button onclick="openSonderEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🖼️ Rahmen</button></div>`
     : '';
   document.getElementById('playerStatsTitle').innerHTML = `<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:0"><div id="modalPlayerAvatar" style="flex-shrink:0;margin-top:2px">${renderAvatar(name, 56)}</div><div style="flex:1;min-width:0"><div style="font-size:1.15rem;font-weight:700;line-height:1.3">${esc(name)}${competition ? ' · <span style="color:var(--muted);font-weight:400;font-size:0.95rem">' + esc(competition) + '</span>' : ''}</div>${avatarEditBtn}</div></div>`;
 
