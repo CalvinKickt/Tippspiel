@@ -340,6 +340,7 @@
   .erg-done { color: var(--green-light); font-size: 0.8rem; white-space: nowrap; }
   .erg-group-header { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 14px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
   .live-badge { display:inline-flex; align-items:center; gap:4px; background:#ef4444; color:#fff; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:20px; letter-spacing:0.05em; }
+  #chatToast.show { transform:translateY(0);opacity:1;pointer-events:auto; }
   .live-dot { width:6px; height:6px; border-radius:50%; background:#fff; animation:livepulse 1s infinite; }
   @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .live-score { font-size:1.1rem; font-weight:700; color:#f87171; }
@@ -869,6 +870,54 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="avatarEditorModal" onclick="if(event.target===this)document.getElementById('avatarEditorModal').classList.remove('open')" style="z-index:200">
+  <div class="modal" style="max-width:320px;width:100%">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div id="avatarEditorPreview" style="flex-shrink:0"></div>
+      <div>
+        <div id="avatarEditorName" style="font-size:1.1rem;font-weight:700"></div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Avatar bearbeiten</div>
+      </div>
+    </div>
+    <div id="avatarEditorContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('avatarEditorModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="frameEditorModal" onclick="if(event.target===this)document.getElementById('frameEditorModal').classList.remove('open')" style="z-index:200">
+  <div class="modal" style="max-width:320px;width:100%">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div id="frameEditorPreview" style="flex-shrink:0"></div>
+      <div>
+        <div id="frameEditorName" style="font-size:1.1rem;font-weight:700"></div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Rahmen bearbeiten</div>
+      </div>
+    </div>
+    <div id="frameEditorContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('frameEditorModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="sonderEditorModal" onclick="if(event.target===this)document.getElementById('sonderEditorModal').classList.remove('open')" style="z-index:200">
+  <div class="modal" style="max-width:320px;width:100%">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div id="sonderEditorPreview" style="flex-shrink:0"></div>
+      <div>
+        <div id="sonderEditorName" style="font-size:1.1rem;font-weight:700"></div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Sonderrahmen</div>
+      </div>
+    </div>
+    <div id="sonderEditorContent"></div>
+    <div class="modal-btns" style="margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('sonderEditorModal').classList.remove('open')">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="seasonTableModal" onclick="if(event.target===this)document.getElementById('seasonTableModal').classList.remove('open')">
   <div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <h3 id="seasonTableTitle" style="font-size:1.15rem;margin-bottom:16px"></h3>
@@ -905,6 +954,17 @@
       <button class="btn btn-ghost" onclick="document.getElementById('archiveTipsModal').classList.remove('open')">Schließen</button>
     </div>
   </div>
+</div>
+
+<!-- CHAT TOAST -->
+<div id="chatToast" onclick="showPage('chat', document.querySelector('[data-page=chat]'));document.getElementById('chatToast').classList.remove('show')"
+  style="position:fixed;bottom:24px;right:20px;z-index:1500;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:flex-start;gap:10px;transform:translateY(120%);opacity:0;transition:transform 0.3s ease,opacity 0.3s ease;pointer-events:none">
+  <span style="font-size:1.3rem;flex-shrink:0">💬</span>
+  <div style="min-width:0">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:2px" id="chatToastSender"></div>
+    <div style="font-size:0.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="chatToastText"></div>
+  </div>
+  <button onclick="event.stopPropagation();document.getElementById('chatToast').classList.remove('show')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;flex-shrink:0;padding:0;margin-left:4px">✕</button>
 </div>
 
 <!-- LIVE EDIT MODAL -->
@@ -987,7 +1047,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v144';
+const APP_VERSION = 'v186';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1140,6 +1200,18 @@ function applyDefaults() {
   state.playerBonusPts = state.playerBonusPts || {};
   state.deletedMatchIds = state.deletedMatchIds || {};
   state.seasonChampions = Array.isArray(state.seasonChampions) ? state.seasonChampions : [];
+  state.playerAvatars = state.playerAvatars || {};
+  // Migration: Saison-1-Sonderrahmen als grantedFrames setzen, falls noch nicht vorhanden
+  const _s1defaults = {Calvin:['bronze_sp'], Maxim:['silber_sp'], tomeuben:['gold_sp']};
+  let _s1changed = false;
+  Object.entries(_s1defaults).forEach(([pname, frames]) => {
+    if (!state.playerAvatars[pname]) state.playerAvatars[pname] = {};
+    if (!state.playerAvatars[pname].grantedFrames) {
+      state.playerAvatars[pname].grantedFrames = frames;
+      _s1changed = true;
+    }
+  });
+  if (_s1changed) save();
   state.activeChampion = state.activeChampion || null;
   state.podiumTitles = Array.isArray(state.podiumTitles) ? state.podiumTitles : [];
   state.seasonEndDate = state.seasonEndDate || null;
@@ -2474,7 +2546,7 @@ function renderRangliste() {
   const activeChampion = state.activeChampion || null;
 
   el.innerHTML = `<div style="overflow-x:auto;"><table class="rank-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th class="col-hide-mobile" style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
+    <thead><tr><th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th class="col-hide-mobile" style="color:var(--muted);font-size:0.72rem">Fehler</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${stats.map((s,i)=>{
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
       const bonus = (state.playerBonusPts && state.playerBonusPts[s.name]) || 0;
@@ -2509,6 +2581,7 @@ function renderRangliste() {
       return `
       <tr class="rank-${i+1}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td style="padding:6px 4px;text-align:center;vertical-align:middle">${renderAvatar(s.name, 38)}</td>
         <td onclick="${isAdmin && ranglisteEditMode ? '' : `openPlayerStats('${esc(s.name)}')`}" style="${isAdmin && ranglisteEditMode ? '' : 'cursor:pointer'}">
           <div style="display:flex;align-items:center;gap:4px">
             <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
@@ -2943,7 +3016,7 @@ function renderMeisterschaften() {
   // Full table
   const isAdmin = currentUser && currentUser.isAdmin;
   const tableHtml = `<div style="overflow-x:auto;"><table class="rank-table">
-    <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
+    <thead><tr><th>#</th><th></th><th>Spieler</th><th>Punkte</th><th>Genau</th><th style="color:var(--muted);font-size:0.72rem">Differenz</th><th style="color:var(--muted);font-size:0.72rem">Tendenz</th><th style="color:var(--muted);font-size:0.72rem">Spiele</th></tr></thead>
     <tbody>${sorted.map((s,i) => {
       const isMe = currentUser && !currentUser.isAdmin && s.name === currentUser.name;
       const bonus = (state.compBonusPts && state.compBonusPts[selectedMeisterComp] && state.compBonusPts[selectedMeisterComp][s.name]) || 0;
@@ -2973,6 +3046,7 @@ function renderMeisterschaften() {
       return `
       <tr class="rank-${curRank}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
         <td class="rank-num" style="line-height:1.2">${rankDisplay}${rankArrow}</td>
+        <td style="padding:6px 4px;text-align:center;vertical-align:middle">${renderAvatar(s.name, 38)}</td>
         <td onclick="${isAdmin && meisterEditMode ? '' : `openPlayerStats('${esc(s.name)}', '${esc(selectedMeisterComp)}')`}" style="${isAdmin && meisterEditMode ? '' : 'cursor:pointer'}">
           <span style="font-size:1.1rem;font-weight:700">${s.name}</span>
           ${isAdmin && meisterEditMode ? '' : `<span style="font-size:0.7rem;color:var(--muted);margin-left:5px;opacity:0.6">↗</span>`}
@@ -3521,6 +3595,50 @@ function doLogin() {
   updateHeaderUser();
   renderAll();
   startAutoLiveTimer();
+  showChatWelcome();
+}
+
+function showChatWelcome() {
+  // kurz warten bis Chat geladen ist, dann Aufmerksamkeit lenken
+  setTimeout(() => {
+    const saved = parseInt(localStorage.getItem('chatLastSeen') || '0');
+    const unreadMsgs = Object.values(chatMessages)
+      .filter(m => m.ts > saved && m.sender !== (currentUser && currentUser.name))
+      .sort((a,b) => b.ts - a.ts);
+    const unreadCount = unreadMsgs.length;
+
+    // Chat-Nav-Button pulsen lassen
+    const chatBtn = document.querySelector('[data-page="chat"]');
+    if (chatBtn) {
+      chatBtn.style.transition = 'box-shadow 0.4s ease';
+      let pulseCount = 0;
+      const pulse = setInterval(() => {
+        chatBtn.style.boxShadow = pulseCount % 2 === 0
+          ? '0 0 0 3px rgba(34,197,94,0.5), 0 0 12px rgba(34,197,94,0.3)'
+          : 'none';
+        pulseCount++;
+        if (pulseCount >= 6) { clearInterval(pulse); chatBtn.style.boxShadow = ''; }
+      }, 400);
+    }
+
+    // Toast zeigen
+    const toast = document.getElementById('chatToast');
+    const senderEl = document.getElementById('chatToastSender');
+    const textEl = document.getElementById('chatToastText');
+    if (!toast || !senderEl || !textEl) return;
+
+    if (unreadCount > 0) {
+      const latest = unreadMsgs[0];
+      senderEl.textContent = `💬 ${unreadCount} neue Nachricht${unreadCount > 1 ? 'en' : ''} von ${latest.sender}`;
+      textEl.textContent = latest.text || '';
+    } else {
+      senderEl.textContent = '💬 Chat';
+      textEl.textContent = 'Schau mal rein und schreib etwas!';
+    }
+    toast.classList.add('show');
+    clearTimeout(_chatToastTimer);
+    _chatToastTimer = setTimeout(() => toast.classList.remove('show'), 6000);
+  }, 1800);
 }
 
 function doLogout() {
@@ -3813,6 +3931,249 @@ function setBonusPts(player, safeId) {
   renderUebersicht();
 }
 
+function renderAvatar(name, size) {
+  size = size || 36;
+  const cfg = (state.playerAvatars || {})[name] || {};
+  const gender = cfg.gender || 'm';
+  const hair = cfg.hair || 'brown';
+  const skin = cfg.skin || 'light';
+  const hairstyle = cfg.hairstyle || 'kurz';
+  const hairColors = {blonde:'#F5C518',brown:'#6B3A2A',black:'#1C1C1C',red:'#C0392B',gray:'#9CA3AF',white:'#E5E7EB',auburn:'#92400E'};
+  const skinColors = {light:'#FDDBB4',medium:'#D4956A',dark:'#8D5524'};
+  const h = hairColors[hair] || hairColors.brown;
+  const s = skinColors[skin] || skinColors.light;
+  const bodyColor = gender === 'f' ? '#7C3AED' : '#1D4ED8';
+
+  const frame = cfg.frame || 'schwarz';
+  const frameColors = {schwarz:'#1C1C1C',blau:'#3B82F6',gruen:'#22C55E',lila:'#A855F7',rot:'#EF4444'};
+  const frameTri = (cfg.frameTri || '#EF4444,#3B82F6,#22C55E').split(',');
+  let frameSvg = '';
+  if (frame === 'regenbogen') {
+    frameSvg = `<defs><linearGradient id="rfg${name.replace(/\W/g,'')}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f00"/><stop offset="20%" stop-color="#ff0"/><stop offset="40%" stop-color="#0f0"/><stop offset="60%" stop-color="#0ff"/><stop offset="80%" stop-color="#00f"/><stop offset="100%" stop-color="#f0f"/></linearGradient></defs><circle cx="20" cy="20" r="19" fill="none" stroke="url(#rfg${name.replace(/\W/g,'')})" stroke-width="2.5"/>`;
+  } else if (frame === 'tri') {
+    const [c1,c2,c3] = frameTri;
+    const gid = `trifg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="1" y1="20" x2="39" y2="20" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="${c1}"/><stop offset="33.3%" stop-color="${c1}"/><stop offset="33.3%" stop-color="${c2}"/><stop offset="66.6%" stop-color="${c2}"/><stop offset="66.6%" stop-color="${c3}"/><stop offset="100%" stop-color="${c3}"/></linearGradient></defs><circle cx="20" cy="20" r="18.5" fill="none" stroke="url(#${gid})" stroke-width="2.5"/>`;
+  } else if (frame === 'feuer') {
+    const gid=`feuerfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F97316"/><stop offset="100%" stop-color="#EAB308"/></linearGradient></defs><circle cx="20" cy="20" r="18.5" fill="none" stroke="url(#${gid})" stroke-width="2.5"/>`;
+  } else if (frame === 'eis') {
+    const gid=`eisfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06B6D4"/><stop offset="50%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#BAE6FD"/></linearGradient></defs><circle cx="20" cy="20" r="18.5" fill="none" stroke="url(#${gid})" stroke-width="2.5"/>`;
+  } else if (frame === 'gold_sp') {
+    const gid=`goldfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3D2A00"/><stop offset="28%" stop-color="#FFD700"/><stop offset="52%" stop-color="#FFF176"/><stop offset="76%" stop-color="#FFD700"/><stop offset="100%" stop-color="#2A1A00"/></linearGradient></defs><circle cx="20" cy="20" r="19.2" fill="none" stroke="url(#${gid})" stroke-width="0.9" opacity="0.65"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="url(#${gid})" stroke-width="3"/><circle cx="20" cy="2.5" r="1.6" fill="#FFF176"/><circle cx="37.5" cy="20" r="1.6" fill="#FFF176"/><circle cx="2.5" cy="20" r="1.6" fill="#FFF176"/><rect x="15" y="35" width="10" height="5.5" rx="2.5" fill="#2A1A00"/><text x="20" y="39.5" text-anchor="middle" font-size="4.2" font-weight="bold" fill="#FFF176" font-family="sans-serif">S1</text>`;
+  } else if (frame === 'silber_sp') {
+    const gid=`silbfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1A1A1A"/><stop offset="28%" stop-color="#A8A8A8"/><stop offset="52%" stop-color="#F0F0F0"/><stop offset="76%" stop-color="#A8A8A8"/><stop offset="100%" stop-color="#111"/></linearGradient></defs><circle cx="20" cy="20" r="19.2" fill="none" stroke="url(#${gid})" stroke-width="0.9" opacity="0.65"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="url(#${gid})" stroke-width="3"/><circle cx="20" cy="2.5" r="1.6" fill="#F0F0F0"/><circle cx="37.5" cy="20" r="1.6" fill="#F0F0F0"/><circle cx="2.5" cy="20" r="1.6" fill="#F0F0F0"/><rect x="15" y="35" width="10" height="5.5" rx="2.5" fill="#111"/><text x="20" y="39.5" text-anchor="middle" font-size="4.2" font-weight="bold" fill="#F0F0F0" font-family="sans-serif">S1</text>`;
+  } else if (frame === 'bronze_sp') {
+    const gid=`brnzfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4A2000"/><stop offset="28%" stop-color="#CD7F32"/><stop offset="52%" stop-color="#F0B045"/><stop offset="76%" stop-color="#CD7F32"/><stop offset="100%" stop-color="#3D1800"/></linearGradient></defs><circle cx="20" cy="20" r="19.2" fill="none" stroke="url(#${gid})" stroke-width="0.9" opacity="0.65"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="url(#${gid})" stroke-width="3"/><circle cx="20" cy="2.5" r="1.6" fill="#F0B045"/><circle cx="37.5" cy="20" r="1.6" fill="#F0B045"/><circle cx="2.5" cy="20" r="1.6" fill="#F0B045"/><rect x="15" y="35" width="10" height="5.5" rx="2.5" fill="#2A0E00"/><text x="20" y="39.5" text-anchor="middle" font-size="4.2" font-weight="bold" fill="#F0B045" font-family="sans-serif">S1</text>`;
+  } else if (frameColors[frame]) {
+    frameSvg = `<circle cx="20" cy="20" r="18.5" fill="none" stroke="${frameColors[frame]}" stroke-width="2.5"/>`;
+  }
+
+  const hsMap = {
+    kurz:     { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<rect x="12" y="9" width="16" height="7" rx="4" fill="${h}"/>` },
+    lang:     { b:`<ellipse cx="20" cy="19" rx="10" ry="13" fill="${h}"/>`, f:`<ellipse cx="20" cy="11" rx="8.5" ry="5" fill="${h}"/>` },
+    locken:   { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<circle cx="12" cy="12" r="3" fill="${h}"/><circle cx="16" cy="8.5" r="3.2" fill="${h}"/><circle cx="20" cy="7.5" r="3.2" fill="${h}"/><circle cx="24" cy="8.5" r="3.2" fill="${h}"/><circle cx="28" cy="12" r="3" fill="${h}"/>` },
+    stacheln: { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<polygon points="14,13 16,5 18,13" fill="${h}"/><polygon points="18,12 20,4 22,12" fill="${h}"/><polygon points="22,13 24,5 26,13" fill="${h}"/>` },
+    glatze:   { b:`<ellipse cx="20" cy="14" r="9" fill="${s}"/>`,           f:`` },
+    zopf:     { b:`<ellipse cx="20" cy="14" r="9" fill="${h}"/>`,           f:`<ellipse cx="20" cy="9" rx="4" ry="5" fill="${h}"/><circle cx="20" cy="4" r="2.5" fill="${h}"/>` },
+  };
+  const hs = hsMap[hairstyle] || hsMap.kurz;
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" style="flex-shrink:0;border-radius:50%;display:inline-block;vertical-align:middle"><circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.08)"/>${hs.b}<ellipse cx="20" cy="19" rx="8" ry="9.5" fill="${s}"/>${hs.f}<circle cx="16.5" cy="18" r="1.5" fill="#222"/><circle cx="23.5" cy="18" r="1.5" fill="#222"/><path d="M16.5 22.5 Q20 26 23.5 22.5" stroke="#222" stroke-width="1.2" fill="none" stroke-linecap="round"/><rect x="17.5" y="27.5" width="5" height="4" rx="1.5" fill="${s}"/><path d="M6 40 Q7 30 20 28 Q33 30 34 40Z" fill="${bodyColor}"/>${frameSvg}</svg>`;
+}
+function openAvatarEditor(name) {
+  document.getElementById('avatarEditorName').textContent = name;
+  document.getElementById('avatarEditorPreview').innerHTML = renderAvatar(name, 72);
+  document.getElementById('avatarEditorContent').innerHTML = buildAvatarEditor(name);
+  document.getElementById('avatarEditorModal').classList.add('open');
+}
+function openFrameEditor(name) {
+  document.getElementById('frameEditorName').textContent = name;
+  document.getElementById('frameEditorPreview').innerHTML = renderAvatar(name, 72);
+  document.getElementById('frameEditorContent').innerHTML = buildFrameEditor(name);
+  document.getElementById('frameEditorModal').classList.add('open');
+}
+function openSonderEditor(name) {
+  document.getElementById('sonderEditorName').textContent = name;
+  document.getElementById('sonderEditorPreview').innerHTML = renderAvatar(name, 72);
+  document.getElementById('sonderEditorContent').innerHTML = buildSonderEditor(name);
+  document.getElementById('sonderEditorModal').classList.add('open');
+}
+// Katalog aller verleihbaren Sonderrahmen
+const SPECIAL_FRAMES_CATALOG = [
+  {k:'gold_sp',   label:'🥇 Gold Saison 1',   svg:`<defs><linearGradient id="gsp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3D2A00"/><stop offset="30%" stop-color="#FFD700"/><stop offset="55%" stop-color="#FFF176"/><stop offset="78%" stop-color="#FFD700"/><stop offset="100%" stop-color="#2A1A00"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#gsp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#gsp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#FFF176"/><circle cx="18.8" cy="10" r="1.1" fill="#FFF176"/><circle cx="1.2" cy="10" r="1.1" fill="#FFF176"/><rect x="6.5" y="17" width="7" height="3.5" rx="1.75" fill="#2A1A00"/><text x="10" y="19.8" text-anchor="middle" font-size="3" font-weight="bold" fill="#FFF176" font-family="sans-serif">S1</text>`},
+  {k:'silber_sp', label:'🥈 Silber Saison 1', svg:`<defs><linearGradient id="ssp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1A1A1A"/><stop offset="30%" stop-color="#A8A8A8"/><stop offset="55%" stop-color="#F0F0F0"/><stop offset="78%" stop-color="#A8A8A8"/><stop offset="100%" stop-color="#111"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#ssp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#ssp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#F0F0F0"/><circle cx="18.8" cy="10" r="1.1" fill="#F0F0F0"/><circle cx="1.2" cy="10" r="1.1" fill="#F0F0F0"/><rect x="6.5" y="17" width="7" height="3.5" rx="1.75" fill="#111"/><text x="10" y="19.8" text-anchor="middle" font-size="3" font-weight="bold" fill="#F0F0F0" font-family="sans-serif">S1</text>`},
+  {k:'bronze_sp', label:'🥉 Bronze Saison 1', svg:`<defs><linearGradient id="bsp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4A2000"/><stop offset="30%" stop-color="#CD7F32"/><stop offset="55%" stop-color="#F0B045"/><stop offset="78%" stop-color="#CD7F32"/><stop offset="100%" stop-color="#3D1800"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#bsp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#bsp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#F0B045"/><circle cx="18.8" cy="10" r="1.1" fill="#F0B045"/><circle cx="1.2" cy="10" r="1.1" fill="#F0B045"/><rect x="6.5" y="17" width="7" height="3.5" rx="1.75" fill="#2A0E00"/><text x="10" y="19.8" text-anchor="middle" font-size="3" font-weight="bold" fill="#F0B045" font-family="sans-serif">S1</text>`},
+];
+function grantSpecialFrame(name, frameKey) {
+  if (!state.playerAvatars) state.playerAvatars = {};
+  if (!state.playerAvatars[name]) state.playerAvatars[name] = {};
+  const granted = state.playerAvatars[name].grantedFrames || [];
+  if (!granted.includes(frameKey)) {
+    state.playerAvatars[name].grantedFrames = [...granted, frameKey];
+    save();
+  }
+  const scontent = document.getElementById('sonderEditorContent');
+  if (scontent) scontent.innerHTML = buildSonderEditor(name);
+}
+function revokeSpecialFrame(name, frameKey) {
+  if (!state.playerAvatars?.[name]) return;
+  const granted = state.playerAvatars[name].grantedFrames || [];
+  state.playerAvatars[name].grantedFrames = granted.filter(k => k !== frameKey);
+  if (state.playerAvatars[name].frame === frameKey) {
+    state.playerAvatars[name].frame = 'schwarz';
+  }
+  save();
+  renderMeisterschaften(); renderRangliste();
+  const chatEl = document.getElementById('chatMessages');
+  if (chatEl) renderChatMessages(false);
+  const av = document.getElementById('modalPlayerAvatar');
+  if (av) av.innerHTML = renderAvatar(name, 56);
+  const sprev = document.getElementById('sonderEditorPreview');
+  if (sprev) sprev.innerHTML = renderAvatar(name, 72);
+  const scontent = document.getElementById('sonderEditorContent');
+  if (scontent) scontent.innerHTML = buildSonderEditor(name);
+}
+function buildSonderEditor(name) {
+  const cfg = (state.playerAvatars || {})[name] || {};
+  const frame = cfg.frame || 'schwarz';
+  const granted = Array.isArray(cfg.grantedFrames) ? cfg.grantedFrames : [];
+  const isAdm = currentUser && currentUser.isAdmin;
+  const baseSonder = [
+    {k:'feuer', label:'Feuer 🔥', svg:`<defs><linearGradient id="fe_se" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F97316"/><stop offset="100%" stop-color="#EAB308"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#fe_se)" stroke-width="2"/>`},
+    {k:'eis',   label:'Eis ❄️',  svg:`<defs><linearGradient id="ei_se" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06B6D4"/><stop offset="50%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#BAE6FD"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#ei_se)" stroke-width="2"/>`},
+    ...SPECIAL_FRAMES_CATALOG.filter(f => granted.includes(f.k)),
+  ];
+  const sw = ({k,label,svg}) => `<div onclick="savePlayerAvatar('${esc(name)}','frame','${k}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;background:${frame===k?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.03)'};border:1px solid ${frame===k?'var(--green)':'rgba(255,255,255,0.08)'}"><svg viewBox="0 0 20 20" width="32" height="32">${svg}</svg><span style="font-size:0.85rem;color:var(--text)">${label}</span>${frame===k?'<span style="margin-left:auto;color:var(--green);font-size:0.8rem">✓</span>':''}</div>`;
+  let adminSection = '';
+  if (isAdm) {
+    const rows = SPECIAL_FRAMES_CATALOG.map(f => {
+      const has = granted.includes(f.k);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <svg viewBox="0 0 20 20" width="26" height="26">${f.svg}</svg>
+        <span style="flex:1;font-size:0.8rem;color:var(--text)">${f.label}</span>
+        ${has
+          ? `<button onclick="revokeSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.12);color:#EF4444;cursor:pointer">Entziehen</button>`
+          : `<button onclick="grantSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(34,197,94,0.5);background:rgba(34,197,94,0.12);color:var(--green);cursor:pointer">Vergeben</button>`
+        }
+      </div>`;
+    }).join('');
+    adminSection = `<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">
+      <div style="font-size:0.62rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">⚙️ Admin: Rahmen vergeben</div>
+      ${rows}
+    </div>`;
+  }
+  return `<div><div style="display:flex;flex-direction:column;gap:6px">${baseSonder.map(sw).join('')}</div>${adminSection}</div>`;
+}
+function buildFrameEditor(name) {
+  const cfg = (state.playerAvatars || {})[name] || {};
+  const frame = cfg.frame || 'schwarz';
+  const triColors = (cfg.frameTri || '#EF4444,#3B82F6,#22C55E').split(',');
+  const triPalette = ['#EF4444','#F97316','#EAB308','#22C55E','#06B6D4','#3B82F6','#A855F7','#EC4899','#FFFFFF','#1C1C1C'];
+  const frameOpts = [
+    {k:'none',    col:'transparent', label:'Kein'},
+    {k:'schwarz', col:'#1C1C1C',     label:'Schwarz'},
+    {k:'blau',    col:'#3B82F6',     label:'Blau'},
+    {k:'gruen',   col:'#22C55E',     label:'Grün'},
+    {k:'lila',    col:'#A855F7',     label:'Lila'},
+    {k:'rot',     col:'#EF4444',     label:'Rot'},
+    {k:'regenbogen', col:'linear-gradient(135deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)', label:'Regenbogen'},
+  ];
+  const fSwatch = ({k,col,label}) => `<span onclick="savePlayerAvatar('${esc(name)}','frame','${k}')" title="${label}" style="display:inline-block;width:24px;height:24px;border-radius:50%;background:${k==='none'?'transparent':col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${frame===k?'0 0 0 2px var(--green)':'none'};position:relative">${k==='none'?'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">–</span>':''}</span>`;
+  const triBtn = `<span onclick="savePlayerAvatar('${esc(name)}','frame','tri')" title="3 Farben" style="display:inline-block;width:24px;height:24px;border-radius:50%;background:linear-gradient(to right,${triColors[0]} 0% 33%,${triColors[1]} 33% 66%,${triColors[2]} 66% 100%);cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${frame==='tri'?'0 0 0 2px var(--green)':'none'}"></span>`;
+  const triPickerRow = (idx) => {
+    const label = ['Farbe 1','Farbe 2','Farbe 3'][idx];
+    const swatches = triPalette.map(c => `<span onclick="saveFrameTriColor('${esc(name)}',${idx},'${c}')" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${c};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${triColors[idx]===c?'0 0 0 2px var(--green)':'none'}"></span>`).join('');
+    return `<div style="display:flex;align-items:center;gap:4px;margin-top:4px"><span style="font-size:0.7rem;color:var(--muted);width:60px">${label}</span>${swatches}</div>`;
+  };
+  const triRows = frame === 'tri' ? `${triPickerRow(0)}${triPickerRow(1)}${triPickerRow(2)}` : '';
+  const sonderOpts = [
+    {k:'feuer', label:'Feuer 🔥', svg:`<defs><linearGradient id="fe_sw" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F97316"/><stop offset="100%" stop-color="#EAB308"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#fe_sw)" stroke-width="2"/>`},
+    {k:'eis',   label:'Eis ❄️',  svg:`<defs><linearGradient id="ei_sw" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#06B6D4"/><stop offset="50%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#BAE6FD"/></linearGradient></defs><circle cx="10" cy="10" r="8" fill="none" stroke="url(#ei_sw)" stroke-width="2"/>`},
+  ];
+  const sSonderSwatch = ({k,label,svg}) => `<span onclick="savePlayerAvatar('${esc(name)}','frame','${k}')" title="${label}" style="display:inline-block;width:28px;height:28px;border-radius:50%;cursor:pointer;background:rgba(255,255,255,0.05);box-shadow:${frame===k?'0 0 0 2px var(--green)':'0 0 0 1px rgba(255,255,255,0.15)'}"><svg viewBox="0 0 20 20" width="28" height="28">${svg}</svg></span>`;
+  return `<div>
+    <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Einfarbig</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${frameOpts.map(fSwatch).join('')}${triBtn}</div>
+    ${triRows}
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Sonderrahmen</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${sonderOpts.map(sSonderSwatch).join('')}</div>
+  </div>`;
+}
+function savePlayerAvatar(name, field, value) {
+  if (!state.playerAvatars) state.playerAvatars = {};
+  if (!state.playerAvatars[name]) state.playerAvatars[name] = {};
+  state.playerAvatars[name][field] = value;
+  save();
+  renderMeisterschaften(); renderRangliste();
+  const chatEl = document.getElementById('chatMessages');
+  if (chatEl) renderChatMessages(false);
+  const av = document.getElementById('modalPlayerAvatar');
+  if (av) av.innerHTML = renderAvatar(name, 56);
+  const prev = document.getElementById('avatarEditorPreview');
+  if (prev) prev.innerHTML = renderAvatar(name, 72);
+  const content = document.getElementById('avatarEditorContent');
+  if (content) content.innerHTML = buildAvatarEditor(name);
+  const fprev = document.getElementById('frameEditorPreview');
+  if (fprev) fprev.innerHTML = renderAvatar(name, 72);
+  const fcontent = document.getElementById('frameEditorContent');
+  if (fcontent) fcontent.innerHTML = buildFrameEditor(name);
+  const sprev = document.getElementById('sonderEditorPreview');
+  if (sprev) sprev.innerHTML = renderAvatar(name, 72);
+  const scontent = document.getElementById('sonderEditorContent');
+  if (scontent) scontent.innerHTML = buildSonderEditor(name);
+}
+function saveFrameTriColor(name, idx, color) {
+  if (!state.playerAvatars) state.playerAvatars = {};
+  if (!state.playerAvatars[name]) state.playerAvatars[name] = {};
+  const tri = (state.playerAvatars[name].frameTri || '#EF4444,#3B82F6,#22C55E').split(',');
+  tri[idx] = color;
+  state.playerAvatars[name].frameTri = tri.join(',');
+  state.playerAvatars[name].frame = 'tri';
+  save();
+  renderMeisterschaften(); renderRangliste();
+  const chatEl = document.getElementById('chatMessages');
+  if (chatEl) renderChatMessages(false);
+  const av = document.getElementById('modalPlayerAvatar');
+  if (av) av.innerHTML = renderAvatar(name, 56);
+  const prev = document.getElementById('avatarEditorPreview');
+  if (prev) prev.innerHTML = renderAvatar(name, 72);
+  const content = document.getElementById('avatarEditorContent');
+  if (content) content.innerHTML = buildAvatarEditor(name);
+  const fprev = document.getElementById('frameEditorPreview');
+  if (fprev) fprev.innerHTML = renderAvatar(name, 72);
+  const fcontent = document.getElementById('frameEditorContent');
+  if (fcontent) fcontent.innerHTML = buildFrameEditor(name);
+  const sprev = document.getElementById('sonderEditorPreview');
+  if (sprev) sprev.innerHTML = renderAvatar(name, 72);
+  const scontent = document.getElementById('sonderEditorContent');
+  if (scontent) scontent.innerHTML = buildSonderEditor(name);
+}
+function buildAvatarEditor(name) {
+  const cfg = (state.playerAvatars || {})[name] || {};
+  const gender = cfg.gender || 'm';
+  const hair = cfg.hair || 'brown';
+  const skin = cfg.skin || 'light';
+  const hairstyle = cfg.hairstyle || 'kurz';
+  const hairMap = {blonde:'#F5C518',brown:'#6B3A2A',black:'#1C1C1C',red:'#C0392B',gray:'#9CA3AF',white:'#E5E7EB',auburn:'#92400E'};
+  const skinMap = {light:'#FDDBB4',medium:'#D4956A',dark:'#5C3317'};
+  const hairstyleOpts = [{k:'kurz',icon:'〰',label:'Kurz'},{k:'lang',icon:'↓',label:'Lang'},{k:'locken',icon:'∿',label:'Locken'},{k:'stacheln',icon:'∧',label:'Stacheln'},{k:'glatze',icon:'○',label:'Glatze'},{k:'zopf',icon:'↑',label:'Zopf'}];
+  const gBtn = (g, label) => `<button onclick="savePlayerAvatar('${esc(name)}','gender','${g}')" style="padding:3px 10px;border-radius:6px;border:2px solid ${gender===g?'var(--green)':'var(--border)'};background:${gender===g?'rgba(34,197,94,0.15)':'var(--surface2)'};color:var(--text);cursor:pointer;font-size:0.78rem">${label}</button>`;
+  const hSwatch = (k, col) => `<span onclick="savePlayerAvatar('${esc(name)}','hair','${k}')" title="${k}" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${hair===k?'0 0 0 2px var(--green)':'none'}"></span>`;
+  const sSwatch = (k, col) => `<span onclick="savePlayerAvatar('${esc(name)}','skin','${k}')" title="${k}" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${col};cursor:pointer;border:2px solid rgba(0,0,0,0.45);box-shadow:${skin===k?'0 0 0 2px var(--green)':'none'}"></span>`;
+  const iconBtn = (field, cur) => ({k,icon,label}) => `<button onclick="savePlayerAvatar('${esc(name)}','${field}','${k}')" title="${label}" style="width:30px;height:26px;border-radius:6px;border:2px solid ${cur===k?'var(--green)':'var(--border)'};background:${cur===k?'rgba(34,197,94,0.15)':'var(--surface2)'};color:var(--text);cursor:pointer;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center">${icon}</button>`;
+  return `<div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Geschlecht</span>${gBtn('m','♂ Mann')}${gBtn('f','♀ Frau')}</div>
+    <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Frisur</span>${hairstyleOpts.map(iconBtn('hairstyle', hairstyle)).join('')}</div>
+    <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Haarfarbe</span>${Object.entries(hairMap).map(([k,v])=>hSwatch(k,v)).join('')}</div>
+    <div style="display:flex;align-items:center;gap:5px"><span style="font-size:0.7rem;color:var(--muted);width:60px">Hautton</span>${Object.entries(skinMap).map(([k,v])=>sSwatch(k,v)).join('')}</div>
+  </div>`;
+}
+
 // ===================== PLAYER STATS POPUP =====================
 function openPlayerStats(name, competition, fromGeschichte) {
   const doneMatches = state.matches.filter(m =>
@@ -3943,7 +4304,11 @@ function openPlayerStats(name, competition, fromGeschichte) {
     </div>`;
   })();
 
-  document.getElementById('playerStatsTitle').textContent = '📈 ' + name + (competition ? ' · ' + competition : '');
+  const isAdminStats = currentUser && currentUser.isAdmin;
+  const avatarEditBtn = isAdminStats
+    ? `<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap"><button onclick="openAvatarEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🎨 Avatar</button><button onclick="openFrameEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">🖼️ Rahmen</button><button onclick="openSonderEditor('${esc(name)}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">✨ Sonder</button></div>`
+    : '';
+  document.getElementById('playerStatsTitle').innerHTML = `<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:0"><div id="modalPlayerAvatar" style="flex-shrink:0;margin-top:2px">${renderAvatar(name, 56)}</div><div style="flex:1;min-width:0"><div style="font-size:1.15rem;font-weight:700;line-height:1.3">${esc(name)}${competition ? ' · <span style="color:var(--muted);font-weight:400;font-size:0.95rem">' + esc(competition) + '</span>' : ''}</div>${avatarEditBtn}</div></div>`;
 
   // Champion + Podium badges im Modal
   const isActiveChamp = (state.activeChampion || null) === name;
@@ -4667,17 +5032,50 @@ let chatUnread = 0;
 let chatOpen = false;
 let chatLastSeen = 0;        // timestamp der letzten gesehenen Nachricht
 
+let _chatToastTimer = null;
+let _chatKnownMsgCount = 0;
+
+function showChatToast(msg) {
+  const toast = document.getElementById('chatToast');
+  const senderEl = document.getElementById('chatToastSender');
+  const textEl = document.getElementById('chatToastText');
+  if (!toast || !senderEl || !textEl) return;
+  senderEl.textContent = msg.sender || 'Jemand';
+  textEl.textContent = msg.text || '📎 Nachricht';
+  toast.classList.add('show');
+  clearTimeout(_chatToastTimer);
+  _chatToastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
+}
+
 function initChat() {
   if (!window._fbDb) return;
+  let firstLoad = true;
   window._fbDb.ref('chat').on('value', snap => {
+    const prev = chatMessages;
     chatMessages = snap.val() || {};
     const isOnChatPage = document.getElementById('page-chat') && document.getElementById('page-chat').classList.contains('active');
     if (isOnChatPage) {
       renderChatMessages(true);
       markChatSeen();
     } else {
+      // Find new messages since last update (not from me, not on first load)
+      if (!firstLoad) {
+        const saved = parseInt(localStorage.getItem('chatLastSeen') || '0');
+        const newMsgs = Object.values(chatMessages)
+          .filter(m => m.ts > saved && m.sender !== (currentUser && currentUser.name) && !prev[Object.keys(chatMessages).find(k => chatMessages[k] === m)])
+          .sort((a,b) => b.ts - a.ts);
+        // Simpler: find messages not in prev
+        const prevIds = new Set(Object.keys(prev));
+        const brandNew = Object.entries(chatMessages)
+          .filter(([id, m]) => !prevIds.has(id) && m.sender !== (currentUser && currentUser.name))
+          .map(([,m]) => m)
+          .sort((a,b) => b.ts - a.ts);
+        if (brandNew.length > 0) showChatToast(brandNew[0]);
+      }
+      firstLoad = false;
       updateChatBadge();
     }
+    if (firstLoad) firstLoad = false;
   });
   // Live-Ticker für Chat-Header
   setInterval(renderChatMatchInfo, 30000);
@@ -4770,7 +5168,7 @@ function renderChatMessages(scrollToBottom) {
     }).join('');
 
     html += `<div class="chat-msg ${isMe?'mine':'theirs'}" id="cmsg-${m.id}">
-      ${!isMe ? `<div class="msg-sender">${esc(m.sender)}</div>` : ''}
+      ${!isMe ? `<div class="msg-sender" style="display:flex;align-items:center;gap:5px">${renderAvatar(m.sender, 20)}${esc(m.sender)}</div>` : ''}
       <div class="msg-bubble" ondblclick="showReactionPicker('${m.id}',this)" title="Doppelklick für Reaktion">${esc(m.text)}</div>
       ${reactionHtml ? `<div class="msg-reactions">${reactionHtml}</div>` : ''}
       <div class="msg-time">${timeStr}</div>
