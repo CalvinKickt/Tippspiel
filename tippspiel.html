@@ -1062,7 +1062,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v197';
+const APP_VERSION = 'v202';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -3984,6 +3984,9 @@ function renderAvatar(name, size) {
   } else if (frame === 'bronze_sp') {
     const gid=`brnzfg${name.replace(/\W/g,'')}`;
     frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4A2000"/><stop offset="28%" stop-color="#CD7F32"/><stop offset="52%" stop-color="#F0B045"/><stop offset="76%" stop-color="#CD7F32"/><stop offset="100%" stop-color="#3D1800"/></linearGradient></defs><circle cx="20" cy="20" r="19.2" fill="none" stroke="url(#${gid})" stroke-width="0.9" opacity="0.65"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="url(#${gid})" stroke-width="3"/><circle cx="20" cy="2.5" r="1.6" fill="#F0B045"/><circle cx="37.5" cy="20" r="1.6" fill="#F0B045"/><circle cx="2.5" cy="20" r="1.6" fill="#F0B045"/><rect x="13" y="33" width="14" height="7" rx="3" fill="#2A0E00"/><text x="20" y="38.5" text-anchor="middle" font-size="5.5" font-weight="bold" fill="#F0B045" font-family="sans-serif">S1</text>`;
+  } else if (frame === 'wm_sp') {
+    const gid=`wmfg${name.replace(/\W/g,'')}`;
+    frameSvg = `<defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1A3A00"/><stop offset="30%" stop-color="#84CC16"/><stop offset="55%" stop-color="#FDE047"/><stop offset="78%" stop-color="#84CC16"/><stop offset="100%" stop-color="#1A3A00"/></linearGradient></defs><circle cx="20" cy="20" r="19.2" fill="none" stroke="url(#${gid})" stroke-width="0.9" opacity="0.55"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="url(#${gid})" stroke-width="3"/><circle cx="20" cy="20" r="17.2" fill="none" stroke="#FDE047" stroke-width="3.5" stroke-dasharray="6 102" opacity="0.95"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="1.8s" repeatCount="indefinite"/></circle><circle cx="20" cy="20" r="17.2" fill="none" stroke="#ECFCCB" stroke-width="3" stroke-dasharray="3 105" opacity="0.8"><animateTransform attributeName="transform" type="rotate" from="130 20 20" to="490 20 20" dur="2.3s" repeatCount="indefinite"/></circle><circle cx="20" cy="20" r="17.2" fill="none" stroke="#FDE047" stroke-width="3" stroke-dasharray="4 104" opacity="0.6"><animateTransform attributeName="transform" type="rotate" from="260 20 20" to="620 20 20" dur="2.7s" repeatCount="indefinite"/></circle><rect x="12" y="33" width="16" height="7" rx="3" fill="#1A3A00"/><text x="20" y="38.5" text-anchor="middle" font-size="5" font-weight="bold" fill="#FDE047" font-family="sans-serif">WM</text>`;
   } else if (frameColors[frame]) {
     frameSvg = `<circle cx="20" cy="20" r="18.5" fill="none" stroke="${frameColors[frame]}" stroke-width="2.5"/>`;
   }
@@ -4060,6 +4063,7 @@ const SPECIAL_FRAMES_CATALOG = [
   {k:'gold_sp',   label:'🥇 Gold Saison 1',   svg:`<defs><linearGradient id="gsp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3D2A00"/><stop offset="30%" stop-color="#FFD700"/><stop offset="55%" stop-color="#FFF176"/><stop offset="78%" stop-color="#FFD700"/><stop offset="100%" stop-color="#2A1A00"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#gsp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#gsp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#FFF176"/><circle cx="18.8" cy="10" r="1.1" fill="#FFF176"/><circle cx="1.2" cy="10" r="1.1" fill="#FFF176"/><rect x="5" y="15.5" width="10" height="4.5" rx="2" fill="#2A1A00"/><text x="10" y="19.3" text-anchor="middle" font-size="3.8" font-weight="bold" fill="#FFF176" font-family="sans-serif">S1</text>`},
   {k:'silber_sp', label:'🥈 Silber Saison 1', svg:`<defs><linearGradient id="ssp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1A1A1A"/><stop offset="30%" stop-color="#A8A8A8"/><stop offset="55%" stop-color="#F0F0F0"/><stop offset="78%" stop-color="#A8A8A8"/><stop offset="100%" stop-color="#111"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#ssp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#ssp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#F0F0F0"/><circle cx="18.8" cy="10" r="1.1" fill="#F0F0F0"/><circle cx="1.2" cy="10" r="1.1" fill="#F0F0F0"/><rect x="5" y="15.5" width="10" height="4.5" rx="2" fill="#111"/><text x="10" y="19.3" text-anchor="middle" font-size="3.8" font-weight="bold" fill="#F0F0F0" font-family="sans-serif">S1</text>`},
   {k:'bronze_sp', label:'🥉 Bronze Saison 1', svg:`<defs><linearGradient id="bsp_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4A2000"/><stop offset="30%" stop-color="#CD7F32"/><stop offset="55%" stop-color="#F0B045"/><stop offset="78%" stop-color="#CD7F32"/><stop offset="100%" stop-color="#3D1800"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#bsp_sv)" stroke-width="0.8" opacity="0.65"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#bsp_sv)" stroke-width="2.5"/><circle cx="10" cy="1.2" r="1.1" fill="#F0B045"/><circle cx="18.8" cy="10" r="1.1" fill="#F0B045"/><circle cx="1.2" cy="10" r="1.1" fill="#F0B045"/><rect x="5" y="15.5" width="10" height="4.5" rx="2" fill="#2A0E00"/><text x="10" y="19.3" text-anchor="middle" font-size="3.8" font-weight="bold" fill="#F0B045" font-family="sans-serif">S1</text>`},
+  {k:'wm_sp', label:'⚽ WM Teilnehmer', svg:`<defs><linearGradient id="wm_sv" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1A3A00"/><stop offset="30%" stop-color="#84CC16"/><stop offset="55%" stop-color="#FDE047"/><stop offset="78%" stop-color="#84CC16"/><stop offset="100%" stop-color="#1A3A00"/></linearGradient></defs><circle cx="10" cy="10" r="9.2" fill="none" stroke="url(#wm_sv)" stroke-width="0.8" opacity="0.55"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="url(#wm_sv)" stroke-width="2.5"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="#FDE047" stroke-width="3" stroke-dasharray="4 43" opacity="0.95"><animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1.8s" repeatCount="indefinite"/></circle><circle cx="10" cy="10" r="7.5" fill="none" stroke="#ECFCCB" stroke-width="2.5" stroke-dasharray="2 45" opacity="0.7"><animateTransform attributeName="transform" type="rotate" from="130 10 10" to="490 10 10" dur="2.3s" repeatCount="indefinite"/></circle><rect x="4.5" y="15.5" width="11" height="4.5" rx="2" fill="#1A3A00"/><text x="10" y="19.3" text-anchor="middle" font-size="3.5" font-weight="bold" fill="#FDE047" font-family="sans-serif">WM</text>`},
 ];
 function grantSpecialFrame(name, frameKey) {
   if (!state.playerAvatars) state.playerAvatars = {};
@@ -4128,15 +4132,29 @@ function buildSonderEditor(name) {
   // ── Admin Vergabe ──
   let adminSection = '';
   if (isAdm) {
+    // Prüfen welche Frames bereits an andere Spieler vergeben sind (exklusive Frames)
+    const exclusiveFrames = ['gold_sp','silber_sp','bronze_sp']; // wm_sp ist nicht exklusiv
+    const takenBy = {};
+    Object.entries(state.playerAvatars || {}).forEach(([pname, pcfg]) => {
+      if (pname !== name && Array.isArray(pcfg.grantedFrames)) {
+        pcfg.grantedFrames.forEach(fk => { if (exclusiveFrames.includes(fk)) takenBy[fk] = pname; });
+      }
+    });
     const rows = SPECIAL_FRAMES_CATALOG.map(f => {
       const has = granted.includes(f.k);
+      const takenByOther = !has && takenBy[f.k];
+      let btn;
+      if (has) {
+        btn = `<button onclick="revokeSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.12);color:#EF4444;cursor:pointer">Entziehen</button>`;
+      } else if (takenByOther) {
+        btn = `<span style="font-size:0.68rem;color:var(--muted);padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03)" title="Bereits an ${esc(takenByOther)} vergeben">🔒 ${esc(takenByOther)}</span>`;
+      } else {
+        btn = `<button onclick="grantSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(34,197,94,0.5);background:rgba(34,197,94,0.12);color:var(--green);cursor:pointer">Vergeben</button>`;
+      }
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
         <svg viewBox="0 0 20 20" width="26" height="26">${f.svg}</svg>
-        <span style="flex:1;font-size:0.8rem;color:var(--text)">${f.label}</span>
-        ${has
-          ? `<button onclick="revokeSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.12);color:#EF4444;cursor:pointer">Entziehen</button>`
-          : `<button onclick="grantSpecialFrame('${esc(name)}','${f.k}')" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(34,197,94,0.5);background:rgba(34,197,94,0.12);color:var(--green);cursor:pointer">Vergeben</button>`
-        }
+        <span style="flex:1;font-size:0.8rem;color:${takenByOther?'var(--muted)':'var(--text)'}">${f.label}</span>
+        ${btn}
       </div>`;
     }).join('');
     adminSection = `<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">
@@ -4636,7 +4654,7 @@ function renderStatistik() {
 
   // ---- Punkte pro Spieltag (Balkendiagramm) ----
   const barHtml = (() => {
-    const last20 = tippedMatches.slice(-20);
+    const last20 = tippedMatches.slice(-30);
     if (last20.length < 2) return `<div class="stat-card"><h2>📅 Punkte pro Spiel</h2><div class="empty" style="padding:6px 0">Noch zu wenig Daten.</div></div>`;
     const W=560, H=120, PL=20, PB=22, PT=10, PR=10;
     const iW=W-PL-PR, iH=H-PT-PB;
