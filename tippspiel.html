@@ -1062,7 +1062,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v202';
+const APP_VERSION = 'v203';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1193,6 +1193,25 @@ function save() {
     window._fbDb.ref('tippspiel').set(JSON.parse(JSON.stringify(state)))
       .catch(e => { console.error('Firebase Fehler:', e); _fbSaving = false; });
   }
+}
+
+// Granularer Write: nur ein einzelnes Match aktualisieren (kein Überschreiben anderer Daten)
+function saveMatchById(id) {
+  if (!window._fbDb) return;
+  const idx = state.matches.findIndex(m => m.id === id);
+  if (idx === -1) { save(); return; }
+  window._fbDb.ref('tippspiel/matches/' + idx)
+    .set(JSON.parse(JSON.stringify(state.matches[idx])))
+    .catch(e => { console.error('Firebase Fehler (Match):', e); });
+}
+
+// Granularer Write: nur einen einzelnen Tipp aktualisieren
+function saveTipEntry(matchId, player) {
+  if (!window._fbDb) return;
+  if (!state.tips[matchId] || state.tips[matchId][player] === undefined) return;
+  window._fbDb.ref('tippspiel/tips/' + matchId + '/' + player)
+    .set(state.tips[matchId][player])
+    .catch(e => { console.error('Firebase Fehler (Tipp):', e); });
 }
 
 function load() {} // replaced by Firebase
@@ -1457,19 +1476,19 @@ function saveErgResult(id, keepLive) {
   if (h === '' || a === '') { alert('Bitte beide Felder ausfüllen.'); return; }
   m.resultHome = parseInt(h); m.resultAway = parseInt(a);
   if (!keepLive) m.isLive = false;
-  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+  saveMatchById(id); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function clearErgResult(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   m.resultHome = null; m.resultAway = null; m.isLive = false;
-  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+  saveMatchById(id); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function toggleMatchExcluded(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   m.excluded = !m.excluded;
-  save(); renderErgebnisse(); renderRangliste(); renderUebersicht();
+  saveMatchById(id); renderErgebnisse(); renderRangliste(); renderUebersicht();
 }
 
 function startLive(id) {
@@ -1479,13 +1498,13 @@ function startLive(id) {
   m.resultHome = h !== '' ? parseInt(h) : 0;
   m.resultAway = a !== '' ? parseInt(a) : 0;
   m.isLive = true;
-  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+  saveMatchById(id); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function endLive(id) {
   const m = state.matches.find(m => m.id === id); if (!m) return;
   m.isLive = false;
-  save(); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
+  saveMatchById(id); renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderUebersicht(); updateHeader();
 }
 
 function openLiveEditModal() {
@@ -1520,7 +1539,7 @@ function saveLiveFromModal(id, keepLive) {
   m.resultHome = parseInt(h);
   m.resultAway = parseInt(a);
   m.isLive = keepLive;
-  save();
+  saveMatchById(id);
   renderErgebnisse(); renderCalendar(); renderSpiele(); renderRangliste(); renderMeisterschaften(); renderUebersicht(); updateHeader();
   if (!keepLive) document.getElementById('liveEditModal').classList.remove('open');
   else openLiveEditModal(); // refresh modal content
@@ -2222,7 +2241,7 @@ function setMatchMultiplier(id, val) {
   const m = state.matches.find(m => m.id === id);
   if (!m) return;
   m.multiplier = val;
-  save();
+  saveMatchById(id);
   renderSpiele(); renderRangliste(); renderMeisterschaften(); renderUebersicht();
 }
 
@@ -2433,7 +2452,7 @@ function saveTip(matchId, player) {
   if (h===''||a==='') { alert('Tipp unvollständig.'); return; }
   if (!state.tips[matchId]) state.tips[matchId] = {};
   state.tips[matchId][player] = {home:parseInt(h), away:parseInt(a)};
-  save(); renderTipps();
+  saveTipEntry(matchId, player); renderTipps();
 }
 
 function autoSaveTip(matchId, player) {
@@ -2444,7 +2463,7 @@ function autoSaveTip(matchId, player) {
   if (match && isMatchLocked(match)) return;
   if (!state.tips[matchId]) state.tips[matchId] = {};
   state.tips[matchId][player] = {home: parseInt(hEl.value), away: parseInt(aEl.value)};
-  save();
+  saveTipEntry(matchId, player);
   // Update saved indicator for this match
   const statusEl = document.getElementById('tip_status_' + matchId);
   if (statusEl) statusEl.innerHTML = '<span class="tip-saved">✓ Gespeichert</span>';
@@ -2480,10 +2499,10 @@ function saveAllTips() {
     if (h === '' || a === '') { skipped++; return; }
     if (!state.tips[m.id]) state.tips[m.id] = {};
     state.tips[m.id][player] = {home: parseInt(h), away: parseInt(a)};
+    saveTipEntry(m.id, player);
     saved++;
   });
   if (saved === 0) { alert('Keine Tipps zum Speichern (Felder leer?).'); return; }
-  save();
   renderTipps();
 }
 
