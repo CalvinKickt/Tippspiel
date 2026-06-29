@@ -1095,7 +1095,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v212';
+const APP_VERSION = 'v215';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1166,7 +1166,7 @@ function checkAutoWeekClose() {
           if (!tip) return;
           const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
           if (pt === null) return;
-          const mult = m.multiplier || 1;
+          const mult = (m.multiplier != null ? m.multiplier : 1);
           played++; pts += pt * mult;
           if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
         });
@@ -1183,7 +1183,7 @@ function checkAutoWeekClose() {
             if (!tip) return;
             const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
             if (pt === null) return;
-            const mult = m.multiplier || 1;
+            const mult = (m.multiplier != null ? m.multiplier : 1);
             played++; pts += pt * mult;
             if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
           });
@@ -2315,7 +2315,7 @@ function renderSpiele() {
     const diff = m.date ? new Date(m.date) - new Date() : Infinity;
     const urgent = !done && !locked && diff > 0 && diff < 24*60*60*1000;
     const urgentBorder = urgent ? 'border-color:#f59e0b;' : locked && !done ? 'border-color:rgba(239,68,68,0.4);' : '';
-    const mult = m.multiplier || 1;
+    const mult = (m.multiplier != null ? m.multiplier : 1);
     const isAdmin = currentUser && currentUser.isAdmin;
     const multColor = mult===3?'#a855f7':mult===2?'#3b82f6':'#f59e0b';
     const multColorBg = mult===3?'rgba(168,85,247,0.2)':mult===2?'rgba(59,130,246,0.2)':'rgba(245,158,11,0.2)';
@@ -2637,7 +2637,7 @@ function getPlayerStats(player) {
     if (!tip) return;
     const p = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
     if (p===null) return;
-    const mult = m.multiplier || 1;
+    const mult = (m.multiplier != null ? m.multiplier : 1);
     played++; pts += p * mult;
     if (p===3) exact++;
     else if (p===2) diff++;
@@ -3084,9 +3084,11 @@ function renderArchiv() {
         const dateObj = m.date ? new Date(m.date) : null;
         const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
         const result = m.resultHome != null ? `${m.resultHome}:${m.resultAway}` : '?:?';
+        const mult = (m.multiplier != null ? m.multiplier : 1);
+        const multBadge = mult === 0 ? `<span style="font-size:0.6rem;font-weight:800;color:#ef4444">✕</span>` : mult > 1 ? `<span style="font-size:0.6rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>` : '';
         const editHdrClick = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','')" style="font-size:0.72rem;white-space:nowrap;cursor:pointer"` : `style="font-size:0.72rem;white-space:nowrap"`;
         return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" ${editHdrClick}>
-          ${flagShort(m.home,3)}–${flagShort(m.away,3)}<br>
+          ${flagShort(m.home,3)}–${flagShort(m.away,3)} ${multBadge}<br>
           <span style="font-weight:400;font-size:0.68rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${result}${isAdmin&&archivEditMode?' ✏️':''}</span>
         </th>`;
       }).join('')}
@@ -3200,6 +3202,28 @@ function openArchivCellModal(matchId, playerName) {
 
   const safeName = playerName ? playerName.replace(/\\/g,'\\\\').replace(/'/g,"\\'") : '';
 
+  const curMult = (m.multiplier != null ? m.multiplier : 1);
+  function multBtnStyle(v) {
+    var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
+    var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
+    var active = curMult === v;
+    return 'padding:4px 10px;font-size:0.82rem;font-weight:700;border-radius:6px;border:1px solid ' +
+      (active ? colors[v] : 'var(--border)') + ';background:' +
+      (active ? bgs[v] : 'transparent') + ';color:' +
+      (active ? colors[v] : 'var(--muted)') + ';cursor:pointer';
+  }
+  const multSection =
+    '<div style="margin-bottom:18px">' +
+      '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Punktemultiplikator</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button id="acm_m0" onclick="acmSetMult(0)" style="' + multBtnStyle(0) + '" title="Nicht gewertet">✕ kein Wert</button>' +
+        '<button id="acm_m1" onclick="acmSetMult(1)" style="' + multBtnStyle(1) + '">1x</button>' +
+        '<button id="acm_m2" onclick="acmSetMult(2)" style="' + multBtnStyle(2) + '">2x</button>' +
+        '<button id="acm_m3" onclick="acmSetMult(3)" style="' + multBtnStyle(3) + '">3x</button>' +
+      '</div>' +
+      '<input type="hidden" id="acm_mult" value="' + curMult + '">' +
+    '</div>';
+
   document.getElementById('archivCellModalBody').innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
       '<div style="font-weight:700;font-size:0.95rem">' + flagH + ' ' + m.home + ' – ' + flagA + ' ' + m.away + '</div>' +
@@ -3216,6 +3240,7 @@ function openArchivCellModal(matchId, playerName) {
         '<span>' + flagA + '</span>' +
       '</div>' +
     '</div>' +
+    multSection +
     tipSection +
     '<div id="acm_status" style="font-size:0.82rem;min-height:1.2em;margin-bottom:10px"></div>' +
     '<button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveArchivCellModal(\'' + matchId + '\',\'' + safeName + '\')">💾 Speichern</button>';
@@ -3225,6 +3250,20 @@ function openArchivCellModal(matchId, playerName) {
 
 function closeArchivCellModal() {
   document.getElementById('archivCellModal').classList.remove('open');
+}
+
+function acmSetMult(v) {
+  document.getElementById('acm_mult').value = v;
+  var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
+  var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
+  [0,1,2,3].forEach(function(n) {
+    var btn = document.getElementById('acm_m'+n);
+    if (!btn) return;
+    var active = n === v;
+    btn.style.border = '1px solid ' + (active ? colors[n] : 'var(--border)');
+    btn.style.background = active ? bgs[n] : 'transparent';
+    btn.style.color = active ? colors[n] : 'var(--muted)';
+  });
 }
 
 function saveArchivCellModal(matchId, playerName) {
@@ -3238,6 +3277,8 @@ function saveArchivCellModal(matchId, playerName) {
   const resA = parseInt(document.getElementById('acm_resA').value);
   m.resultHome = isNaN(resH) ? null : resH;
   m.resultAway = isNaN(resA) ? null : resA;
+  const multEl = document.getElementById('acm_mult');
+  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
 
   if (playerName) {
     const tipHEl = document.getElementById('acm_tipH');
@@ -3277,15 +3318,18 @@ function recalcArchivScores(weekIdx) {
   (w.matches || []).forEach(m => {
     if (m.resultHome == null) return;
     players.forEach(p => {
+      const mult = (m.multiplier != null ? m.multiplier : 1);
+      if (mult === 0) return; // nicht gewertet — Spiel komplett überspringen
       const tip = ((w.tips||{})[m.id]||{})[p];
       if (!tip) return;
-      const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      const basePts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      const pts = basePts * mult;
       if (!scoreMap[p]) scoreMap[p] = {name:p, pts:0, exact:0, diff:0, tendency:0, miss:0, played:0};
       scoreMap[p].pts += pts;
       scoreMap[p].played++;
-      if (pts===3) scoreMap[p].exact++;
-      else if (pts===2) scoreMap[p].diff++;
-      else if (pts===1) scoreMap[p].tendency++;
+      if (basePts===3) scoreMap[p].exact++;
+      else if (basePts===2) scoreMap[p].diff++;
+      else if (basePts===1) scoreMap[p].tendency++;
       else scoreMap[p].miss++;
     });
   });
@@ -3313,7 +3357,7 @@ function renderGesamtwertung() {
 
   const rows = Object.entries(overall)
     .map(([name,o])=>({name,...o}))
-    .sort((a,b)=>b.wins-a.wins||b.top3-a.top3||b.totalPts-a.totalPts);
+    .sort((a,b)=>b.totalPts-a.totalPts||b.wins-a.wins||b.top3-a.top3);
 
   if (!state.weekHistory.length) { el.innerHTML = '<div class="empty">Noch keine abgeschlossenen Wochen.</div>'; return; }
 
@@ -3441,7 +3485,7 @@ function renderMeisterschaften() {
         const tip = (state.tips[m.id]||{})[p];
         if (tip && tip.home != null) {
           const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-          if (pts !== null) lp += pts * (m.multiplier || 1);
+          if (pts !== null) lp += pts * ((m.multiplier != null ? m.multiplier : 1));
         }
       });
       livePtsMap[p] = lp;
@@ -3889,7 +3933,7 @@ function getCompetitionStats(compName) {
       if (!tip) return;
       const pt = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
       if (pt === null) return;
-      const mult = m.multiplier || 1;
+      const mult = (m.multiplier != null ? m.multiplier : 1);
       played++; pts += pt * mult;
       if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
     });
@@ -5304,7 +5348,7 @@ function renderStatistik() {
       const cumPts = {};
       state.players.forEach(p => { cumPts[p] = 0; });
       compMatches.forEach(m => {
-        const mult = m.multiplier || 1;
+        const mult = (m.multiplier != null ? m.multiplier : 1);
         state.players.forEach(p => {
           const tip = (state.tips[m.id]||{})[p];
           if (tip && tip.home != null) {
@@ -5328,7 +5372,7 @@ function renderStatistik() {
       const cumPts = {};
       allPlayers.forEach(p => { cumPts[p] = 0; });
       sMatches.forEach(m => {
-        const mult = m.multiplier || 1;
+        const mult = (m.multiplier != null ? m.multiplier : 1);
         allPlayers.forEach(p => {
           const tip = (sTips[m.id]||{})[p];
           if (!tip) {
