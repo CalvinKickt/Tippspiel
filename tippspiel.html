@@ -1095,7 +1095,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v211';
+const APP_VERSION = 'v212';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -3180,8 +3180,8 @@ function openArchivCellModal(matchId, playerName) {
   const m = (w.matches||[]).find(function(x){ return String(x.id)===String(matchId); });
   if (!m) return;
   const tip = playerName ? ((w.tips||{})[matchId]||{})[playerName] : null;
-  const flagH = COUNTRY_FLAGS.get(m.home.toLowerCase()) || '🏳️';
-  const flagA = COUNTRY_FLAGS.get(m.away.toLowerCase()) || '🏳️';
+  const flagH = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '🏳️';
+  const flagA = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '🏳️';
   const dateObj = m.date ? new Date(m.date) : null;
   const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
   const inp = 'width:52px;padding:8px 4px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1.1rem;-moz-appearance:textfield';
