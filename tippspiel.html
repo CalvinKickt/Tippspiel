@@ -522,6 +522,7 @@
   <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
   <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Saison</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
+  <button data-page="archiv" onclick="showPage('archiv', this)">🗂️ Archiv</button>
   <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
   <button data-page="ergebnisse" onclick="showPage('ergebnisse', this)">🎯 Ergebnisse</button>
   <button data-page="chat" onclick="showPage('chat', this)" id="chatNavBtn">💬 Chat <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:700;border-radius:99px;padding:1px 6px;margin-left:4px;vertical-align:middle">0</span></button>
@@ -645,6 +646,11 @@
       <span class="section-title">Saisonarchiv</span>
     </div>
     <div id="geschichteContent"></div>
+  </div>
+
+  <!-- ARCHIV -->
+  <div id="page-archiv" class="page">
+    <div id="archivContent"></div>
   </div>
 
   <!-- STATISTIK -->
@@ -1062,7 +1068,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v203';
+const APP_VERSION = 'v204';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1113,6 +1119,7 @@ function getWeekCutoffs() {
 }
 
 function checkAutoWeekClose() {
+  return; // Deaktiviert – Saison wird nur manuell abgeschlossen
   const cutoffs = getWeekCutoffs();
   const lastProcessed = state.lastAutoClose || 0;
   const pending = cutoffs.filter(c => c.getTime() > lastProcessed);
@@ -1350,6 +1357,7 @@ function renderAll() {
   renderPasswordList();
   renderBonusPtsList();
   renderGeschichte();
+  renderArchiv();
   renderMeisterschaften();
   renderStatistik();
   renderErgebnisse();
@@ -2877,6 +2885,169 @@ function renderGeschichte() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ===================== ARCHIV =====================
+let archivSelectedWeek = null;
+let archivPlayerFilter = null;
+
+function renderArchiv() {
+  const el = document.getElementById('archivContent');
+  if (!el) return;
+
+  if (!state.weekHistory || !state.weekHistory.length) {
+    el.innerHTML = '<div class="card"><div class="empty" style="padding:40px 0">Noch keine abgeschlossenen Saisons vorhanden.</div></div>';
+    return;
+  }
+
+  // Default: letzte Saison
+  if (archivSelectedWeek === null || archivSelectedWeek >= state.weekHistory.length) {
+    archivSelectedWeek = state.weekHistory.length - 1;
+  }
+
+  const w = state.weekHistory[archivSelectedWeek];
+  if (!w) return;
+
+  const matches = (w.matches || []).slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const tips = w.tips || {};
+  const scores = w.scores || [];
+  const allPlayers = scores.map(s => s.name);
+  const sorted = [...scores].sort((a,b) => b.pts-a.pts || b.exact-a.exact);
+
+  // ── Saison-Auswahl ──
+  const selectorHtml = `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:1.2rem">🗂️</span>
+        <select id="archivSeasonSelect" onchange="archivSelectedWeek=parseInt(this.value);archivPlayerFilter=null;renderArchiv()"
+          style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:0.95rem;cursor:pointer">
+          ${state.weekHistory.map((wh,i) =>
+            `<option value="${i}" ${i===archivSelectedWeek?'selected':''}>Saison ${wh.week}${wh.label?' – '+wh.label:''}</option>`
+          ).join('')}
+        </select>
+        <span style="color:var(--muted);font-size:0.85rem">${matches.length} Spiele · ${allPlayers.length} Spieler</span>
+      </div>
+    </div>`;
+
+  // ── Rangliste ──
+  const ranglisteHtml = `
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin-bottom:14px">🏆 Rangliste – Saison ${w.week}</h3>
+      <div style="overflow-x:auto">
+        <table class="rank-table" style="width:100%;min-width:480px">
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Spieler</th>
+            <th style="color:var(--green-light)">Punkte</th>
+            <th>Genau</th>
+            <th style="color:var(--muted);font-size:0.72rem">Differenz</th>
+            <th style="color:var(--muted);font-size:0.72rem">Tendenz</th>
+            <th style="color:var(--muted);font-size:0.72rem">Fehler</th>
+            <th style="color:var(--muted);font-size:0.72rem">Spiele</th>
+          </tr></thead>
+          <tbody>
+            ${sorted.map((s,i) => `
+              <tr style="${archivPlayerFilter===s.name?'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.08)!important':''}">
+                <td style="font-weight:700">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+                <td style="font-weight:600;cursor:pointer" onclick="archivPlayerFilter=archivPlayerFilter==='${esc(s.name)}'?null:'${esc(s.name)}';renderArchiv()">
+                  ${s.name} <span style="font-size:0.7rem;opacity:0.4">▼</span>
+                </td>
+                <td style="color:var(--green-light);font-weight:700">${s.pts}</td>
+                <td><span class="badge badge-exact" style="font-size:0.78rem">${s.exact||0}</span></td>
+                <td style="color:var(--muted)">${s.diff??'—'}</td>
+                <td style="color:var(--muted)">${s.tendency??'—'}</td>
+                <td style="color:var(--muted)">${s.miss??'—'}</td>
+                <td style="color:var(--muted)">${s.played??'—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${archivPlayerFilter ? `<div style="margin-top:10px;font-size:0.82rem;color:var(--muted)">Filter: <strong style="color:var(--text)">${archivPlayerFilter}</strong> <button class="btn btn-ghost" style="padding:2px 8px;font-size:0.75rem;margin-left:6px" onclick="archivPlayerFilter=null;renderArchiv()">✕ Alle</button></div>` : ''}
+    </div>`;
+
+  // ── Spiele & Tipps ──
+  const displayPlayers = archivPlayerFilter ? [archivPlayerFilter] : allPlayers;
+
+  const matchCards = matches.length === 0
+    ? '<div class="empty">Keine Spiele gespeichert.</div>'
+    : matches.map(m => {
+        const hasResult = m.resultHome != null;
+        const result = hasResult ? `${m.resultHome}:${m.resultAway}` : '?:?';
+        const dateObj = m.date ? new Date(m.date) : null;
+        const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}) : '';
+        const timeStr = m.date && m.date.includes('T') ? dateObj.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+
+        const tipBadges = displayPlayers.map(p => {
+          const tip = (tips[m.id]||{})[p];
+          if (!tip) return `<span style="color:var(--muted);font-size:0.75rem;padding:3px 7px;background:var(--surface2);border-radius:6px;white-space:nowrap;border:1px solid var(--border)">${p}: —</span>`;
+          let cls = 'tip-noresult';
+          let pts = null;
+          if (hasResult) {
+            pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+            cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
+          }
+          return `<span class="${cls}" style="font-size:0.75rem;padding:3px 7px;border-radius:6px;white-space:nowrap" title="${p}: ${tip.home}:${tip.away}${pts!==null?' ('+pts+' Pkt)':''}">${p}: ${tip.home}:${tip.away}${pts!==null?` <strong>(${pts})</strong>`:''}</span>`;
+        }).join('');
+
+        return `
+          <div style="border-bottom:1px solid rgba(255,255,255,0.05);padding:12px 0">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="color:var(--muted);font-size:0.75rem;min-width:80px">${dateStr}${timeStr?' '+timeStr:''}</span>
+              <span style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</span>
+              <span style="font-weight:700;font-size:0.92rem;padding:2px 10px;border-radius:6px;background:var(--surface2);color:${hasResult?'var(--green-light)':'var(--muted)'}">${result}</span>
+              ${m.competition?`<span style="font-size:0.7rem;color:var(--muted);background:rgba(99,102,241,0.15);padding:2px 7px;border-radius:10px">${m.competition}</span>`:''}
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">${tipBadges}</div>
+          </div>`;
+      }).join('');
+
+  const matchesHtml = `
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+        <h3>⚽ Spiele & Tipps</h3>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:0.78rem;color:var(--muted)">Filter:</span>
+          <button class="btn btn-sm ${!archivPlayerFilter?'btn-primary':''}" style="padding:3px 10px;font-size:0.78rem" onclick="archivPlayerFilter=null;renderArchiv()">Alle</button>
+          ${allPlayers.map(p=>`<button class="btn btn-sm ${archivPlayerFilter===p?'btn-primary':''}" style="padding:3px 10px;font-size:0.78rem" onclick="archivPlayerFilter=archivPlayerFilter==='${esc(p)}'?null:'${esc(p)}';renderArchiv()">${p}</button>`).join('')}
+        </div>
+      </div>
+      ${matchCards}
+    </div>`;
+
+  // ── Statistiken ──
+  const statsHtml = `
+    <div class="card">
+      <h3 style="margin-bottom:16px">📈 Spieler-Statistiken</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px">
+        ${sorted.map(s => {
+          const total = (s.exact||0)+(s.diff||0)+(s.tendency||0)+(s.miss||0);
+          const exactPct = total ? Math.round((s.exact||0)/total*100) : 0;
+          const hitPct = total ? Math.round(((s.exact||0)+(s.diff||0)+(s.tendency||0))/total*100) : 0;
+          const isFiltered = archivPlayerFilter === s.name;
+          return `
+            <div style="background:var(--surface2);border-radius:12px;padding:14px;border:1px solid ${isFiltered?'var(--green)':'var(--border)'};cursor:pointer;transition:border-color 0.15s"
+              onclick="archivPlayerFilter=archivPlayerFilter==='${esc(s.name)}'?null:'${esc(s.name)}';renderArchiv()">
+              <div style="font-weight:700;margin-bottom:6px;font-size:0.95rem">${s.name}</div>
+              <div style="font-size:0.82rem;color:var(--green-light);font-weight:700;margin-bottom:8px">${s.pts} Punkte</div>
+              <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;margin-bottom:8px;gap:1px">
+                <div style="flex:${s.exact||0};background:#22c55e;min-width:${(s.exact||0)>0?'3px':'0'}" title="Genau: ${s.exact||0}"></div>
+                <div style="flex:${s.diff||0};background:#a855f7;min-width:${(s.diff||0)>0?'3px':'0'}" title="Differenz: ${s.diff||0}"></div>
+                <div style="flex:${s.tendency||0};background:#3b82f6;min-width:${(s.tendency||0)>0?'3px':'0'}" title="Tendenz: ${s.tendency||0}"></div>
+                <div style="flex:${s.miss||0};background:#ef4444;min-width:${(s.miss||0)>0?'3px':'0'}" title="Fehler: ${s.miss||0}"></div>
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:0.72rem;margin-bottom:6px">
+                <span class="tip-exact">${s.exact||0} Genau</span>
+                <span class="tip-diff">${s.diff||0} Diff</span>
+                <span class="tip-tendency">${s.tendency||0} Tend</span>
+                <span class="tip-miss">${s.miss||0} Fehler</span>
+              </div>
+              <div style="font-size:0.73rem;color:var(--muted)">Trefferquote ${hitPct}% · Genau ${exactPct}% · ${s.played||0} Spiele</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  el.innerHTML = selectorHtml + ranglisteHtml + matchesHtml + statsHtml;
 }
 
 function renderGesamtwertung() {
