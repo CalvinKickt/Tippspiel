@@ -998,6 +998,12 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="archivCellModal" onclick="if(event.target===this)closeArchivCellModal()">
+  <div class="modal" style="max-width:340px;width:92%">
+    <div id="archivCellModalBody"></div>
+  </div>
+</div>
+
 <!-- CHAT TOAST -->
 <div id="chatToast" onclick="showPage('chat', document.querySelector('[data-page=chat]'));document.getElementById('chatToast').classList.remove('show')"
   style="position:fixed;bottom:24px;right:20px;z-index:1500;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;max-width:280px;cursor:pointer;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:flex-start;gap:10px;transform:translateY(120%);opacity:0;transition:transform 0.3s ease,opacity 0.3s ease;pointer-events:none">
@@ -1089,7 +1095,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v206';
+const APP_VERSION = 'v211';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2988,6 +2994,7 @@ function renderGeschichte() {
 // ===================== ARCHIV =====================
 let archivSelectedWeek = null;
 let archivPlayerFilter = null;
+let archivEditMode = false;
 
 function renderArchiv() {
   const el = document.getElementById('archivContent');
@@ -3006,6 +3013,7 @@ function renderArchiv() {
   const w = state.weekHistory[archivSelectedWeek];
   if (!w) return;
 
+  const isAdmin = currentUser && currentUser.isAdmin;
   const matches = (w.matches || []).slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
   const tips = w.tips || {};
   const scores = w.scores || [];
@@ -3017,15 +3025,20 @@ function renderArchiv() {
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:1.2rem">🗂️</span>
-        <select id="archivSeasonSelect" onchange="archivSelectedWeek=parseInt(this.value);archivPlayerFilter=null;renderArchiv()"
+        <select id="archivSeasonSelect" onchange="archivSelectedWeek=parseInt(this.value);archivPlayerFilter=null;archivEditMode=false;renderArchiv()"
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:0.95rem;cursor:pointer">
           ${state.weekHistory.map((wh,i) =>
             `<option value="${i}" ${i===archivSelectedWeek?'selected':''}>Saison ${wh.week}${wh.label?' – '+wh.label:''}</option>`
           ).join('')}
         </select>
         <span style="color:var(--muted);font-size:0.85rem">${matches.length} Spiele · ${allPlayers.length} Spieler</span>
+        ${isAdmin ? `<button class="btn ${archivEditMode?'btn-primary':'btn-ghost'}" style="margin-left:auto;padding:6px 14px;font-size:0.85rem"
+          onclick="archivEditMode=!archivEditMode;renderArchiv()">
+          ${archivEditMode?'✕ Bearbeitung beenden':'✏️ Bearbeiten'}
+        </button>` : ''}
       </div>
     </div>`;
+
 
   // ── Rangliste ──
   const ranglisteHtml = `
@@ -3071,9 +3084,10 @@ function renderArchiv() {
         const dateObj = m.date ? new Date(m.date) : null;
         const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
         const result = m.resultHome != null ? `${m.resultHome}:${m.resultAway}` : '?:?';
-        return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" style="font-size:0.72rem;white-space:nowrap">
+        const editHdrClick = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','')" style="font-size:0.72rem;white-space:nowrap;cursor:pointer"` : `style="font-size:0.72rem;white-space:nowrap"`;
+        return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" ${editHdrClick}>
           ${flagShort(m.home,3)}–${flagShort(m.away,3)}<br>
-          <span style="font-weight:400;font-size:0.68rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${result}</span>
+          <span style="font-weight:400;font-size:0.68rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${result}${isAdmin&&archivEditMode?' ✏️':''}</span>
         </th>`;
       }).join('')}
       <th class="right" style="min-width:44px">Pkt.</th>
@@ -3084,12 +3098,13 @@ function renderArchiv() {
     const cells = matches.map(m => {
       const tip = (tips[m.id]||{})[s.name];
       const hasResult = m.resultHome != null;
-      if (!tip) return `<td><span class="tip-pending">—</span></td>`;
+      const editAttr = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','${s.name.replace(/'/g,"\\'")}');" style="cursor:pointer"` : '';
+      if (!tip) return `<td ${editAttr}><span class="tip-pending">${isAdmin&&archivEditMode?'＋':'—'}</span></td>`;
       const ts = `${tip.home}:${tip.away}`;
-      if (!hasResult) return `<td><span class="tip-noresult">${ts}</span></td>`;
+      if (!hasResult) return `<td ${editAttr}><span class="tip-noresult">${ts}</span></td>`;
       const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
       const cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
-      return `<td><span class="${cls}">${ts}</span></td>`;
+      return `<td ${editAttr}><span class="${cls}">${ts}</span></td>`;
     }).join('');
     return `<tr style="${isFiltered?'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.06)!important':''}">
       <td class="left" style="font-weight:${isFiltered?'700':'500'};cursor:pointer;white-space:nowrap"
@@ -3156,6 +3171,125 @@ function renderArchiv() {
     </div>`;
 
   el.innerHTML = selectorHtml + ranglisteHtml + matchesHtml + statsHtml;
+}
+
+// ── Archiv Zell-Bearbeitung (Popup) ──
+function openArchivCellModal(matchId, playerName) {
+  const w = state.weekHistory[archivSelectedWeek];
+  if (!w) return;
+  const m = (w.matches||[]).find(function(x){ return String(x.id)===String(matchId); });
+  if (!m) return;
+  const tip = playerName ? ((w.tips||{})[matchId]||{})[playerName] : null;
+  const flagH = COUNTRY_FLAGS.get(m.home.toLowerCase()) || '🏳️';
+  const flagA = COUNTRY_FLAGS.get(m.away.toLowerCase()) || '🏳️';
+  const dateObj = m.date ? new Date(m.date) : null;
+  const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+  const inp = 'width:52px;padding:8px 4px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1.1rem;-moz-appearance:textfield';
+
+  const tipSection = playerName ? `
+    <div style="margin-bottom:20px">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Tipp von ${playerName}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span>${flagH}</span>
+        <input id="acm_tipH" type="number" min="0" max="99" value="${tip ? tip.home : ''}" style="${inp}" placeholder="–">
+        <span style="font-weight:700;font-size:1.2rem">:</span>
+        <input id="acm_tipA" type="number" min="0" max="99" value="${tip ? tip.away : ''}" style="${inp}" placeholder="–">
+        <span>${flagA}</span>
+      </div>
+    </div>` : '';
+
+  const safeName = playerName ? playerName.replace(/\\/g,'\\\\').replace(/'/g,"\\'") : '';
+
+  document.getElementById('archivCellModalBody').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+      '<div style="font-weight:700;font-size:0.95rem">' + flagH + ' ' + m.home + ' – ' + flagA + ' ' + m.away + '</div>' +
+      '<button onclick="closeArchivCellModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:0 2px">✕</button>' +
+    '</div>' +
+    '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:18px">' + dateStr + (m.competition ? ' · ' + m.competition : '') + '</div>' +
+    '<div style="margin-bottom:18px">' +
+      '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Ergebnis</div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<span>' + flagH + '</span>' +
+        '<input id="acm_resH" type="number" min="0" max="99" value="' + (m.resultHome != null ? m.resultHome : '') + '" style="' + inp + '" placeholder="–">' +
+        '<span style="font-weight:700;font-size:1.2rem">:</span>' +
+        '<input id="acm_resA" type="number" min="0" max="99" value="' + (m.resultAway != null ? m.resultAway : '') + '" style="' + inp + '" placeholder="–">' +
+        '<span>' + flagA + '</span>' +
+      '</div>' +
+    '</div>' +
+    tipSection +
+    '<div id="acm_status" style="font-size:0.82rem;min-height:1.2em;margin-bottom:10px"></div>' +
+    '<button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveArchivCellModal(\'' + matchId + '\',\'' + safeName + '\')">💾 Speichern</button>';
+
+  document.getElementById('archivCellModal').classList.add('open');
+}
+
+function closeArchivCellModal() {
+  document.getElementById('archivCellModal').classList.remove('open');
+}
+
+function saveArchivCellModal(matchId, playerName) {
+  const w = state.weekHistory[archivSelectedWeek];
+  if (!w) return;
+  const mIdx = (w.matches||[]).findIndex(function(x){ return String(x.id)===String(matchId); });
+  if (mIdx === -1) return;
+  const m = w.matches[mIdx];
+
+  const resH = parseInt(document.getElementById('acm_resH').value);
+  const resA = parseInt(document.getElementById('acm_resA').value);
+  m.resultHome = isNaN(resH) ? null : resH;
+  m.resultAway = isNaN(resA) ? null : resA;
+
+  if (playerName) {
+    const tipHEl = document.getElementById('acm_tipH');
+    const tipAEl = document.getElementById('acm_tipA');
+    if (tipHEl && tipAEl) {
+      const tipH = parseInt(tipHEl.value);
+      const tipA = parseInt(tipAEl.value);
+      if (!w.tips) w.tips = {};
+      if (!w.tips[matchId]) w.tips[matchId] = {};
+      if (!isNaN(tipH) && !isNaN(tipA)) {
+        w.tips[matchId][playerName] = {home:tipH, away:tipA};
+      } else {
+        delete w.tips[matchId][playerName];
+      }
+    }
+  }
+
+  recalcArchivScores(archivSelectedWeek);
+
+  if (window._fbDb) {
+    window._fbDb.ref('tippspiel/weekHistory/'+archivSelectedWeek)
+      .set(JSON.parse(JSON.stringify(w)))
+      .catch(function(e){ console.error('Firebase Fehler (Archiv-Edit):', e); });
+  }
+
+  const status = document.getElementById('acm_status');
+  if (status) { status.textContent = '✅ Gespeichert!'; status.style.color = 'var(--green,#22c55e)'; }
+  setTimeout(function(){ closeArchivCellModal(); renderArchiv(); }, 700);
+}
+
+function recalcArchivScores(weekIdx) {
+  const w = state.weekHistory[weekIdx];
+  if (!w) return;
+  const players = (w.scores || []).map(s => s.name);
+  const scoreMap = {};
+  players.forEach(p => { scoreMap[p] = {name:p, pts:0, exact:0, diff:0, tendency:0, miss:0, played:0}; });
+  (w.matches || []).forEach(m => {
+    if (m.resultHome == null) return;
+    players.forEach(p => {
+      const tip = ((w.tips||{})[m.id]||{})[p];
+      if (!tip) return;
+      const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      if (!scoreMap[p]) scoreMap[p] = {name:p, pts:0, exact:0, diff:0, tendency:0, miss:0, played:0};
+      scoreMap[p].pts += pts;
+      scoreMap[p].played++;
+      if (pts===3) scoreMap[p].exact++;
+      else if (pts===2) scoreMap[p].diff++;
+      else if (pts===1) scoreMap[p].tendency++;
+      else scoreMap[p].miss++;
+    });
+  });
+  w.scores = Object.values(scoreMap);
 }
 
 function renderGesamtwertung() {
