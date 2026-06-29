@@ -761,6 +761,13 @@
 
     <!-- TIPP SECTION (vor Ergebnis) -->
     <div id="detailTippSection" style="margin-bottom:16px">
+      <!-- Admin: Spieler-Auswahl -->
+      <div id="detailAdminPlayerSection" style="display:none;text-align:center;margin-bottom:12px">
+        <label style="font-size:0.8rem;color:var(--muted);margin-right:8px">Tipp für:</label>
+        <select id="detailAdminPlayer" onchange="onDetailPlayerChange()"
+          style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:0.88rem">
+        </select>
+      </div>
       <div style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;text-align:center" id="detailTippLabel">Mein Tipp</div>
       <div class="detail-result">
         <span id="detailTippHome" style="font-size:0.9rem;color:var(--muted)"></span>
@@ -778,6 +785,20 @@
     <!-- ERGEBNIS SECTION (nach Spielende) -->
     <div id="detailResultSection" style="display:none;margin-bottom:16px">
       <div id="detailResultChart"></div>
+      <!-- Admin: Tipp nachträglich bearbeiten -->
+      <div id="detailAdminEditSection" style="display:none;border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div style="font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:0.05em">⚙️ Admin: Tipp bearbeiten</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center">
+          <select id="detailAdminEditPlayer" onchange="onDetailEditPlayerChange()"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:0.88rem">
+          </select>
+          <input class="score-input" id="detail_admin_tip_h" type="number" min="0" max="99" placeholder="?" style="width:56px" />
+          <span style="color:var(--muted);font-weight:700">:</span>
+          <input class="score-input" id="detail_admin_tip_a" type="number" min="0" max="99" placeholder="?" style="width:56px" />
+          <button class="btn btn-primary btn-sm" onclick="adminSaveTipFromDetail()">💾 Speichern</button>
+        </div>
+        <div id="detailAdminEditStatus" style="text-align:center;font-size:0.8rem;margin-top:8px;min-height:18px"></div>
+      </div>
     </div>
 
     <div class="modal-btns">
@@ -1068,7 +1089,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v204';
+const APP_VERSION = 'v206';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1913,28 +1934,59 @@ function openMatchDetail(id) {
   document.getElementById('detailTeams').textContent = flagTeam(m.home) + ' vs ' + flagTeam(m.away);
   const d = m.date ? new Date(m.date).toLocaleString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
   document.getElementById('detailMeta').textContent = d;
-  // Admin-only controls
   const isAdmin = currentUser && currentUser.isAdmin;
   const delBtn = document.getElementById('detailDeleteBtn');
   if (delBtn) delBtn.style.display = isAdmin ? '' : 'none';
 
-  // Hat das Spiel ein Ergebnis?
   const hasResult = m.resultHome != null && m.resultAway != null;
   const tippSection = document.getElementById('detailTippSection');
   const resultSection = document.getElementById('detailResultSection');
+  const adminPlayerSection = document.getElementById('detailAdminPlayerSection');
+  const adminEditSection = document.getElementById('detailAdminEditSection');
 
   if (hasResult) {
-    // Ergebnis-Ansicht: Kreisdiagramm statt Tipp-Eingabe
     tippSection.style.display = 'none';
     resultSection.style.display = '';
     renderDetailChart(m);
+    // Admin: Tipp nachträglich bearbeiten
+    if (isAdmin && adminEditSection) {
+      adminEditSection.style.display = '';
+      const editSel = document.getElementById('detailAdminEditPlayer');
+      if (editSel) {
+        editSel.innerHTML = state.players.map(p => `<option value="${esc(p)}">${p}</option>`).join('');
+        onDetailEditPlayerChange();
+      }
+      document.getElementById('detailAdminEditStatus').textContent = '';
+    } else if (adminEditSection) {
+      adminEditSection.style.display = 'none';
+    }
   } else {
-    // Tipp-Eingabe
     resultSection.style.display = 'none';
-    const player = currentUser ? currentUser.name : null;
+    if (adminEditSection) adminEditSection.style.display = 'none';
+
+    // Welcher Spieler tippt?
+    let player;
+    if (isAdmin) {
+      // Admin: Spieler-Dropdown befüllen
+      if (adminPlayerSection) {
+        adminPlayerSection.style.display = '';
+        const sel = document.getElementById('detailAdminPlayer');
+        // Default: activeTipper wenn gesetzt
+        const activeTipper = document.getElementById('activeTipper');
+        const defaultPlayer = activeTipper && activeTipper.value ? activeTipper.value : state.players[0];
+        sel.innerHTML = state.players.map(p =>
+          `<option value="${esc(p)}" ${p===defaultPlayer?'selected':''}>${p}</option>`
+        ).join('');
+        player = sel.value;
+      }
+    } else {
+      if (adminPlayerSection) adminPlayerSection.style.display = 'none';
+      player = currentUser ? currentUser.name : null;
+    }
+
     if (player) {
       tippSection.style.display = '';
-      const locked = isMatchLocked(m);
+      const locked = !isAdmin && isMatchLocked(m); // Admin ist nie gesperrt
       const existingTip = (state.tips[id] || {})[player] || {};
       document.getElementById('detailTippHome').textContent = flagTeam(m.home);
       document.getElementById('detailTippAway').textContent = flagTeam(m.away);
@@ -1942,13 +1994,11 @@ function openMatchDetail(id) {
       const tipA = document.getElementById('detail_tip_a');
       tipH.value = existingTip.home !== undefined ? existingTip.home : '';
       tipA.value = existingTip.away !== undefined ? existingTip.away : '';
-      tipH.disabled = locked;
-      tipA.disabled = locked;
-      tipH.style.opacity = locked ? '0.5' : '';
-      tipA.style.opacity = locked ? '0.5' : '';
+      tipH.disabled = locked; tipH.style.opacity = locked ? '0.5' : '';
+      tipA.disabled = locked; tipA.style.opacity = locked ? '0.5' : '';
       document.getElementById('detailTippSaveBtn').disabled = locked;
       document.getElementById('detailTippSaveBtn').style.opacity = locked ? '0.5' : '';
-      const label = locked ? '🔒 Tipp gesperrt (Spiel hat begonnen)' : (existingTip.home !== undefined ? 'Mein Tipp (ändern)' : 'Mein Tipp');
+      const label = locked ? '🔒 Tipp gesperrt (Spiel hat begonnen)' : (existingTip.home !== undefined ? (isAdmin ? `Tipp von ${player} (ändern)` : 'Mein Tipp (ändern)') : (isAdmin ? `Tipp für ${player}` : 'Mein Tipp'));
       document.getElementById('detailTippLabel').textContent = label;
       document.getElementById('detailTippStatus').textContent = '';
     } else {
@@ -1957,6 +2007,50 @@ function openMatchDetail(id) {
   }
 
   document.getElementById('matchDetailModal').classList.add('open');
+}
+
+// Admin wechselt Spieler im Tipp-Modal (vor Ergebnis)
+function onDetailPlayerChange() {
+  const sel = document.getElementById('detailAdminPlayer'); if (!sel || !detailMatchId) return;
+  const player = sel.value;
+  const existingTip = (state.tips[detailMatchId] || {})[player] || {};
+  document.getElementById('detail_tip_h').value = existingTip.home !== undefined ? existingTip.home : '';
+  document.getElementById('detail_tip_a').value = existingTip.away !== undefined ? existingTip.away : '';
+  document.getElementById('detailTippLabel').textContent = existingTip.home !== undefined ? `Tipp von ${player} (ändern)` : `Tipp für ${player}`;
+  document.getElementById('detailTippStatus').textContent = '';
+}
+
+// Admin wechselt Spieler im Edit-Modal (nach Ergebnis)
+function onDetailEditPlayerChange() {
+  const sel = document.getElementById('detailAdminEditPlayer'); if (!sel || !detailMatchId) return;
+  const player = sel.value;
+  const existingTip = (state.tips[detailMatchId] || {})[player] || {};
+  document.getElementById('detail_admin_tip_h').value = existingTip.home !== undefined ? existingTip.home : '';
+  document.getElementById('detail_admin_tip_a').value = existingTip.away !== undefined ? existingTip.away : '';
+  document.getElementById('detailAdminEditStatus').textContent = '';
+}
+
+// Admin speichert Tipp nachträglich (nach Ergebnis)
+function adminSaveTipFromDetail() {
+  if (!detailMatchId || !currentUser || !currentUser.isAdmin) return;
+  const sel = document.getElementById('detailAdminEditPlayer'); if (!sel) return;
+  const player = sel.value;
+  const h = document.getElementById('detail_admin_tip_h').value;
+  const a = document.getElementById('detail_admin_tip_a').value;
+  if (h === '' || a === '') {
+    document.getElementById('detailAdminEditStatus').textContent = '⚠️ Bitte beide Felder ausfüllen.';
+    document.getElementById('detailAdminEditStatus').style.color = 'var(--red)';
+    return;
+  }
+  if (!state.tips[detailMatchId]) state.tips[detailMatchId] = {};
+  state.tips[detailMatchId][player] = { home: parseInt(h), away: parseInt(a) };
+  saveTipEntry(detailMatchId, player);
+  document.getElementById('detailAdminEditStatus').textContent = `✅ Tipp von ${player} gespeichert!`;
+  document.getElementById('detailAdminEditStatus').style.color = 'var(--green-light)';
+  renderRangliste(); renderUebersicht(); renderMeisterschaften();
+  // Chart neu laden
+  const m = state.matches.find(m => m.id === detailMatchId);
+  if (m) renderDetailChart(m);
 }
 
 function closeDetailModal() {
@@ -2056,7 +2150,8 @@ function renderDetailChart(m) {
 function saveTipFromDetail() {
   if (!detailMatchId || !currentUser) return;
   const m = state.matches.find(m => m.id === detailMatchId);
-  if (!m || isMatchLocked(m)) return;
+  const isAdmin = currentUser.isAdmin;
+  if (!m || (!isAdmin && isMatchLocked(m))) return;
   const h = document.getElementById('detail_tip_h').value;
   const a = document.getElementById('detail_tip_a').value;
   if (h === '' || a === '') {
@@ -2064,14 +2159,17 @@ function saveTipFromDetail() {
     document.getElementById('detailTippStatus').style.color = 'var(--red)';
     return;
   }
-  const player = currentUser.name;
+  // Admin: Spieler aus Dropdown, sonst eigener Name
+  const adminSel = document.getElementById('detailAdminPlayer');
+  const player = (isAdmin && adminSel && adminSel.value) ? adminSel.value : currentUser.name;
   if (!state.tips[detailMatchId]) state.tips[detailMatchId] = {};
   state.tips[detailMatchId][player] = { home: parseInt(h), away: parseInt(a) };
-  save();
-  document.getElementById('detailTippLabel').textContent = 'Mein Tipp (ändern)';
-  document.getElementById('detailTippStatus').textContent = '✅ Tipp gespeichert!';
+  saveTipEntry(detailMatchId, player);
+  const label = isAdmin ? `Tipp von ${player} (ändern)` : 'Mein Tipp (ändern)';
+  document.getElementById('detailTippLabel').textContent = label;
+  document.getElementById('detailTippStatus').textContent = isAdmin ? `✅ Tipp für ${player} gespeichert!` : '✅ Tipp gespeichert!';
   document.getElementById('detailTippStatus').style.color = 'var(--green-light)';
-  renderTipps();
+  renderTipps(); renderRangliste(); renderUebersicht();
 }
 
 function _unused_placeholder() {
@@ -2965,53 +3063,63 @@ function renderArchiv() {
       ${archivPlayerFilter ? `<div style="margin-top:10px;font-size:0.82rem;color:var(--muted)">Filter: <strong style="color:var(--text)">${archivPlayerFilter}</strong> <button class="btn btn-ghost" style="padding:2px 8px;font-size:0.75rem;margin-left:6px" onclick="archivPlayerFilter=null;renderArchiv()">✕ Alle</button></div>` : ''}
     </div>`;
 
-  // ── Spiele & Tipps ──
-  const displayPlayers = archivPlayerFilter ? [archivPlayerFilter] : allPlayers;
-
-  const matchCards = matches.length === 0
-    ? '<div class="empty">Keine Spiele gespeichert.</div>'
-    : matches.map(m => {
-        const hasResult = m.resultHome != null;
-        const result = hasResult ? `${m.resultHome}:${m.resultAway}` : '?:?';
+  // ── Spiele & Tipps (Matrix-Tabelle wie Übersicht) ──
+  const tableHeader = matches.length === 0 ? '' :
+    `<tr>
+      <th class="left" style="min-width:110px">Spieler</th>
+      ${matches.map((m,i) => {
         const dateObj = m.date ? new Date(m.date) : null;
-        const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}) : '';
-        const timeStr = m.date && m.date.includes('T') ? dateObj.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '';
+        const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
+        const result = m.resultHome != null ? `${m.resultHome}:${m.resultAway}` : '?:?';
+        return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" style="font-size:0.72rem;white-space:nowrap">
+          ${flagShort(m.home,3)}–${flagShort(m.away,3)}<br>
+          <span style="font-weight:400;font-size:0.68rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${result}</span>
+        </th>`;
+      }).join('')}
+      <th class="right" style="min-width:44px">Pkt.</th>
+    </tr>`;
 
-        const tipBadges = displayPlayers.map(p => {
-          const tip = (tips[m.id]||{})[p];
-          if (!tip) return `<span style="color:var(--muted);font-size:0.75rem;padding:3px 7px;background:var(--surface2);border-radius:6px;white-space:nowrap;border:1px solid var(--border)">${p}: —</span>`;
-          let cls = 'tip-noresult';
-          let pts = null;
-          if (hasResult) {
-            pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-            cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
-          }
-          return `<span class="${cls}" style="font-size:0.75rem;padding:3px 7px;border-radius:6px;white-space:nowrap" title="${p}: ${tip.home}:${tip.away}${pts!==null?' ('+pts+' Pkt)':''}">${p}: ${tip.home}:${tip.away}${pts!==null?` <strong>(${pts})</strong>`:''}</span>`;
-        }).join('');
-
-        return `
-          <div style="border-bottom:1px solid rgba(255,255,255,0.05);padding:12px 0">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-              <span style="color:var(--muted);font-size:0.75rem;min-width:80px">${dateStr}${timeStr?' '+timeStr:''}</span>
-              <span style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</span>
-              <span style="font-weight:700;font-size:0.92rem;padding:2px 10px;border-radius:6px;background:var(--surface2);color:${hasResult?'var(--green-light)':'var(--muted)'}">${result}</span>
-              ${m.competition?`<span style="font-size:0.7rem;color:var(--muted);background:rgba(99,102,241,0.15);padding:2px 7px;border-radius:10px">${m.competition}</span>`:''}
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px">${tipBadges}</div>
-          </div>`;
-      }).join('');
+  const tableRows = sorted.map(s => {
+    const isFiltered = archivPlayerFilter === s.name;
+    const cells = matches.map(m => {
+      const tip = (tips[m.id]||{})[s.name];
+      const hasResult = m.resultHome != null;
+      if (!tip) return `<td><span class="tip-pending">—</span></td>`;
+      const ts = `${tip.home}:${tip.away}`;
+      if (!hasResult) return `<td><span class="tip-noresult">${ts}</span></td>`;
+      const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+      const cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
+      return `<td><span class="${cls}">${ts}</span></td>`;
+    }).join('');
+    return `<tr style="${isFiltered?'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.06)!important':''}">
+      <td class="left" style="font-weight:${isFiltered?'700':'500'};cursor:pointer;white-space:nowrap"
+        onclick="archivPlayerFilter=archivPlayerFilter==='${esc(s.name)}'?null:'${esc(s.name)}';renderArchiv()"
+        title="Klicken zum Filtern">${s.name}</td>
+      ${cells}
+      <td class="right"><strong style="color:var(--green-light)">${s.pts}</strong></td>
+    </tr>`;
+  }).join('');
 
   const matchesHtml = `
     <div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap">
         <h3>⚽ Spiele & Tipps</h3>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:0.78rem;color:var(--muted)">Filter:</span>
-          <button class="btn btn-sm ${!archivPlayerFilter?'btn-primary':''}" style="padding:3px 10px;font-size:0.78rem" onclick="archivPlayerFilter=null;renderArchiv()">Alle</button>
-          ${allPlayers.map(p=>`<button class="btn btn-sm ${archivPlayerFilter===p?'btn-primary':''}" style="padding:3px 10px;font-size:0.78rem" onclick="archivPlayerFilter=archivPlayerFilter==='${esc(p)}'?null:'${esc(p)}';renderArchiv()">${p}</button>`).join('')}
+        <div style="display:flex;gap:4px;flex-wrap:wrap;font-size:0.72rem">
+          <span class="tip-exact">Genau</span>
+          <span class="tip-diff">Differenz</span>
+          <span class="tip-tendency">Sieger</span>
+          <span class="tip-miss">Falsch</span>
+          <span class="tip-pending" style="color:var(--muted)">Kein Tipp</span>
         </div>
       </div>
-      ${matchCards}
+      ${archivPlayerFilter ? `<div style="margin-bottom:8px;font-size:0.82rem;color:var(--muted)">Hervorgehoben: <strong style="color:var(--text)">${archivPlayerFilter}</strong> <button class="btn btn-ghost" style="padding:2px 8px;font-size:0.75rem;margin-left:6px" onclick="archivPlayerFilter=null;renderArchiv()">✕ Alle</button></div>` : '<div style="margin-bottom:8px;font-size:0.75rem;color:var(--muted)">Spielername anklicken zum Hervorheben</div>'}
+      ${matches.length === 0 ? '<div class="empty">Keine Spiele gespeichert.</div>' :
+        `<div style="overflow-x:auto">
+          <table class="overview-table" style="min-width:${Math.max(500, matches.length * 58 + 160)}px">
+            <thead>${tableHeader}</thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>`}
     </div>`;
 
   // ── Statistiken ──
