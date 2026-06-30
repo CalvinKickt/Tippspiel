@@ -623,7 +623,10 @@
   <!-- ÜBERSICHT -->
   <div id="page-uebersicht" class="page">
     <div class="card">
-      <h2>📊 Tipp-Übersicht – <span id="uebersichtWeekLabel"></span></h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin:0">📊 Tipp-Übersicht – <span id="uebersichtWeekLabel"></span></h2>
+        <div id="uebersichtEditBtn"></div>
+      </div>
       <div id="uebersichtLegend" style="margin-bottom:10px;font-size:0.78rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap"></div>
       <div id="uebersichtContent" style="overflow-x:auto"></div>
     </div>
@@ -1095,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v215';
+const APP_VERSION = 'v218';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2838,40 +2841,51 @@ function renderUebersicht() {
   if (!state.players.length||!state.matches.length) { el.innerHTML = '<div class="empty">Keine Daten vorhanden.</div>'; return; }
   const sorted = [...state.matches].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const firstOpenIdx = sorted.findIndex(m => m.resultHome == null);
-  const header = `<tr>
-    <th class="left">Spieler</th>
-    ${sorted.map((m,i)=>`<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}">${flagShort(m.home,3)}–${flagShort(m.away,3)}<br><span style="font-weight:400;font-size:0.7rem">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}</span></th>`).join('')}
-    <th class="right">Pkt.</th></tr>`;
   const isAdmin = currentUser && currentUser.isAdmin;
   const myName = currentUser && !currentUser.isAdmin ? currentUser.name : null;
+  const editBtnEl = document.getElementById('uebersichtEditBtn');
+  if (editBtnEl) editBtnEl.innerHTML = isAdmin
+    ? `<button class="btn ${uebersichtEditMode?'btn-primary':'btn-ghost'}" style="padding:5px 14px;font-size:0.8rem" onclick="uebersichtEditMode=!uebersichtEditMode;renderUebersicht()">${uebersichtEditMode?'✕ Bearbeitung beenden':'✏️ Bearbeiten'}</button>`
+    : '';
+
+  const header = `<tr>
+    <th class="left">Spieler</th>
+    ${sorted.map((m,i)=>{
+      const mult=(m.multiplier!=null?m.multiplier:1);
+      const multBadge=mult===0?`<span style="font-size:0.58rem;font-weight:800;color:#ef4444">✕</span>`:mult>1?`<span style="font-size:0.58rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>`:'';
+      const hdrClick=isAdmin&&uebersichtEditMode?`onclick="openUebersichtCellModal('${m.id}','')" style="cursor:pointer"`:'';
+      return `<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}" ${hdrClick}>${flagShort(m.home,3)}–${flagShort(m.away,3)} ${multBadge}<br><span style="font-weight:400;font-size:0.7rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}${isAdmin&&uebersichtEditMode?' ✏️':''}</span></th>`;
+    }).join('')}
+    <th class="right">Pkt.</th></tr>`;
   const sortedPlayers = [...state.players].sort((a,b) => {
     const sa = getPlayerStats(a), sb = getPlayerStats(b);
     return sb.pts - sa.pts || sb.exact - sa.exact || sb.diff - sb.diff;
   });
   const rows = sortedPlayers.map(p=>{
+    const safePName = p.replace(/'/g,"\\'");
     const cells = sorted.map(m=>{
       const tip = (state.tips[m.id]||{})[p];
       const hasResult = m.resultHome != null;
+      const editAttr = isAdmin && uebersichtEditMode ? `onclick="openUebersichtCellModal('${m.id}','${safePName}')" style="cursor:pointer"` : '';
       // Non-admin + fremder Spieler: Tipp nur sichtbar wenn Spiel beendet
       if (myName && p !== myName) {
-        if (!tip) return `<td><span class="tip-pending">—</span></td>`;
-        if (!hasResult) return `<td><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
-        // Spiel hat Ergebnis → echten Tipp mit Farbe zeigen
+        if (!tip) return `<td ${editAttr}><span class="tip-pending">—</span></td>`;
+        if (!hasResult) return `<td ${editAttr}><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
         const ts = `${tip.home}:${tip.away}`;
         const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
-        if (pts===3) return `<td><span class="tip-exact">${ts}</span></td>`;
-        if (pts===2) return `<td><span class="tip-diff">${ts}</span></td>`;
-        if (pts===1) return `<td><span class="tip-tendency">${ts}</span></td>`;
-        return `<td><span class="tip-miss">${ts}</span></td>`;
+        if (pts===3) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
+        if (pts===2) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
+        if (pts===1) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
+        return `<td ${editAttr}><span class="tip-miss">${ts}</span></td>`;
       }
-      if (!tip) return `<td><span class="tip-pending">—</span></td>`;
+      if (!tip) return `<td ${editAttr}><span class="tip-pending">${isAdmin&&uebersichtEditMode?'＋':'—'}</span></td>`;
       const ts = `${tip.home}:${tip.away}`;
-      if (!hasResult) return `<td><span class="tip-noresult">${ts}</span></td>`;
+      if (!hasResult) return `<td ${editAttr}><span class="tip-noresult">${ts}</span></td>`;
       const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
-      if (pts===3) return `<td><span class="tip-exact">${ts}</span></td>`;
-      if (pts===2) return `<td><span class="tip-diff">${ts}</span></td>`;
-      if (pts===1) return `<td><span class="tip-tendency">${ts}</span></td>`;
-      return `<td><span class="tip-miss">${ts}</span></td>`;
+      if (pts===3) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
+      if (pts===2) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
+      if (pts===1) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
+      return `<td ${editAttr}><span class="tip-miss">${ts}</span></td>`;
     }).join('');
     const s = getPlayerStats(p);
     return `<tr><td class="left">${p}</td>${cells}<td class="right"><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
@@ -2995,6 +3009,7 @@ function renderGeschichte() {
 let archivSelectedWeek = null;
 let archivPlayerFilter = null;
 let archivEditMode = false;
+let uebersichtEditMode = false;
 
 function renderArchiv() {
   const el = document.getElementById('archivContent');
@@ -3250,6 +3265,110 @@ function openArchivCellModal(matchId, playerName) {
 
 function closeArchivCellModal() {
   document.getElementById('archivCellModal').classList.remove('open');
+}
+
+// ── Übersicht Zell-Bearbeitung (Popup) ──
+function openUebersichtCellModal(matchId, playerName) {
+  const m = state.matches.find(function(x){ return String(x.id)===String(matchId); });
+  if (!m) return;
+  const tip = playerName ? (state.tips[matchId]||{})[playerName] : null;
+  const flagH = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '🏳️';
+  const flagA = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '🏳️';
+  const dateObj = m.date ? new Date(m.date) : null;
+  const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+  const inp = 'width:52px;padding:8px 4px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1.1rem;-moz-appearance:textfield';
+
+  const tipSection = playerName ? `
+    <div style="margin-bottom:20px">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Tipp von ${playerName}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span>${flagH}</span>
+        <input id="acm_tipH" type="number" min="0" max="99" value="${tip ? tip.home : ''}" style="${inp}" placeholder="–">
+        <span style="font-weight:700;font-size:1.2rem">:</span>
+        <input id="acm_tipA" type="number" min="0" max="99" value="${tip ? tip.away : ''}" style="${inp}" placeholder="–">
+        <span>${flagA}</span>
+      </div>
+    </div>` : '';
+
+  const curMult = (m.multiplier != null ? m.multiplier : 1);
+  function mbs(v) {
+    var colors={0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
+    var bgs={0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
+    var active=curMult===v;
+    return 'padding:4px 10px;font-size:0.82rem;font-weight:700;border-radius:6px;border:1px solid '+(active?colors[v]:'var(--border)')+';background:'+(active?bgs[v]:'transparent')+';color:'+(active?colors[v]:'var(--muted)')+';cursor:pointer';
+  }
+  const multSection =
+    '<div style="margin-bottom:18px">' +
+      '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Punktemultiplikator</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button id="acm_m0" onclick="acmSetMult(0)" style="'+mbs(0)+'" title="Nicht gewertet">✕ kein Wert</button>' +
+        '<button id="acm_m1" onclick="acmSetMult(1)" style="'+mbs(1)+'">1x</button>' +
+        '<button id="acm_m2" onclick="acmSetMult(2)" style="'+mbs(2)+'">2x</button>' +
+        '<button id="acm_m3" onclick="acmSetMult(3)" style="'+mbs(3)+'">3x</button>' +
+      '</div>' +
+      '<input type="hidden" id="acm_mult" value="'+curMult+'">' +
+    '</div>';
+
+  const safeName = playerName ? playerName.replace(/\\/g,'\\\\').replace(/'/g,"\\'") : '';
+  document.getElementById('archivCellModalBody').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+      '<div style="font-weight:700;font-size:0.95rem">' + flagH + ' ' + m.home + ' – ' + flagA + ' ' + m.away + '</div>' +
+      '<button onclick="closeArchivCellModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;padding:0 2px">✕</button>' +
+    '</div>' +
+    '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:18px">' + dateStr + (m.competition ? ' · ' + m.competition : '') + '</div>' +
+    '<div style="margin-bottom:18px">' +
+      '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Ergebnis</div>' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<span>' + flagH + '</span>' +
+        '<input id="acm_resH" type="number" min="0" max="99" value="' + (m.resultHome != null ? m.resultHome : '') + '" style="' + inp + '" placeholder="–">' +
+        '<span style="font-weight:700;font-size:1.2rem">:</span>' +
+        '<input id="acm_resA" type="number" min="0" max="99" value="' + (m.resultAway != null ? m.resultAway : '') + '" style="' + inp + '" placeholder="–">' +
+        '<span>' + flagA + '</span>' +
+      '</div>' +
+    '</div>' +
+    multSection +
+    tipSection +
+    '<div id="acm_status" style="font-size:0.82rem;min-height:1.2em;margin-bottom:10px"></div>' +
+    '<button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveUebersichtCellModal(\'' + matchId + '\',\'' + safeName + '\')">💾 Speichern</button>';
+
+  document.getElementById('archivCellModal').classList.add('open');
+}
+
+function saveUebersichtCellModal(matchId, playerName) {
+  const m = state.matches.find(function(x){ return String(x.id)===String(matchId); });
+  if (!m) return;
+
+  const resH = parseInt(document.getElementById('acm_resH').value);
+  const resA = parseInt(document.getElementById('acm_resA').value);
+  m.resultHome = isNaN(resH) ? null : resH;
+  m.resultAway = isNaN(resA) ? null : resA;
+  const multEl = document.getElementById('acm_mult');
+  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
+  saveMatchById(matchId);
+
+  if (playerName) {
+    const tipHEl = document.getElementById('acm_tipH');
+    const tipAEl = document.getElementById('acm_tipA');
+    if (tipHEl && tipAEl) {
+      const tipH = parseInt(tipHEl.value);
+      const tipA = parseInt(tipAEl.value);
+      if (!state.tips[matchId]) state.tips[matchId] = {};
+      if (!isNaN(tipH) && !isNaN(tipA)) {
+        state.tips[matchId][playerName] = {home: tipH, away: tipA};
+        saveTipEntry(matchId, playerName);
+      } else {
+        delete state.tips[matchId][playerName];
+        if (window._fbDb) window._fbDb.ref('tippspiel/tips/' + matchId + '/' + playerName).remove();
+      }
+    }
+  }
+
+  const status = document.getElementById('acm_status');
+  if (status) { status.textContent = '✅ Gespeichert!'; status.style.color = 'var(--green,#22c55e)'; }
+  setTimeout(function(){
+    closeArchivCellModal();
+    renderUebersicht(); renderRangliste(); renderErgebnisse();
+  }, 700);
 }
 
 function acmSetMult(v) {
@@ -5342,15 +5461,25 @@ function renderStatistik() {
     let data = []; // [{label, ranks: {name: rank}}]
 
     if (mode === 'wm' && wmComp) {
-      const compMatches = state.matches
+      // Alle WM-Spiele aus archivierten Saisons + aktuelle Saison sammeln
+      let allWmMatches = [];
+      state.weekHistory.forEach(w => {
+        (w.matches || [])
+          .filter(m => m.competition === wmComp && m.resultHome != null && !m.excluded)
+          .forEach(m => allWmMatches.push({match: m, tips: w.tips || {}}));
+      });
+      state.matches
         .filter(m => m.competition === wmComp && m.resultHome != null && !m.excluded)
-        .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+        .forEach(m => allWmMatches.push({match: m, tips: state.tips}));
+      allWmMatches.sort((a,b) => (a.match.date||'').localeCompare(b.match.date||''));
+
       const cumPts = {};
       state.players.forEach(p => { cumPts[p] = 0; });
-      compMatches.forEach(m => {
+      allWmMatches.forEach(({match: m, tips: mTips}) => {
         const mult = (m.multiplier != null ? m.multiplier : 1);
+        if (mult === 0) return;
         state.players.forEach(p => {
-          const tip = (state.tips[m.id]||{})[p];
+          const tip = (mTips[m.id]||{})[p];
           if (tip && tip.home != null) {
             const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
             if (pts !== null) cumPts[p] += pts * mult;
