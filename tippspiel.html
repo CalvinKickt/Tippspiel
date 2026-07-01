@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v223';
+const APP_VERSION = 'v224';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2854,7 +2854,7 @@ function renderUebersicht() {
       const mult=(m.multiplier!=null?m.multiplier:1);
       const multBadge=mult===0?`<span style="font-size:0.58rem;font-weight:800;color:#ef4444">✕</span>`:mult>1?`<span style="font-size:0.58rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>`:'';
       const hdrClick=isAdmin&&uebersichtEditMode?`onclick="openUebersichtCellModal('${m.id}','')" style="cursor:pointer"`:'';
-      return `<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}" ${hdrClick}>${flagShort(m.home,3)}–${flagShort(m.away,3)} ${multBadge}<br><span style="font-weight:400;font-size:0.7rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}${isAdmin&&uebersichtEditMode?' ✏️':''}</span></th>`;
+      return `<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}" style="text-align:center" ${hdrClick}>${flagShort(m.home,3)}<br>${flagShort(m.away,3)} ${multBadge}<br><span style="font-weight:400;font-size:0.7rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}${isAdmin&&uebersichtEditMode?' ✏️':''}</span></th>`;
     }).join('')}
     <th class="right">Pkt.</th></tr>`;
   const sortedPlayers = [...state.players].sort((a,b) => {
@@ -3101,9 +3101,9 @@ function renderArchiv() {
         const result = m.resultHome != null ? `${m.resultHome}:${m.resultAway}` : '?:?';
         const mult = (m.multiplier != null ? m.multiplier : 1);
         const multBadge = mult === 0 ? `<span style="font-size:0.6rem;font-weight:800;color:#ef4444">✕</span>` : mult > 1 ? `<span style="font-size:0.6rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>` : '';
-        const editHdrClick = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','')" style="font-size:0.72rem;white-space:nowrap;cursor:pointer"` : `style="font-size:0.72rem;white-space:nowrap"`;
+        const editHdrClick = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','')" style="font-size:0.72rem;text-align:center;cursor:pointer"` : `style="font-size:0.72rem;text-align:center"`;
         return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" ${editHdrClick}>
-          ${flagShort(m.home,3)}–${flagShort(m.away,3)} ${multBadge}<br>
+          ${flagShort(m.home,3)}<br>${flagShort(m.away,3)} ${multBadge}<br>
           <span style="font-weight:400;font-size:0.68rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${result}${isAdmin&&archivEditMode?' ✏️':''}</span>
         </th>`;
       }).join('')}
