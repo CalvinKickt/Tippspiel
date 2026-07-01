@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v224';
+const APP_VERSION = 'v227';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -5487,8 +5487,7 @@ function renderStatistik() {
         });
         const sorted = [...state.players].sort((a,b) => cumPts[b]-cumPts[a]);
         const ranks = {}; sorted.forEach((p,i) => { ranks[p] = i+1; });
-        const label = (m.home||'').slice(0,3)+'-'+(m.away||'').slice(0,3);
-        data.push({label, ranks});
+        data.push({label: String(data.length + 1), ranks});
       });
     } else if (mode === 'saison' && selSeason) {
       // Match-by-match ranking within the selected season
@@ -5518,8 +5517,7 @@ function renderStatistik() {
         });
         const sorted = [...allPlayers].sort((a,b) => cumPts[b]-cumPts[a]);
         const ranks = {}; sorted.forEach((p,i) => { ranks[p] = i+1; });
-        const label = (m.home||'').slice(0,3)+'-'+(m.away||'').slice(0,3);
-        data.push({label, ranks});
+        data.push({label: String(data.length + 1), ranks});
       });
     }
 
@@ -5551,7 +5549,7 @@ function renderStatistik() {
       ? [...new Set((selSeason.scores||[]).map(s=>s.name))]
       : state.players;
     const numP = players.length;
-    const W=560, H=Math.max(160, numP*22+40), PL=28, PR=12, PT=16, PB=26;
+    const W=Math.max(700, data.length*14+60), H=Math.max(160, numP*22+40), PL=28, PR=12, PT=16, PB=26;
     const iW=W-PL-PR, iH=H-PT-PB;
     const xStep = data.length>1 ? iW/(data.length-1) : iW;
     const yStep = numP>1 ? iH/(numP-1) : iH;
@@ -5565,7 +5563,7 @@ function renderStatistik() {
     }).join('');
 
     const xLabels = data.map((d,i)=>
-      `<text x="${xPos(i)}" y="${H-5}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.22)" transform="rotate(-40 ${xPos(i)} ${H-5})">${d.label}</text>`
+      `<text x="${xPos(i)}" y="${H-5}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.4)">${d.label}</text>`
     ).join('');
 
     const lines = players.map((p,pi) => {
@@ -5593,8 +5591,8 @@ function renderStatistik() {
         <h2 style="margin:0">📉 Ranglistenverlauf</h2>${toggleBtns}
       </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px">Platzierung im Verlauf — oben = Platz 1</div>
-      <div style="overflow-x:auto">
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block">${hGrid}${xLabels}${lines}</svg>
+      <div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block">${hGrid}${xLabels}${lines}</svg>
       </div>
       <div style="margin-top:8px;display:flex;flex-wrap:wrap">${legend}</div>
     </div>`;
