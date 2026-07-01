@@ -237,10 +237,10 @@
   .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
 
   /* SPIELE LAYOUT */
-  #page-spiele.page { max-width: 1200px; }
+  #page-spiele.page { max-width: 1160px; }
   .spiele-layout { display: flex; gap: 20px; align-items: flex-start; }
-  .spiele-cal { flex: 0 0 490px; position: sticky; top: 24px; }
-  .spiele-list { flex: 1; min-width: 0; max-height: calc(100vh - 82px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .spiele-cal { flex: 0 0 800px; position: sticky; top: 24px; }
+  .spiele-list { flex: 1; min-width: 0; max-width: 320px; max-height: calc(100vh - 82px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
   .spiele-list::-webkit-scrollbar { width: 5px; }
   .spiele-list::-webkit-scrollbar-track { background: transparent; }
   .spiele-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; }
@@ -256,7 +256,7 @@
   .cal-month-label { font-size: 1.1rem; font-weight: 700; }
   .cal-nav { background: var(--surface2); border: none; color: var(--text); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
   .cal-nav:hover { background: var(--border); }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .cal-dow { text-align: center; font-size: 0.72rem; font-weight: 600; color: var(--muted); padding: 4px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
   .cal-day { min-height: 80px; background: var(--surface2); border-radius: 8px; padding: 6px; cursor: pointer; transition: background 0.15s; border: 2px solid transparent; position: relative; }
   .cal-day:hover { background: var(--border); }
@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v218';
+const APP_VERSION = 'v223';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
