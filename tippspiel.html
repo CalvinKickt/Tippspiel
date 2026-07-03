@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v227';
+const APP_VERSION = 'v229';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -3611,6 +3611,52 @@ function renderMeisterschaften() {
     });
   }
 
+  // Last 5 played matches for this competition (across history + current)
+  let allCompPlayed = [];
+  state.weekHistory.forEach(w => {
+    (w.matches || []).filter(m => m.competition === selectedMeisterComp && m.resultHome != null && !m.excluded)
+      .forEach(m => allCompPlayed.push({match: m, tips: w.tips || {}}));
+  });
+  state.matches.filter(m => m.competition === selectedMeisterComp && m.resultHome != null && !m.excluded)
+    .forEach(m => allCompPlayed.push({match: m, tips: state.tips}));
+  allCompPlayed.sort((a,b) => (b.match.date||'').localeCompare(a.match.date||''));
+  const last5 = allCompPlayed.slice(0, 5);
+
+  const last5PtsMap = {};
+  state.players.forEach(p => { last5PtsMap[p] = 0; });
+  last5.forEach(({match: m, tips: mTips}) => {
+    const mult = (m.multiplier != null ? m.multiplier : 1);
+    if (mult === 0) return;
+    state.players.forEach(p => {
+      const tip = (mTips[m.id]||{})[p];
+      if (tip && tip.home != null) {
+        const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
+        if (pts !== null) last5PtsMap[p] += pts * mult;
+      }
+    });
+  });
+
+  const last5Chips = last5.length ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Letzte 5 Spiele</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${last5.map(({match: m}) => {
+          const flagH = COUNTRY_FLAGS[(m.home||'').toLowerCase()] || '';
+          const flagA = COUNTRY_FLAGS[(m.away||'').toLowerCase()] || '';
+          const codeH = getIOCCode(m.home);
+          const codeA = getIOCCode(m.away);
+          const mult = (m.multiplier != null ? m.multiplier : 1);
+          const multColor = mult === 3 ? '#a855f7' : mult === 2 ? '#3b82f6' : null;
+          return `<div style="background:var(--surface2);border:1px solid ${multColor||'var(--border)'};border-radius:8px;padding:5px 10px;font-size:0.78rem;white-space:nowrap">
+            ${flagH}<span style="font-size:0.7rem">${codeH}</span>
+            <strong style="margin:0 5px;color:var(--green-light)">${m.resultHome}:${m.resultAway}</strong>
+            ${flagA}<span style="font-size:0.7rem">${codeA}</span>
+            ${multColor ? `<span style="font-size:0.62rem;font-weight:800;color:${multColor};margin-left:2px">${mult}x</span>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
   // Baseline-Rang OHNE Live-Punkte (s.pts enthält bereits Live-Beitrag → rausrechnen)
   const baselineRankMap = {};
   if (liveMatchesCur.length) {
@@ -3618,6 +3664,15 @@ function renderMeisterschaften() {
       .map(s => ({name: s.name, basePts: s.pts - (livePtsMap[s.name] || 0), exact: s.exact, diff: s.diff}))
       .sort((a,b) => b.basePts - a.basePts || b.exact - a.exact || b.diff - a.diff);
     baselineSorted.forEach((s, i) => { baselineRankMap[s.name] = i + 1; });
+  }
+
+  // Baseline-Rang OHNE die letzten 5 Spiele → zeigt Rang-Delta
+  const last5BaselineRankMap = {};
+  if (last5.length && !liveMatchesCur.length) {
+    const last5Baseline = sorted
+      .map(s => ({name: s.name, basePts: s.pts - (last5PtsMap[s.name] || 0), exact: s.exact, diff: s.diff}))
+      .sort((a,b) => b.basePts - a.basePts || b.exact - a.exact || b.diff - a.diff);
+    last5Baseline.forEach((s, i) => { last5BaselineRankMap[s.name] = i + 1; });
   }
 
   // Podium (top 3)
@@ -3636,22 +3691,30 @@ function renderMeisterschaften() {
       const liveBadge = liveMatchesCur.length && lp != null
         ? `<span style="font-size:0.72rem;font-weight:700;color:${lp>0?'#22c55e':'#f87171'};margin-left:5px;opacity:0.9">${lp>0?'+'+lp:lp===0?'+0':''}</span>`
         : '';
+      const l5 = last5PtsMap[s.name] || 0;
+      const last5Badge = last5.length && !liveMatchesCur.length
+        ? `<span style="font-size:0.68rem;font-weight:700;color:#60a5fa;margin-left:5px;opacity:0.85" title="Punkte aus den letzten ${last5.length} Spielen">+${l5}</span>`
+        : '';
       const ptsCell = (isAdmin && meisterEditMode)
         ? `<td class="pts" style="padding:4px 8px">
              <input type="number" value="${s.pts}" min="0"
                style="width:60px;text-align:center;font-size:1.1rem;font-weight:700;background:var(--surface2);border:1px solid var(--green);border-radius:6px;color:var(--fg);padding:2px 4px"
                onchange="saveMeisterBonusPts('${esc(selectedMeisterComp)}', '${esc(s.name)}', this.value, ${calculatedPts})" />
            </td>`
-        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}${liveBadge}</td>`;
+        : `<td class="pts" style="font-size:1.4rem">${s.pts}${bonusBadge}${liveBadge}${last5Badge}</td>`;
       const curRank = i + 1;
-      // rankDelta: wie viele Plätze durch Live-Punkte gewonnen/verloren (positiv = aufgestiegen)
+      // rankDelta: Plätze durch Live-Punkte oder letzte 5 Spiele (positiv = aufgestiegen)
       const baseRank = baselineRankMap[s.name];
-      const rankDelta = liveMatchesCur.length && baseRank != null ? baseRank - curRank : 0;
+      const last5BaseRank = last5BaselineRankMap[s.name];
+      const rankDelta = liveMatchesCur.length && baseRank != null
+        ? baseRank - curRank
+        : last5.length && last5BaseRank != null ? last5BaseRank - curRank : 0;
+      const hasRankCtx = liveMatchesCur.length > 0 || last5.length > 0;
       const rankArrow = rankDelta > 0
         ? `<span style="font-size:0.62rem;color:#22c55e;font-weight:700;line-height:1;display:block">▲${rankDelta}</span>`
         : rankDelta < 0
           ? `<span style="font-size:0.62rem;color:#f87171;font-weight:700;line-height:1;display:block">▼${Math.abs(rankDelta)}</span>`
-          : liveMatchesCur.length ? `<span style="font-size:0.6rem;color:var(--muted);line-height:1;display:block">–</span>` : '';
+          : hasRankCtx ? `<span style="font-size:0.6rem;color:var(--muted);line-height:1;display:block">–</span>` : '';
       const rankDisplay = curRank===1?'🥇':curRank===2?'🥈':curRank===3?'🥉':curRank;
       return `
       <tr class="rank-${curRank}" style="${isMe ? 'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.1)!important;' : ''}">
@@ -3694,6 +3757,7 @@ function renderMeisterschaften() {
         ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="toggleMeisterEdit()">${meisterEditMode ? '✅ Fertig' : '✏️ Bearbeiten'}</button>` : ''}
       </div>
       ${liveBannerHtml}
+      ${last5Chips}
       ${!hasResults && !liveMatches.length ? '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:14px">⏳ Noch keine Ergebnisse – alle starten bei 0 Punkten.</div>' : ''}
       ${tableHtml}
     </div>`;
