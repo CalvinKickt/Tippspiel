@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v230';
+const APP_VERSION = 'v231';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1227,7 +1227,16 @@ function checkAutoWeekClose() {
 function save() {
   if (window._fbDb) {
     _fbSaving = true;
-    window._fbDb.ref('tippspiel').set(JSON.parse(JSON.stringify(state)))
+    // Pending granulare Tipp-Writes in den State mergen, bevor wir alles überschreiben
+    const stateToSave = JSON.parse(JSON.stringify(state));
+    Object.entries(_pendingTipWrites).forEach(([mid, players]) => {
+      if (!stateToSave.tips) stateToSave.tips = {};
+      if (!stateToSave.tips[mid]) stateToSave.tips[mid] = {};
+      Object.entries(players).forEach(([player, tip]) => {
+        stateToSave.tips[mid][player] = tip;
+      });
+    });
+    window._fbDb.ref('tippspiel').set(stateToSave)
       .catch(e => { console.error('Firebase Fehler:', e); _fbSaving = false; });
   }
 }
@@ -1246,9 +1255,23 @@ function saveMatchById(id) {
 function saveTipEntry(matchId, player) {
   if (!window._fbDb) return;
   if (!state.tips[matchId] || state.tips[matchId][player] === undefined) return;
+  const tip = state.tips[matchId][player];
+  // Als pending markieren, bis Firebase bestätigt
+  if (!_pendingTipWrites[matchId]) _pendingTipWrites[matchId] = {};
+  _pendingTipWrites[matchId][player] = tip;
   window._fbDb.ref('tippspiel/tips/' + matchId + '/' + player)
-    .set(state.tips[matchId][player])
-    .catch(e => { console.error('Firebase Fehler (Tipp):', e); });
+    .set(tip)
+    .then(() => {
+      // Write bestätigt – aus pending entfernen
+      if (_pendingTipWrites[matchId]) {
+        delete _pendingTipWrites[matchId][player];
+        if (!Object.keys(_pendingTipWrites[matchId]).length) delete _pendingTipWrites[matchId];
+      }
+    })
+    .catch(e => {
+      console.error('Firebase Fehler (Tipp):', e);
+      if (_pendingTipWrites[matchId]) delete _pendingTipWrites[matchId][player];
+    });
 }
 
 function load() {} // replaced by Firebase
@@ -5797,6 +5820,7 @@ const wmMatches = [
 let _fbSaving = false;
 let _wmMergeDone = false; // verhindert mehrfachen Merge pro Seitenladung
 let _fbInitialized = false; // verhindert mehrfaches initChat/startAutoLiveTimer
+const _pendingTipWrites = {}; // {matchId: {player: tip}} – in-flight granulare Writes
 
 // Speichert alle aktuell eingetippten (aber noch nicht gespeicherten) Inputwerte
 function _preserveTipInputs() {
@@ -6038,6 +6062,14 @@ window.addEventListener('load', function() {
         // Eingaben sichern bevor der State überschrieben wird (nur bei Updates, nicht beim ersten Laden)
         const _savedInputs = _fbInitialized ? _preserveTipInputs() : {};
         if (data) {
+          // Pending Tipp-Writes mergen, damit in-flight Writes nicht verloren gehen
+          Object.entries(_pendingTipWrites).forEach(([mid, players]) => {
+            if (!data.tips) data.tips = {};
+            if (!data.tips[mid]) data.tips[mid] = {};
+            Object.entries(players).forEach(([player, tip]) => {
+              data.tips[mid][player] = tip;
+            });
+          });
           state = data;
           applyDefaults();
           checkAutoWeekClose();
