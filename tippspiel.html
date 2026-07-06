@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v229';
+const APP_VERSION = 'v230';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -5796,6 +5796,24 @@ const wmMatches = [
 // ===================== FIREBASE =====================
 let _fbSaving = false;
 let _wmMergeDone = false; // verhindert mehrfachen Merge pro Seitenladung
+let _fbInitialized = false; // verhindert mehrfaches initChat/startAutoLiveTimer
+
+// Speichert alle aktuell eingetippten (aber noch nicht gespeicherten) Inputwerte
+function _preserveTipInputs() {
+  const vals = {};
+  document.querySelectorAll('[id^="tip_h_"],[id^="tip_a_"],[id^="detail_tip_h"],[id^="detail_tip_a"],[id^="acm_tipH"],[id^="acm_tipA"]').forEach(el => {
+    if (el.value !== '') vals[el.id] = el.value;
+  });
+  return vals;
+}
+
+// Stellt gespeicherte Inputwerte nach einem Re-Render wieder her
+function _restoreTipInputs(vals) {
+  Object.entries(vals).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && el.value === '') el.value = val;
+  });
+}
 
 // ===================== CHAT =====================
 let chatMessages = {};       // msgId → {sender, text, ts, reactions:{emoji:{user:true}}}
@@ -6017,6 +6035,8 @@ window.addEventListener('load', function() {
 
       db.ref('tippspiel').on('value', snap => {
         const data = snap.val();
+        // Eingaben sichern bevor der State überschrieben wird (nur bei Updates, nicht beim ersten Laden)
+        const _savedInputs = _fbInitialized ? _preserveTipInputs() : {};
         if (data) {
           state = data;
           applyDefaults();
@@ -6024,17 +6044,28 @@ window.addEventListener('load', function() {
         }
         _fbSaving = false;
         if (lo) lo.style.display = 'none';
-        initLogin();
+        if (!_fbInitialized) {
+          initLogin();
+          startAutoLiveTimer();
+          initChat();
+          _fbInitialized = true;
+        } else {
+          // Nur Login-Dropdown aktualisieren, keine neuen Listener starten
+          updateLoginSelect();
+        }
         renderAll();
-        startAutoLiveTimer();
-        initChat();
+        // Eingaben nach dem Re-Render wiederherstellen
+        _restoreTipInputs(_savedInputs);
       }, err => {
         console.error('Firebase read error:', err);
         if (lo) lo.style.display = 'none';
-        initLogin();
+        if (!_fbInitialized) {
+          initLogin();
+          startAutoLiveTimer();
+          initChat();
+          _fbInitialized = true;
+        }
         renderAll();
-        startAutoLiveTimer();
-        initChat();
       });
     } catch(e) {
       console.error('Firebase init error:', e);
