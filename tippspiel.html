@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v231';
+const APP_VERSION = 'v232';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1280,6 +1280,12 @@ function applyDefaults() {
   state.tips = state.tips || {};
   state.players = Array.isArray(state.players) ? state.players : Object.values(state.players || {});
   state.matches = Array.isArray(state.matches) ? state.matches : Object.values(state.matches || {});
+  // IDs immer als Strings normalisieren – Firebase konvertiert Integer-ähnliche Strings manchmal zu Zahlen
+  state.matches = state.matches.map(m => m && m.id != null ? {...m, id: String(m.id)} : m).filter(Boolean);
+  // Tips-Schlüssel ebenfalls normalisieren
+  const _normalizedTips = {};
+  Object.keys(state.tips || {}).forEach(k => { _normalizedTips[String(k)] = state.tips[k]; });
+  state.tips = _normalizedTips;
   state.tournament = state.tournament || 'Tippspiel';
   state.currentWeek = state.currentWeek || 1;
   state.weekHistory = Array.isArray(state.weekHistory) ? state.weekHistory : Object.values(state.weekHistory || {});
