@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v232';
+const APP_VERSION = 'v235';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1323,6 +1323,24 @@ function applyDefaults() {
   }
   // WM-Merge wurde entfernt – Spiele sind direkt in Firebase gespeichert.
   // Kein automatisches Löschen — nur der Admin darf Spiele manuell löschen
+
+  // Halbfinale WM 2026 – einmalig anlegen falls noch nicht vorhanden
+  if (!state.halbfinale2026seeded) {
+    const _hfMatches = [
+      {id:'hf2026_1', home:'Frankreich', away:'Spanien',    date:'2026-07-14T19:00:00.000Z', competition:'WM 2026'},
+      {id:'hf2026_2', home:'England',    away:'Argentinien', date:'2026-07-15T19:00:00.000Z', competition:'WM 2026'},
+    ];
+    let _hfChanged = false;
+    _hfMatches.forEach(hf => {
+      const exists = state.matches.some(m => m.home===hf.home && m.away===hf.away && m.date===hf.date);
+      if (!exists && !state.deletedMatchIds[hf.id]) {
+        state.matches.push({id:hf.id, home:hf.home, away:hf.away, date:hf.date, competition:hf.competition, resultHome:null, resultAway:null});
+        _hfChanged = true;
+      }
+    });
+    state.halbfinale2026seeded = true;
+    if (_hfChanged) save();
+  }
 }
 
 // ===================== NAV =====================
@@ -3268,6 +3286,8 @@ function openArchivCellModal(matchId, playerName) {
       '<input type="hidden" id="acm_mult" value="' + curMult + '">' +
     '</div>';
 
+  const compSection = buildCompSection(m.competition);
+
   document.getElementById('archivCellModalBody').innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
       '<div style="font-weight:700;font-size:0.95rem">' + flagH + ' ' + m.home + ' – ' + flagA + ' ' + m.away + '</div>' +
@@ -3285,6 +3305,7 @@ function openArchivCellModal(matchId, playerName) {
       '</div>' +
     '</div>' +
     multSection +
+    compSection +
     tipSection +
     '<div id="acm_status" style="font-size:0.82rem;min-height:1.2em;margin-bottom:10px"></div>' +
     '<button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveArchivCellModal(\'' + matchId + '\',\'' + safeName + '\')">💾 Speichern</button>';
@@ -3338,6 +3359,8 @@ function openUebersichtCellModal(matchId, playerName) {
       '<input type="hidden" id="acm_mult" value="'+curMult+'">' +
     '</div>';
 
+  const compSection = buildCompSection(m.competition);
+
   const safeName = playerName ? playerName.replace(/\\/g,'\\\\').replace(/'/g,"\\'") : '';
   document.getElementById('archivCellModalBody').innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
@@ -3356,6 +3379,7 @@ function openUebersichtCellModal(matchId, playerName) {
       '</div>' +
     '</div>' +
     multSection +
+    compSection +
     tipSection +
     '<div id="acm_status" style="font-size:0.82rem;min-height:1.2em;margin-bottom:10px"></div>' +
     '<button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveUebersichtCellModal(\'' + matchId + '\',\'' + safeName + '\')">💾 Speichern</button>';
@@ -3373,6 +3397,8 @@ function saveUebersichtCellModal(matchId, playerName) {
   m.resultAway = isNaN(resA) ? null : resA;
   const multEl = document.getElementById('acm_mult');
   if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
+  const compEl = document.getElementById('acm_comp');
+  if (compEl) { m.competition = compEl.value || null; }
   saveMatchById(matchId);
 
   if (playerName) {
@@ -3414,6 +3440,42 @@ function acmSetMult(v) {
   });
 }
 
+// ── Turnier-Auswahl im Zell-Modal ──
+function buildCompSection(curComp) {
+  var comps = state.competitions || [];
+  var cur = curComp || '';
+  function cbs(active) {
+    return 'padding:4px 10px;font-size:0.82rem;font-weight:700;border-radius:6px;border:1px solid ' +
+      (active ? '#22c55e' : 'var(--border)') + ';background:' +
+      (active ? 'rgba(34,197,94,0.2)' : 'transparent') + ';color:' +
+      (active ? '#22c55e' : 'var(--muted)') + ';cursor:pointer';
+  }
+  var btns = '<button id="acm_c_-1" onclick="acmSetComp(-1)" style="' + cbs(cur === '') + '" title="Zählt in keinem Turnier">✕ kein Turnier</button>';
+  comps.forEach(function(c, i) {
+    btns += '<button id="acm_c_' + i + '" onclick="acmSetComp(' + i + ')" style="' + cbs(cur === c.name) + '">' + (c.icon || '🏆') + ' ' + c.name + '</button>';
+  });
+  return '<div style="margin-bottom:18px">' +
+    '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-weight:600">Turnier</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + btns + '</div>' +
+    '<input type="hidden" id="acm_comp" value="' + cur.replace(/"/g,'&quot;') + '">' +
+  '</div>';
+}
+
+function acmSetComp(idx) {
+  var comps = state.competitions || [];
+  var name = (idx >= 0 && comps[idx]) ? comps[idx].name : '';
+  var el = document.getElementById('acm_comp');
+  if (el) el.value = name;
+  for (var i = -1; i < comps.length; i++) {
+    var btn = document.getElementById('acm_c_' + i);
+    if (!btn) continue;
+    var active = (i === -1) ? name === '' : comps[i].name === name;
+    btn.style.border = '1px solid ' + (active ? '#22c55e' : 'var(--border)');
+    btn.style.background = active ? 'rgba(34,197,94,0.2)' : 'transparent';
+    btn.style.color = active ? '#22c55e' : 'var(--muted)';
+  }
+}
+
 function saveArchivCellModal(matchId, playerName) {
   const w = state.weekHistory[archivSelectedWeek];
   if (!w) return;
@@ -3427,6 +3489,8 @@ function saveArchivCellModal(matchId, playerName) {
   m.resultAway = isNaN(resA) ? null : resA;
   const multEl = document.getElementById('acm_mult');
   if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
+  const compEl = document.getElementById('acm_comp');
+  if (compEl) { m.competition = compEl.value || null; }
 
   if (playerName) {
     const tipHEl = document.getElementById('acm_tipH');
