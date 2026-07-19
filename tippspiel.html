@@ -1098,7 +1098,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v235';
+const APP_VERSION = 'v236';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -2367,13 +2367,13 @@ function renderSpiele() {
     const urgentBorder = urgent ? 'border-color:#f59e0b;' : locked && !done ? 'border-color:rgba(239,68,68,0.4);' : '';
     const mult = (m.multiplier != null ? m.multiplier : 1);
     const isAdmin = currentUser && currentUser.isAdmin;
-    const multColor = mult===3?'#a855f7':mult===2?'#3b82f6':'#f59e0b';
-    const multColorBg = mult===3?'rgba(168,85,247,0.2)':mult===2?'rgba(59,130,246,0.2)':'rgba(245,158,11,0.2)';
-    const multGrad = mult===3?'linear-gradient(135deg,#7e22ce,#a855f7)':mult===2?'linear-gradient(135deg,#1d4ed8,#3b82f6)':'linear-gradient(135deg,#d97706,#f59e0b)';
+    const multColor = mult===5?'#ec4899':mult===3?'#a855f7':mult===2?'#3b82f6':'#f59e0b';
+    const multColorBg = mult===5?'rgba(236,72,153,0.2)':mult===3?'rgba(168,85,247,0.2)':mult===2?'rgba(59,130,246,0.2)':'rgba(245,158,11,0.2)';
+    const multGrad = mult===5?'linear-gradient(135deg,#be185d,#ec4899)':mult===3?'linear-gradient(135deg,#7e22ce,#a855f7)':mult===2?'linear-gradient(135deg,#1d4ed8,#3b82f6)':'linear-gradient(135deg,#d97706,#f59e0b)';
     const multBadge = mult > 1 ? `<span style="background:${multGrad};color:#fff;font-size:0.7rem;font-weight:800;border-radius:6px;padding:2px 7px;letter-spacing:0.03em">${mult}x</span>` : '';
     const multButtons = isAdmin ? `
       <div onclick="event.stopPropagation()" style="display:flex;gap:3px;align-items:center">
-        ${[1,2,3].map(v=>{const vc=v===3?'#a855f7':v===2?'#3b82f6':'#9ca3af';const vbg=v===3?'rgba(168,85,247,0.2)':v===2?'rgba(59,130,246,0.2)':'rgba(156,163,175,0.15)';return`<button onclick="event.stopPropagation();setMatchMultiplier('${m.id}',${v})" style="padding:2px 8px;font-size:0.72rem;font-weight:700;border-radius:5px;border:1px solid ${mult===v?vc:'var(--border)'};background:${mult===v?vbg:'transparent'};color:${mult===v?vc:'var(--muted)'};cursor:pointer">${v}x</button>`;}).join('')}
+        ${[1,2,3,5].map(v=>{const vc=v===5?'#ec4899':v===3?'#a855f7':v===2?'#3b82f6':'#9ca3af';const vbg=v===5?'rgba(236,72,153,0.2)':v===3?'rgba(168,85,247,0.2)':v===2?'rgba(59,130,246,0.2)':'rgba(156,163,175,0.15)';return`<button onclick="event.stopPropagation();setMatchMultiplier('${m.id}',${v})" style="padding:2px 8px;font-size:0.72rem;font-weight:700;border-radius:5px;border:1px solid ${mult===v?vc:'var(--border)'};background:${mult===v?vbg:'transparent'};color:${mult===v?vc:'var(--muted)'};cursor:pointer">${v}x</button>`;}).join('')}
       </div>` : '';
     return `<div class="match-card" onclick="openMatchDetail('${m.id}')" style="cursor:pointer;${urgentBorder}${mult>1?`border-color:${multColor};`:''}">
       <div class="match-header">
@@ -2899,7 +2899,7 @@ function renderUebersicht() {
     <th class="left">Spieler</th>
     ${sorted.map((m,i)=>{
       const mult=(m.multiplier!=null?m.multiplier:1);
-      const multBadge=mult===0?`<span style="font-size:0.58rem;font-weight:800;color:#ef4444">✕</span>`:mult>1?`<span style="font-size:0.58rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>`:'';
+      const multBadge=mult===0?`<span style="font-size:0.58rem;font-weight:800;color:#ef4444">✕</span>`:mult>1?`<span style="font-size:0.58rem;font-weight:800;color:${mult===5?'#ec4899':mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>`:'';
       const hdrClick=isAdmin&&uebersichtEditMode?`onclick="openUebersichtCellModal('${m.id}','')" style="cursor:pointer"`:'';
       return `<th id="ub-col-${i}" title="${flagTeam(m.home)} vs ${flagTeam(m.away)}" style="text-align:center" ${hdrClick}>${flagShort(m.home,3)}<br>${flagShort(m.away,3)} ${multBadge}<br><span style="font-weight:400;font-size:0.7rem;color:${m.resultHome!=null?'var(--green-light)':'var(--muted)'}">${m.resultHome!=null?m.resultHome+':'+m.resultAway:'?:?'}${isAdmin&&uebersichtEditMode?' ✏️':''}</span></th>`;
     }).join('')}
@@ -3147,7 +3147,7 @@ function renderArchiv() {
         const dateStr = dateObj ? dateObj.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
         const result = m.resultHome != null ? `${m.resultHome}:${m.resultAway}` : '?:?';
         const mult = (m.multiplier != null ? m.multiplier : 1);
-        const multBadge = mult === 0 ? `<span style="font-size:0.6rem;font-weight:800;color:#ef4444">✕</span>` : mult > 1 ? `<span style="font-size:0.6rem;font-weight:800;color:${mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>` : '';
+        const multBadge = mult === 0 ? `<span style="font-size:0.6rem;font-weight:800;color:#ef4444">✕</span>` : mult > 1 ? `<span style="font-size:0.6rem;font-weight:800;color:${mult===5?'#ec4899':mult===3?'#a855f7':'#3b82f6'}">${mult}x</span>` : '';
         const editHdrClick = (isAdmin && archivEditMode) ? `onclick="openArchivCellModal('${m.id}','')" style="font-size:0.72rem;text-align:center;cursor:pointer"` : `style="font-size:0.72rem;text-align:center"`;
         return `<th id="archiv-col-${i}" title="${m.home} vs ${m.away} (${dateStr})" ${editHdrClick}>
           ${flagShort(m.home,3)}<br>${flagShort(m.away,3)} ${multBadge}<br>
@@ -3266,8 +3266,8 @@ function openArchivCellModal(matchId, playerName) {
 
   const curMult = (m.multiplier != null ? m.multiplier : 1);
   function multBtnStyle(v) {
-    var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
-    var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
+    var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7',5:'#ec4899'};
+    var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)',5:'rgba(236,72,153,0.25)'};
     var active = curMult === v;
     return 'padding:4px 10px;font-size:0.82rem;font-weight:700;border-radius:6px;border:1px solid ' +
       (active ? colors[v] : 'var(--border)') + ';background:' +
@@ -3282,6 +3282,7 @@ function openArchivCellModal(matchId, playerName) {
         '<button id="acm_m1" onclick="acmSetMult(1)" style="' + multBtnStyle(1) + '">1x</button>' +
         '<button id="acm_m2" onclick="acmSetMult(2)" style="' + multBtnStyle(2) + '">2x</button>' +
         '<button id="acm_m3" onclick="acmSetMult(3)" style="' + multBtnStyle(3) + '">3x</button>' +
+        '<button id="acm_m5" onclick="acmSetMult(5)" style="' + multBtnStyle(5) + '">5x</button>' +
       '</div>' +
       '<input type="hidden" id="acm_mult" value="' + curMult + '">' +
     '</div>';
@@ -3342,8 +3343,8 @@ function openUebersichtCellModal(matchId, playerName) {
 
   const curMult = (m.multiplier != null ? m.multiplier : 1);
   function mbs(v) {
-    var colors={0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
-    var bgs={0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
+    var colors={0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7',5:'#ec4899'};
+    var bgs={0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)',5:'rgba(236,72,153,0.25)'};
     var active=curMult===v;
     return 'padding:4px 10px;font-size:0.82rem;font-weight:700;border-radius:6px;border:1px solid '+(active?colors[v]:'var(--border)')+';background:'+(active?bgs[v]:'transparent')+';color:'+(active?colors[v]:'var(--muted)')+';cursor:pointer';
   }
@@ -3355,6 +3356,7 @@ function openUebersichtCellModal(matchId, playerName) {
         '<button id="acm_m1" onclick="acmSetMult(1)" style="'+mbs(1)+'">1x</button>' +
         '<button id="acm_m2" onclick="acmSetMult(2)" style="'+mbs(2)+'">2x</button>' +
         '<button id="acm_m3" onclick="acmSetMult(3)" style="'+mbs(3)+'">3x</button>' +
+        '<button id="acm_m5" onclick="acmSetMult(5)" style="'+mbs(5)+'">5x</button>' +
       '</div>' +
       '<input type="hidden" id="acm_mult" value="'+curMult+'">' +
     '</div>';
@@ -3396,7 +3398,7 @@ function saveUebersichtCellModal(matchId, playerName) {
   m.resultHome = isNaN(resH) ? null : resH;
   m.resultAway = isNaN(resA) ? null : resA;
   const multEl = document.getElementById('acm_mult');
-  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
+  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = ([0,1,2,3,5].indexOf(mv) !== -1) ? mv : 1; }
   const compEl = document.getElementById('acm_comp');
   if (compEl) { m.competition = compEl.value || null; }
   saveMatchById(matchId);
@@ -3428,9 +3430,9 @@ function saveUebersichtCellModal(matchId, playerName) {
 
 function acmSetMult(v) {
   document.getElementById('acm_mult').value = v;
-  var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7'};
-  var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)'};
-  [0,1,2,3].forEach(function(n) {
+  var colors = {0:'#ef4444',1:'#9ca3af',2:'#3b82f6',3:'#a855f7',5:'#ec4899'};
+  var bgs = {0:'rgba(239,68,68,0.2)',1:'rgba(156,163,175,0.25)',2:'rgba(59,130,246,0.25)',3:'rgba(168,85,247,0.25)',5:'rgba(236,72,153,0.25)'};
+  [0,1,2,3,5].forEach(function(n) {
     var btn = document.getElementById('acm_m'+n);
     if (!btn) return;
     var active = n === v;
@@ -3488,7 +3490,7 @@ function saveArchivCellModal(matchId, playerName) {
   m.resultHome = isNaN(resH) ? null : resH;
   m.resultAway = isNaN(resA) ? null : resA;
   const multEl = document.getElementById('acm_mult');
-  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = (mv >= 0 && mv <= 3) ? mv : 1; }
+  if (multEl) { const mv = parseInt(multEl.value); m.multiplier = ([0,1,2,3,5].indexOf(mv) !== -1) ? mv : 1; }
   const compEl = document.getElementById('acm_comp');
   if (compEl) { m.competition = compEl.value || null; }
 
@@ -3739,7 +3741,7 @@ function renderMeisterschaften() {
           const codeH = getIOCCode(m.home);
           const codeA = getIOCCode(m.away);
           const mult = (m.multiplier != null ? m.multiplier : 1);
-          const multColor = mult === 3 ? '#a855f7' : mult === 2 ? '#3b82f6' : null;
+          const multColor = mult === 5 ? '#ec4899' : mult === 3 ? '#a855f7' : mult === 2 ? '#3b82f6' : null;
           return `<div style="background:var(--surface2);border:1px solid ${multColor||'var(--border)'};border-radius:8px;padding:5px 10px;font-size:0.78rem;white-space:nowrap">
             ${flagH}<span style="font-size:0.7rem">${codeH}</span>
             <strong style="margin:0 5px;color:var(--green-light)">${m.resultHome}:${m.resultAway}</strong>
