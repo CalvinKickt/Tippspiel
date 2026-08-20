@@ -274,12 +274,14 @@
 
   /* MEISTERSCHAFTEN */
   /* WM Animated Background */
-  #wmBgCanvas { position: fixed; top: 0; left: 220px; width: calc(100% - 220px); height: 100dvh; min-height: 100%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.8s ease; }
-  #wmBgCanvas.active { opacity: 1; }
+  #wmBgCanvas, #blBgCanvas, #plBgCanvas, #clBgCanvas, #uelBgCanvas, #seBgCanvas { position: fixed; top: 0; left: 220px; width: calc(100% - 220px); height: 100dvh; min-height: 100%; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.8s ease; }
+  #wmBgCanvas.active, #blBgCanvas.active, #plBgCanvas.active, #clBgCanvas.active, #uelBgCanvas.active, #seBgCanvas.active { opacity: 1; }
   #page-meisterschaften .meister-comp-tabs,
   #page-meisterschaften #meisterContent { position: relative; z-index: 1; }
+  #page-rangliste .week-banner,
+  #page-rangliste .card { position: relative; z-index: 1; }
   .meister-comp-tab.wm-tab.active { border-color: #d4a820; background: rgba(212,168,32,0.14); color: #f0c842; font-weight: 700; box-shadow: 0 0 16px rgba(212,168,32,0.30); }
-  @media (max-width: 768px) { #wmBgCanvas { left: 0; width: 100%; height: 100dvh; } }
+  @media (max-width: 768px) { #wmBgCanvas, #blBgCanvas, #plBgCanvas, #clBgCanvas, #uelBgCanvas, #seBgCanvas { left: 0; width: 100%; height: 100dvh; } }
 
   /* Liquid Glass – nur im WM-Kontext */
   .wm-glass .card {
@@ -303,10 +305,125 @@
   .wm-glass .rank-table tr.rank-2 td { background: transparent !important; }
   .wm-glass .rank-table tr.rank-3 td { background: transparent !important; }
   .wm-glass .card h2 { color: #f0c842 !important; text-shadow: 0 0 20px rgba(212,175,55,0.4); }
+
+  /* Liquid Glass – Bundesliga (Schwarz-Rot) */
+  .bl-glass .card {
+    background: rgba(10, 3, 6, 0.10) !important;
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    border: 1px solid rgba(220, 38, 48, 0.30) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,60,70,0.16), inset 0 -1px 0 rgba(255,60,70,0.07) !important;
+    overflow: hidden !important;
+  }
+  .bl-glass .rank-table th {
+    background: rgba(8, 2, 5, 0.55) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(220,38,48,0.24) !important;
+  }
+  .bl-glass .rank-table td { background: transparent !important; }
+  .bl-glass .rank-table tr { background: transparent !important; }
+  .bl-glass .rank-table tbody tr:hover td { background: rgba(220,38,48,0.10) !important; }
+  .bl-glass .rank-table tr.rank-1 td { background: rgba(220,38,48,0.09) !important; }
+  .bl-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .bl-glass .rank-table tr.rank-3 td { background: transparent !important; }
+  .bl-glass .card h2 { color: #ff5a63 !important; text-shadow: 0 0 20px rgba(220,38,48,0.45); }
+
+  /* Liquid Glass – Premier League (Violett-Cyan) */
+  .pl-glass .card {
+    background: rgba(10, 4, 24, 0.12) !important;
+    backdrop-filter: blur(6px) saturate(125%);
+    -webkit-backdrop-filter: blur(6px) saturate(125%);
+    border: 1px solid rgba(150, 90, 235, 0.32) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(180,130,255,0.18), inset 0 -1px 0 rgba(60,200,235,0.10) !important;
+    overflow: hidden !important;
+  }
+  .pl-glass .rank-table th {
+    background: rgba(8, 3, 20, 0.55) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(150,90,235,0.26) !important;
+  }
+  .pl-glass .rank-table td { background: transparent !important; }
+  .pl-glass .rank-table tr { background: transparent !important; }
+  .pl-glass .rank-table tbody tr:hover td { background: rgba(150,90,235,0.11) !important; }
+  .pl-glass .rank-table tr.rank-1 td { background: rgba(150,90,235,0.10) !important; }
+  .pl-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .pl-glass .rank-table tr.rank-3 td { background: transparent !important; }
+  .pl-glass .card h2 { color: #c9a2ff !important; text-shadow: 0 0 20px rgba(150,90,235,0.5); }
+
+  /* Liquid Glass – Champions League (Nachtblau) */
+  .cl-glass .card {
+    background: rgba(5, 10, 38, 0.14) !important;
+    backdrop-filter: blur(6px) saturate(125%);
+    -webkit-backdrop-filter: blur(6px) saturate(125%);
+    border: 1px solid rgba(70, 130, 255, 0.34) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(120,180,255,0.20), inset 0 -1px 0 rgba(190,60,220,0.10) !important;
+    overflow: hidden !important;
+  }
+  .cl-glass .rank-table th {
+    background: rgba(4, 8, 30, 0.58) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(70,130,255,0.28) !important;
+  }
+  .cl-glass .rank-table td { background: transparent !important; }
+  .cl-glass .rank-table tr { background: transparent !important; }
+  .cl-glass .rank-table tbody tr:hover td { background: rgba(70,130,255,0.12) !important; }
+  .cl-glass .rank-table tr.rank-1 td { background: rgba(70,130,255,0.11) !important; }
+  .cl-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .cl-glass .rank-table tr.rank-3 td { background: transparent !important; }
+  .cl-glass .card h2 { color: #7fc0ff !important; text-shadow: 0 0 20px rgba(60,130,255,0.55); }
+
+  /* Liquid Glass – Europa League (Orange-Schwarz) */
+  .uel-glass .card {
+    background: rgba(14, 7, 2, 0.14) !important;
+    backdrop-filter: blur(6px) saturate(125%);
+    -webkit-backdrop-filter: blur(6px) saturate(125%);
+    border: 1px solid rgba(255, 140, 30, 0.32) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,180,90,0.18), inset 0 -1px 0 rgba(255,120,20,0.08) !important;
+    overflow: clip !important;
+  }
+  .uel-glass .rank-table th {
+    background: rgba(10, 5, 2, 0.58) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(255,140,30,0.26) !important;
+  }
+  .uel-glass .rank-table td { background: transparent !important; }
+  .uel-glass .rank-table tr { background: transparent !important; }
+  .uel-glass .rank-table tbody tr:hover td { background: rgba(255,140,30,0.11) !important; }
+  .uel-glass .rank-table tr.rank-1 td { background: rgba(255,140,30,0.10) !important; }
+  .uel-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .uel-glass .rank-table tr.rank-3 td { background: transparent !important; }
+  .uel-glass .card h2 { color: #ffa94d !important; text-shadow: 0 0 20px rgba(255,140,30,0.5); }
+
+  /* Liquid Glass – Saisonwertung */
+  .se-glass .card, .se-glass .week-banner {
+    background: rgba(6, 12, 30, 0.14) !important;
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    border: 1px solid rgba(212, 175, 55, 0.26) !important;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,215,0,0.14), inset 0 -1px 0 rgba(120,170,255,0.08) !important;
+    overflow: clip !important;
+  }
+  .se-glass .rank-table th {
+    background: rgba(5, 10, 26, 0.58) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-bottom: 1px solid rgba(212,175,55,0.20) !important;
+  }
+  .se-glass .rank-table td { background: transparent !important; }
+  .se-glass .rank-table tr { background: transparent !important; }
+  .se-glass .rank-table tbody tr:hover td { background: rgba(212,175,55,0.08) !important; }
+  .se-glass .rank-table tr.rank-1 td { background: rgba(245,158,11,0.08) !important; }
+  .se-glass .rank-table tr.rank-2 td { background: transparent !important; }
+  .se-glass .rank-table tr.rank-3 td { background: transparent !important; }
   .meister-comp-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-  .meister-comp-tab { background: var(--surface2); border: 2px solid transparent; border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s; }
-  .meister-comp-tab:hover { border-color: var(--border); }
-  .meister-comp-tab.active { border-color: var(--green); background: rgba(22,163,74,0.12); color: var(--green-light); font-weight: 600; }
+  .meister-comp-tab { background: var(--surface2); border: 2px solid var(--border); border-radius: 20px; padding: 7px 16px; font-size: 0.88rem; cursor: pointer; transition: all 0.15s;
+    color: var(--text); font-weight: 600; opacity: 0.85; }
+  .meister-comp-tab:hover { border-color: var(--green); background: var(--surface); opacity: 1; }
+  .meister-comp-tab.active { border-color: var(--green); background: rgba(22,163,74,0.12); color: var(--green-light); font-weight: 700; opacity: 1; }
   .meister-podium { display: flex; justify-content: center; align-items: flex-end; gap: 12px; margin: 24px 0 32px; }
   .meister-podium-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .meister-podium-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; }
@@ -516,11 +633,11 @@
 <div class="layout">
 <nav id="mainNav">
   <div class="nav-drawer-header">Navigation</div>
-  <button data-page="meisterschaften" class="active" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
+  <button data-page="rangliste" class="active" onclick="showPage('rangliste', this)">🏆 Saison</button>
+  <button data-page="meisterschaften" onclick="showPage('meisterschaften', this)">🥇 Meisterschaften</button>
   <button data-page="tipps" onclick="showPage('tipps', this)">✏️ Tipps</button>
   <button data-page="spiele" onclick="showPage('spiele', this)">📅 Spiele</button>
   <button data-page="uebersicht" onclick="showPage('uebersicht', this)">📊 Übersicht</button>
-  <button data-page="rangliste" onclick="showPage('rangliste', this)">🏆 Saison</button>
   <button data-page="geschichte" onclick="showPage('geschichte', this)">📜 Geschichte</button>
   <button data-page="archiv" onclick="showPage('archiv', this)">🗂️ Archiv</button>
   <button data-page="statistik" onclick="showPage('statistik', this)">📈 Statistik</button>
@@ -538,7 +655,8 @@
 <main>
 
   <!-- RANGLISTE -->
-  <div id="page-rangliste" class="page">
+  <div id="page-rangliste" class="page active">
+    <canvas id="seBgCanvas"></canvas>
     <div class="week-banner" id="weekBanner">
       <div class="week-banner-info">
         <h3 id="weekBannerTitle">Saison 1</h3>
@@ -562,9 +680,9 @@
     <div class="card">
       <h2>📋 Punkteregeln</h2>
       <div class="rule-box">
-        <div class="rule-row"><span class="rule-pts" style="color:var(--green-light)">3</span><span>Korrektes Ergebnis (z.B. 2:1 → 2:1)</span></div>
-        <div class="rule-row"><span class="rule-pts" style="color:var(--purple)">2</span><span>Korrekte Differenz (z.B. 2:1 → 3:2, beide +1)</span></div>
-        <div class="rule-row"><span class="rule-pts" style="color:#60a5fa">1</span><span>Richtiger Sieger (Tendenz stimmt)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:var(--green-light)">6</span><span>Korrektes Ergebnis (z.B. 2:1 → 2:1)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:var(--purple)">4</span><span>Korrekte Differenz (z.B. 2:1 → 3:2, beide +1)</span></div>
+        <div class="rule-row"><span class="rule-pts" style="color:#60a5fa">2</span><span>Richtiger Sieger (Tendenz stimmt)</span></div>
         <div class="rule-row"><span class="rule-pts" style="color:var(--muted)">0</span><span>Falsch</span></div>
       </div>
     </div>
@@ -633,8 +751,12 @@
   </div>
 
   <!-- MEISTERSCHAFTEN -->
-  <div id="page-meisterschaften" class="page active">
+  <div id="page-meisterschaften" class="page">
     <canvas id="wmBgCanvas"></canvas>
+    <canvas id="blBgCanvas"></canvas>
+    <canvas id="plBgCanvas"></canvas>
+    <canvas id="clBgCanvas"></canvas>
+    <canvas id="uelBgCanvas"></canvas>
     <div id="meisterCompTabs" class="meister-comp-tabs"></div>
     <div id="meisterContent"></div>
   </div>
@@ -827,7 +949,10 @@
 <div class="modal-overlay" id="closeWeekModal">
   <div class="modal">
     <h3>🏁 Saison abschließen?</h3>
-    <p>Die aktuelle Saison wird archiviert und eine neue beginnt. Tipps und Spiele der aktuellen Saison werden gelöscht.</p>
+    <p>Alle <b>beendeten</b> Spiele werden mit ihren Tipps archiviert und eine neue Saison beginnt.
+       Spiele <b>ohne Ergebnis</b> bleiben mitsamt den bereits abgegebenen Tipps in der neuen Saison erhalten.</p>
+    <div id="closeWeekSplit" style="font-size:0.88rem;color:var(--muted);margin:10px 0 4px"></div>
+    <div id="closeWeekError" style="display:none;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;border-radius:8px;padding:10px 12px;font-size:0.85rem;margin:8px 0;word-break:break-word"></div>
     <div class="modal-preview" id="modalPreview"></div>
     <div class="modal-btns">
       <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
@@ -1098,7 +1223,7 @@
 
 <script>
 // ===================== VERSION =====================
-const APP_VERSION = 'v236';
+const APP_VERSION = 'v260';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('appVersion');
   if (el) el.textContent = APP_VERSION;
@@ -1171,7 +1296,7 @@ function checkAutoWeekClose() {
           if (pt === null) return;
           const mult = (m.multiplier != null ? m.multiplier : 1);
           played++; pts += pt * mult;
-          if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+          if (pt===PTS.EXACT) exact++; else if (pt===PTS.DIFF) diff++; else if (pt===PTS.TENDENCY) tendency++; else miss++;
         });
         return {name:p, pts, exact, diff, tendency, miss, played};
       }).sort((a,b) => b.pts-a.pts || b.exact-a.exact);
@@ -1179,7 +1304,7 @@ function checkAutoWeekClose() {
       // Per-competition scores
       const competitionScores = {};
       (state.competitions||[]).forEach(c => {
-        competitionScores[c.name] = state.players.map(p => {
+        competitionScores[compKey(c.name)] = state.players.map(p => {
           let pts=0, exact=0, diff=0, tendency=0, miss=0, played=0;
           oldMatches.filter(m => m.competition === c.name && m.resultHome != null && !m.excluded).forEach(m => {
             const tip = (state.tips[m.id]||{})[p];
@@ -1188,7 +1313,7 @@ function checkAutoWeekClose() {
             if (pt === null) return;
             const mult = (m.multiplier != null ? m.multiplier : 1);
             played++; pts += pt * mult;
-            if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+            if (pt===PTS.EXACT) exact++; else if (pt===PTS.DIFF) diff++; else if (pt===PTS.TENDENCY) tendency++; else miss++;
           });
           return {name:p, pts, exact, diff, tendency, miss, played};
         });
@@ -1341,6 +1466,290 @@ function applyDefaults() {
     state.halbfinale2026seeded = true;
     if (_hfChanged) save();
   }
+
+  // ===== Migration: Beendete Wettbewerbe ans Ende der Tab-Leiste (v248) =====
+  // Die WM 2026 ist vorbei – sie soll nicht mehr als erster Tab stehen.
+  // Nur die Reihenfolge in state.competitions wird geaendert, es wird nichts geloescht.
+  if (!state.wmMovedToEnd) {
+    if (!Array.isArray(state.competitions)) state.competitions = Object.values(state.competitions || {});
+    const _endeNamen = ['WM'];   // Wettbewerbe, die hinten einsortiert werden
+    const _vorne = state.competitions.filter(c => c && !_endeNamen.includes(c.name));
+    const _hinten = state.competitions.filter(c => c && _endeNamen.includes(c.name));
+    if (_hinten.length && _vorne.length) {
+      state.competitions = _vorne.concat(_hinten);
+      state.wmMovedToEnd = true;
+      save();
+    } else {
+      state.wmMovedToEnd = true;
+    }
+  }
+
+  // ===== Migration: Punktesystem 3/2/1 -> 6/4/2 (v245). Archivierte Punkte einmalig verdoppeln =====
+  // Gespeicherte Saison-Punkte sind feste Zahlen und rechnen sich nicht neu. Da das neue System
+  // exakt das Doppelte des alten ist, ist ×2 die korrekte Umrechnung. Punktemultiplikatoren
+  // (x2 / x3) stecken bereits in den gespeicherten Werten und skalieren dadurch automatisch mit:
+  // ein x2-Spiel mit exaktem Ergebnis war 3×2=6 und wird zu 6×2=12.
+  if (!state.pointsDoubledV245) {
+    let _dblSeasons = 0, _dblScores = 0, _dblCompScores = 0, _dblBonus = 0;
+    if (!Array.isArray(state.weekHistory)) state.weekHistory = Object.values(state.weekHistory || {});
+    state.weekHistory.forEach(w => {
+      if (!w) return;
+      let touched = false;
+      const sc = Array.isArray(w.scores) ? w.scores : Object.values(w.scores || {});
+      sc.forEach(s2 => {
+        if (s2 && typeof s2.pts === 'number') { s2.pts = s2.pts * 2; _dblScores++; touched = true; }
+      });
+      if (Array.isArray(w.scores)) w.scores = sc;
+      if (w.competitionScores) {
+        Object.keys(w.competitionScores).forEach(k => {
+          const arr = Array.isArray(w.competitionScores[k])
+            ? w.competitionScores[k] : Object.values(w.competitionScores[k] || {});
+          arr.forEach(s3 => {
+            if (s3 && typeof s3.pts === 'number') { s3.pts = s3.pts * 2; _dblCompScores++; touched = true; }
+          });
+          if (Array.isArray(w.competitionScores[k])) w.competitionScores[k] = arr;
+        });
+      }
+      if (touched) _dblSeasons++;
+    });
+    // Manuell vergebene Bonuspunkte stammen aus dem alten System und skalieren mit
+    if (state.playerBonusPts) {
+      Object.keys(state.playerBonusPts).forEach(p => {
+        if (typeof state.playerBonusPts[p] === 'number' && state.playerBonusPts[p] !== 0) {
+          state.playerBonusPts[p] = state.playerBonusPts[p] * 2; _dblBonus++;
+        }
+      });
+    }
+    state.pointsDoubledV245 = true;
+    console.log('[Tippspiel] Punkte verdoppelt (3/2/1 -> 6/4/2): '
+      + _dblSeasons + ' Saisons, ' + _dblScores + ' Spielerwertungen, '
+      + _dblCompScores + ' Wettbewerbswertungen, ' + _dblBonus + ' Bonuspunkt-Eintraege.');
+    save();
+  }
+
+  // ===== Migration: Wettbewerbsname mit '/' -> Firebase erlaubt '/' nicht in Schlüsseln =====
+  {
+    const _renameMap = { 'Bundesliga 26/27': 'Bundesliga 26-27' };
+    let _renamed = false;
+    if (!Array.isArray(state.competitions)) state.competitions = Object.values(state.competitions || {});
+    state.competitions.forEach(c => {
+      if (c && _renameMap[c.name]) { c.name = _renameMap[c.name]; _renamed = true; }
+    });
+    state.matches.forEach(m => {
+      if (m && _renameMap[m.competition]) { m.competition = _renameMap[m.competition]; _renamed = true; }
+    });
+    if (_renamed) save();
+  }
+
+  // ===== Bundesliga 2026/27 – Hinrunde (17 Spieltage, 153 Spiele) einmalig anlegen =====
+  if (!state.bundesliga2627seeded) {
+    const _blTeams = {
+      FCB:'FC Bayern München', BVB:'Borussia Dortmund', B04:'Bayer 04 Leverkusen',
+      RBL:'RB Leipzig', SGE:'Eintracht Frankfurt', VFB:'VfB Stuttgart',
+      BMG:'Borussia Mönchengladbach', SCF:'SC Freiburg', SVW:'SV Werder Bremen',
+      TSG:'TSG Hoffenheim', KOE:'1. FC Köln', M05:'1. FSV Mainz 05',
+      FCU:'1. FC Union Berlin', FCA:'FC Augsburg', HSV:'Hamburger SV',
+      S04:'FC Schalke 04', SVE:'SV 07 Elversberg', SCP:'SC Paderborn 07'
+    };
+    // [Spieltag, Anstoss (lokale Zeit), Heim-Kürzel, Auswärts-Kürzel]
+    const _blFixtures = [
+      [1,'2026-08-28T20:30','FCB','VFB'],[1,'2026-08-29T15:30','RBL','BMG'],[1,'2026-08-29T15:30','M05','SCP'],
+      [1,'2026-08-29T15:30','FCU','SGE'],[1,'2026-08-29T15:30','KOE','TSG'],[1,'2026-08-29T15:30','SVE','B04'],
+      [1,'2026-08-29T18:30','BVB','HSV'],[1,'2026-08-30T15:30','SCF','SVW'],[1,'2026-08-30T17:30','FCA','S04'],
+      [2,'2026-09-04T20:30','VFB','KOE'],[2,'2026-09-05T15:30','TSG','BVB'],[2,'2026-09-05T15:30','B04','FCU'],
+      [2,'2026-09-05T15:30','BMG','SVE'],[2,'2026-09-05T15:30','SVW','RBL'],[2,'2026-09-05T15:30','SCP','SCF'],
+      [2,'2026-09-05T18:30','S04','FCB'],[2,'2026-09-06T15:30','HSV','M05'],[2,'2026-09-06T17:30','SGE','FCA'],
+      [3,'2026-09-11T20:30','FCU','S04'],[3,'2026-09-12T15:30','BVB','SCP'],[3,'2026-09-12T15:30','TSG','VFB'],
+      [3,'2026-09-12T15:30','SCF','BMG'],[3,'2026-09-12T15:30','FCA','B04'],[3,'2026-09-12T15:30','M05','SGE'],
+      [3,'2026-09-12T18:30','KOE','SVW'],[3,'2026-09-13T15:30','RBL','HSV'],[3,'2026-09-13T17:30','SVE','FCB'],
+      [4,'2026-09-18T20:30','FCB','FCU'],[4,'2026-09-19T15:30','SGE','SCF'],[4,'2026-09-19T15:30','BMG','M05'],
+      [4,'2026-09-19T15:30','HSV','KOE'],[4,'2026-09-19T15:30','SVW','FCA'],[4,'2026-09-19T18:30','VFB','BVB'],
+      [4,'2026-09-20T15:30','B04','RBL'],[4,'2026-09-20T17:30','S04','SVE'],[4,'2026-09-20T19:30','SCP','TSG'],
+      [5,'2026-10-10T15:30','BVB','SVW'],[5,'2026-10-10T15:30','RBL','SGE'],[5,'2026-10-10T15:30','TSG','HSV'],
+      [5,'2026-10-10T15:30','SCF','S04'],[5,'2026-10-10T15:30','FCA','FCB'],[5,'2026-10-10T15:30','M05','B04'],
+      [5,'2026-10-10T15:30','FCU','SVE'],[5,'2026-10-10T15:30','KOE','BMG'],[5,'2026-10-10T15:30','SCP','VFB'],
+      [6,'2026-10-17T15:30','FCB','RBL'],[6,'2026-10-17T15:30','B04','SCF'],[6,'2026-10-17T15:30','SGE','KOE'],
+      [6,'2026-10-17T15:30','FCU','BVB'],[6,'2026-10-17T15:30','BMG','TSG'],[6,'2026-10-17T15:30','HSV','VFB'],
+      [6,'2026-10-17T15:30','SVW','SCP'],[6,'2026-10-17T15:30','S04','M05'],[6,'2026-10-17T15:30','SVE','FCA'],
+      [7,'2026-10-24T15:30','VFB','BMG'],[7,'2026-10-24T15:30','BVB','SGE'],[7,'2026-10-24T15:30','RBL','SVE'],
+      [7,'2026-10-24T15:30','TSG','B04'],[7,'2026-10-24T15:30','SCF','FCB'],[7,'2026-10-24T15:30','FCA','FCU'],
+      [7,'2026-10-24T15:30','M05','SVW'],[7,'2026-10-24T15:30','KOE','S04'],[7,'2026-10-24T15:30','SCP','HSV'],
+      [8,'2026-10-31T15:30','B04','VFB'],[8,'2026-10-31T15:30','S04','RBL'],[8,'2026-10-31T15:30','FCB','BVB'],
+      [8,'2026-10-31T15:30','SGE','HSV'],[8,'2026-10-31T15:30','FCA','SCF'],[8,'2026-10-31T15:30','FCU','KOE'],
+      [8,'2026-10-31T15:30','BMG','SCP'],[8,'2026-10-31T15:30','SVW','TSG'],[8,'2026-10-31T15:30','SVE','M05'],
+      [9,'2026-11-07T15:30','VFB','SVW'],[9,'2026-11-07T15:30','BVB','SVE'],[9,'2026-11-07T15:30','RBL','FCA'],
+      [9,'2026-11-07T15:30','TSG','S04'],[9,'2026-11-07T15:30','SCF','FCU'],[9,'2026-11-07T15:30','M05','FCB'],
+      [9,'2026-11-07T15:30','HSV','BMG'],[9,'2026-11-07T15:30','KOE','B04'],[9,'2026-11-07T15:30','SCP','SGE'],
+      [10,'2026-11-21T15:30','FCB','KOE'],[10,'2026-11-21T15:30','B04','SCP'],[10,'2026-11-21T15:30','SGE','TSG'],
+      [10,'2026-11-21T15:30','FCA','M05'],[10,'2026-11-21T15:30','FCU','RBL'],[10,'2026-11-21T15:30','BMG','BVB'],
+      [10,'2026-11-21T15:30','SVW','HSV'],[10,'2026-11-21T15:30','S04','VFB'],[10,'2026-11-21T15:30','SVE','SCF'],
+      [11,'2026-11-28T15:30','BVB','B04'],[11,'2026-11-28T15:30','VFB','SGE'],[11,'2026-11-28T15:30','TSG','FCA'],
+      [11,'2026-11-28T15:30','SCF','RBL'],[11,'2026-11-28T15:30','M05','FCU'],[11,'2026-11-28T15:30','HSV','FCB'],
+      [11,'2026-11-28T15:30','KOE','SVE'],[11,'2026-11-28T15:30','SVW','BMG'],[11,'2026-11-28T15:30','SCP','S04'],
+      [12,'2026-12-05T15:30','SVE','VFB'],[12,'2026-12-05T15:30','FCB','SCP'],[12,'2026-12-05T15:30','RBL','M05'],
+      [12,'2026-12-05T15:30','B04','BMG'],[12,'2026-12-05T15:30','SCF','TSG'],[12,'2026-12-05T15:30','SGE','SVW'],
+      [12,'2026-12-05T15:30','FCA','KOE'],[12,'2026-12-05T15:30','FCU','HSV'],[12,'2026-12-05T15:30','S04','BVB'],
+      [13,'2026-12-12T15:30','SCP','SVE'],[13,'2026-12-12T15:30','BVB','FCA'],[13,'2026-12-12T15:30','VFB','FCU'],
+      [13,'2026-12-12T15:30','TSG','FCB'],[13,'2026-12-12T15:30','M05','SCF'],[13,'2026-12-12T15:30','BMG','SGE'],
+      [13,'2026-12-12T15:30','HSV','S04'],[13,'2026-12-12T15:30','KOE','RBL'],[13,'2026-12-12T15:30','SVW','B04'],
+      [14,'2026-12-19T15:30','SVE','HSV'],[14,'2026-12-19T15:30','FCB','SVW'],[14,'2026-12-19T15:30','RBL','BVB'],
+      [14,'2026-12-19T15:30','B04','SGE'],[14,'2026-12-19T15:30','SCF','VFB'],[14,'2026-12-19T15:30','FCA','SCP'],
+      [14,'2026-12-19T15:30','M05','KOE'],[14,'2026-12-19T15:30','FCU','TSG'],[14,'2026-12-19T15:30','S04','BMG'],
+      [15,'2027-01-09T15:30','BVB','M05'],[15,'2027-01-09T15:30','VFB','FCA'],[15,'2027-01-09T15:30','TSG','SVE'],
+      [15,'2027-01-09T15:30','SGE','S04'],[15,'2027-01-09T15:30','BMG','FCB'],[15,'2027-01-09T15:30','HSV','B04'],
+      [15,'2027-01-09T15:30','KOE','SCF'],[15,'2027-01-09T15:30','SVW','FCU'],[15,'2027-01-09T15:30','SCP','RBL'],
+      [16,'2027-01-12T20:30','FCB','B04'],[16,'2027-01-12T20:30','RBL','VFB'],[16,'2027-01-12T20:30','SCF','HSV'],
+      [16,'2027-01-12T20:30','FCA','BMG'],[16,'2027-01-12T20:30','M05','TSG'],[16,'2027-01-12T20:30','FCU','SCP'],
+      [16,'2027-01-12T20:30','KOE','BVB'],[16,'2027-01-12T20:30','S04','SVW'],[16,'2027-01-12T20:30','SVE','SGE'],
+      [17,'2027-01-16T15:30','BVB','SCF'],[17,'2027-01-16T15:30','VFB','M05'],[17,'2027-01-16T15:30','TSG','RBL'],
+      [17,'2027-01-16T15:30','B04','S04'],[17,'2027-01-16T15:30','SGE','FCB'],[17,'2027-01-16T15:30','BMG','FCU'],
+      [17,'2027-01-16T15:30','HSV','FCA'],[17,'2027-01-16T15:30','SVW','SVE'],[17,'2027-01-16T15:30','SCP','KOE']
+    ];
+    const _blComp = 'Bundesliga 26-27';
+    if (!Array.isArray(state.competitions)) state.competitions = [];
+    let _blChanged = false;
+    if (!state.competitions.find(c => c.name === _blComp)) {
+      state.competitions.push({ name: _blComp, icon: '🇩🇪' });
+      _blChanged = true;
+    }
+    _blFixtures.forEach(f => {
+      const md = f[0], date = f[1] + ':00', home = _blTeams[f[2]], away = _blTeams[f[3]];
+      const id = 'bl2627_' + String(md).padStart(2,'0') + '_' + f[2] + '_' + f[3];
+      if (state.deletedMatchIds && state.deletedMatchIds[id]) return;
+      const exists = state.matches.some(m =>
+        m.id === id || (m.home === home && m.away === away && m.competition === _blComp));
+      if (exists) return;
+      state.matches.push({
+        id: id, home: home, away: away, date: date,
+        competition: _blComp, matchday: md,
+        resultHome: null, resultAway: null
+      });
+      _blChanged = true;
+    });
+    state.bundesliga2627seeded = true;
+    if (_blChanged) save();
+  }
+
+  // ===== Premier League 26-27 – Hinrunde (19 Spieltage, 190 Spiele) einmalig anlegen =====
+  if (!state.premierleague2627seeded) {
+    const _plTeams = {"ARS": "Arsenal", "AVL": "Aston Villa", "BOU": "AFC Bournemouth", "BRE": "Brentford", "BHA": "Brighton & Hove Albion", "CHE": "Chelsea", "COV": "Coventry City", "CRY": "Crystal Palace", "EVE": "Everton", "FUL": "Fulham", "HUL": "Hull City", "IPS": "Ipswich Town", "LEE": "Leeds United", "LIV": "Liverpool", "MCI": "Manchester City", "MUN": "Manchester United", "NEW": "Newcastle United", "NFO": "Nottingham Forest", "TOT": "Tottenham Hotspur", "SUN": "Sunderland"};
+    // [Spieltag, Anstoss (lokale Zeit), Heim-Kürzel, Auswärts-Kürzel]
+    const _plFixtures = [
+      [1,'2026-08-21T21:00','ARS','COV'],[1,'2026-08-22T13:30','HUL','MUN'],[1,'2026-08-22T16:00','EVE','CRY'],
+      [1,'2026-08-22T16:00','IPS','SUN'],[1,'2026-08-22T16:00','NFO','LEE'],[1,'2026-08-22T18:30','BRE','TOT'],
+      [1,'2026-08-23T15:00','BHA','AVL'],[1,'2026-08-23T15:00','MCI','BOU'],[1,'2026-08-23T17:30','NEW','LIV'],
+      [1,'2026-08-24T21:00','FUL','CHE'],[2,'2026-08-28T21:00','CRY','MCI'],[2,'2026-08-29T13:30','LIV','NFO'],
+      [2,'2026-08-29T16:00','BOU','EVE'],[2,'2026-08-29T16:00','COV','HUL'],[2,'2026-08-29T18:30','TOT','NEW'],
+      [2,'2026-08-30T15:00','CHE','BHA'],[2,'2026-08-30T15:00','LEE','BRE'],[2,'2026-08-30T15:00','SUN','FUL'],
+      [2,'2026-08-30T17:30','MUN','IPS'],[2,'2026-08-31T21:00','AVL','ARS'],[3,'2026-09-04T21:00','IPS','LIV'],
+      [3,'2026-09-05T13:30','NEW','BOU'],[3,'2026-09-05T16:00','BRE','SUN'],[3,'2026-09-05T16:00','BHA','LEE'],
+      [3,'2026-09-05T16:00','FUL','CRY'],[3,'2026-09-05T16:00','MCI','COV'],[3,'2026-09-05T16:00','NFO','TOT'],
+      [3,'2026-09-05T18:30','HUL','AVL'],[3,'2026-09-06T15:00','EVE','MUN'],[3,'2026-09-06T17:30','ARS','CHE'],
+      [4,'2026-09-12T16:00','BOU','BRE'],[4,'2026-09-12T16:00','AVL','NFO'],[4,'2026-09-12T16:00','CHE','HUL'],
+      [4,'2026-09-12T16:00','CRY','IPS'],[4,'2026-09-12T16:00','LIV','FUL'],[4,'2026-09-12T18:30','TOT','EVE'],
+      [4,'2026-09-12T21:00','SUN','ARS'],[4,'2026-09-13T15:00','COV','BHA'],[4,'2026-09-13T17:30','MUN','MCI'],
+      [4,'2026-09-14T21:00','LEE','NEW'],[5,'2026-09-18T21:00','BRE','CHE'],[5,'2026-09-19T13:30','TOT','AVL'],
+      [5,'2026-09-19T16:00','BHA','ARS'],[5,'2026-09-19T16:00','EVE','IPS'],[5,'2026-09-19T16:00','LEE','CRY'],
+      [5,'2026-09-19T16:00','MCI','SUN'],[5,'2026-09-19T16:00','NEW','HUL'],[5,'2026-09-19T18:30','NFO','COV'],
+      [5,'2026-09-20T15:00','BOU','LIV'],[5,'2026-09-20T17:30','FUL','MUN'],[6,'2026-10-10T16:00','ARS','LEE'],
+      [6,'2026-10-10T16:00','AVL','BRE'],[6,'2026-10-10T16:00','CHE','BOU'],[6,'2026-10-10T16:00','COV','NEW'],
+      [6,'2026-10-10T16:00','CRY','NFO'],[6,'2026-10-10T16:00','HUL','EVE'],[6,'2026-10-10T16:00','IPS','FUL'],
+      [6,'2026-10-10T16:00','LIV','MCI'],[6,'2026-10-10T16:00','MUN','TOT'],[6,'2026-10-10T16:00','SUN','BHA'],
+      [7,'2026-10-17T16:00','BOU','SUN'],[7,'2026-10-17T16:00','BRE','LIV'],[7,'2026-10-17T16:00','BHA','CRY'],
+      [7,'2026-10-17T16:00','EVE','CHE'],[7,'2026-10-17T16:00','FUL','HUL'],[7,'2026-10-17T16:00','LEE','MUN'],
+      [7,'2026-10-17T16:00','MCI','IPS'],[7,'2026-10-17T16:00','NEW','AVL'],[7,'2026-10-17T16:00','NFO','ARS'],
+      [7,'2026-10-17T16:00','TOT','COV'],[8,'2026-10-24T16:00','ARS','EVE'],[8,'2026-10-24T16:00','AVL','MCI'],
+      [8,'2026-10-24T16:00','CHE','TOT'],[8,'2026-10-24T16:00','COV','FUL'],[8,'2026-10-24T16:00','CRY','NEW'],
+      [8,'2026-10-24T16:00','HUL','BRE'],[8,'2026-10-24T16:00','IPS','NFO'],[8,'2026-10-24T16:00','LIV','BHA'],
+      [8,'2026-10-24T16:00','MUN','BOU'],[8,'2026-10-24T16:00','SUN','LEE'],[9,'2026-10-31T16:00','BOU','LEE'],
+      [9,'2026-10-31T16:00','AVL','FUL'],[9,'2026-10-31T16:00','BRE','NFO'],[9,'2026-10-31T16:00','CHE','MUN'],
+      [9,'2026-10-31T16:00','COV','SUN'],[9,'2026-10-31T16:00','HUL','IPS'],[9,'2026-10-31T16:00','LIV','ARS'],
+      [9,'2026-10-31T16:00','MCI','BHA'],[9,'2026-10-31T16:00','NEW','EVE'],[9,'2026-10-31T16:00','TOT','CRY'],
+      [10,'2026-11-07T16:00','ARS','HUL'],[10,'2026-11-07T16:00','BHA','BRE'],[10,'2026-11-07T16:00','CRY','LIV'],
+      [10,'2026-11-07T16:00','EVE','COV'],[10,'2026-11-07T16:00','FUL','NEW'],[10,'2026-11-07T16:00','IPS','BOU'],
+      [10,'2026-11-07T16:00','LEE','TOT'],[10,'2026-11-07T16:00','MUN','AVL'],[10,'2026-11-07T16:00','NFO','MCI'],
+      [10,'2026-11-07T16:00','SUN','CHE'],[11,'2026-11-21T16:00','BOU','NFO'],[11,'2026-11-21T16:00','AVL','SUN'],
+      [11,'2026-11-21T16:00','BRE','EVE'],[11,'2026-11-21T16:00','CHE','LEE'],[11,'2026-11-21T16:00','COV','CRY'],
+      [11,'2026-11-21T16:00','HUL','BHA'],[11,'2026-11-21T16:00','LIV','MUN'],[11,'2026-11-21T16:00','MCI','FUL'],
+      [11,'2026-11-21T16:00','NEW','ARS'],[11,'2026-11-21T16:00','TOT','IPS'],[12,'2026-11-28T16:00','ARS','MCI'],
+      [12,'2026-11-28T16:00','BHA','NEW'],[12,'2026-11-28T16:00','CRY','HUL'],[12,'2026-11-28T16:00','EVE','LIV'],
+      [12,'2026-11-28T16:00','FUL','BOU'],[12,'2026-11-28T16:00','IPS','AVL'],[12,'2026-11-28T16:00','LEE','COV'],
+      [12,'2026-11-28T16:00','MUN','BRE'],[12,'2026-11-28T16:00','NFO','CHE'],[12,'2026-11-28T16:00','SUN','TOT'],
+      [13,'2026-12-02T21:00','BOU','BHA'],[13,'2026-12-02T21:00','AVL','EVE'],[13,'2026-12-02T21:00','BRE','ARS'],
+      [13,'2026-12-02T21:00','CHE','CRY'],[13,'2026-12-02T21:00','COV','IPS'],[13,'2026-12-02T21:00','HUL','NFO'],
+      [13,'2026-12-02T21:00','LIV','SUN'],[13,'2026-12-02T21:00','MCI','LEE'],[13,'2026-12-02T21:00','NEW','MUN'],
+      [13,'2026-12-02T21:00','TOT','FUL'],[14,'2026-12-05T16:00','BOU','HUL'],[14,'2026-12-05T16:00','AVL','CRY'],
+      [14,'2026-12-05T16:00','BRE','MCI'],[14,'2026-12-05T16:00','CHE','LIV'],[14,'2026-12-05T16:00','EVE','FUL'],
+      [14,'2026-12-05T16:00','LEE','IPS'],[14,'2026-12-05T16:00','MUN','COV'],[14,'2026-12-05T16:00','NEW','SUN'],
+      [14,'2026-12-05T16:00','NFO','BHA'],[14,'2026-12-05T16:00','TOT','ARS'],[15,'2026-12-12T16:00','ARS','BOU'],
+      [15,'2026-12-12T16:00','BHA','EVE'],[15,'2026-12-12T16:00','COV','AVL'],[15,'2026-12-12T16:00','CRY','MUN'],
+      [15,'2026-12-12T16:00','FUL','BRE'],[15,'2026-12-12T16:00','HUL','TOT'],[15,'2026-12-12T16:00','IPS','NEW'],
+      [15,'2026-12-12T16:00','LIV','LEE'],[15,'2026-12-12T16:00','MCI','CHE'],[15,'2026-12-12T16:00','SUN','NFO'],
+      [16,'2026-12-19T16:00','BOU','COV'],[16,'2026-12-19T16:00','ARS','MUN'],[16,'2026-12-19T16:00','BRE','NEW'],
+      [16,'2026-12-19T16:00','BHA','IPS'],[16,'2026-12-19T16:00','CHE','AVL'],[16,'2026-12-19T16:00','LEE','FUL'],
+      [16,'2026-12-19T16:00','LIV','TOT'],[16,'2026-12-19T16:00','MCI','HUL'],[16,'2026-12-19T16:00','NFO','EVE'],
+      [16,'2026-12-19T16:00','SUN','CRY'],[17,'2026-12-26T16:00','AVL','LEE'],[17,'2026-12-26T16:00','COV','CHE'],
+      [17,'2026-12-26T16:00','CRY','ARS'],[17,'2026-12-26T16:00','EVE','SUN'],[17,'2026-12-26T16:00','FUL','BHA'],
+      [17,'2026-12-26T16:00','HUL','LIV'],[17,'2026-12-26T16:00','IPS','BRE'],[17,'2026-12-26T16:00','MUN','NFO'],
+      [17,'2026-12-26T16:00','NEW','MCI'],[17,'2026-12-26T16:00','TOT','BOU'],[18,'2026-12-30T21:00','AVL','LIV'],
+      [18,'2026-12-30T21:00','COV','BRE'],[18,'2026-12-30T21:00','CRY','BOU'],[18,'2026-12-30T21:00','EVE','MCI'],
+      [18,'2026-12-30T21:00','FUL','ARS'],[18,'2026-12-30T21:00','HUL','LEE'],[18,'2026-12-30T21:00','IPS','CHE'],
+      [18,'2026-12-30T21:00','MUN','SUN'],[18,'2026-12-30T21:00','NEW','NFO'],[18,'2026-12-30T21:00','TOT','BHA'],
+      [19,'2027-01-02T16:00','BOU','AVL'],[19,'2027-01-02T16:00','ARS','IPS'],[19,'2027-01-02T16:00','BRE','CRY'],
+      [19,'2027-01-02T16:00','BHA','MUN'],[19,'2027-01-02T16:00','CHE','NEW'],[19,'2027-01-02T16:00','LEE','EVE'],
+      [19,'2027-01-02T16:00','LIV','COV'],[19,'2027-01-02T16:00','MCI','TOT'],[19,'2027-01-02T16:00','NFO','FUL'],
+      [19,'2027-01-02T16:00','SUN','HUL']
+    ];
+    const _plComp = 'Premier League 26-27';
+    if (!Array.isArray(state.competitions)) state.competitions = [];
+    let _plChanged = false;
+    if (!state.competitions.find(c => c.name === _plComp)) {
+      state.competitions.push({ name: _plComp, icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' });
+      _plChanged = true;
+    }
+    _plFixtures.forEach(f => {
+      const md = f[0], date = f[1] + ':00', home = _plTeams[f[2]], away = _plTeams[f[3]];
+      const id = 'pl2627_' + String(md).padStart(2,'0') + '_' + f[2] + '_' + f[3];
+      if (state.deletedMatchIds && state.deletedMatchIds[id]) return;
+      const exists = state.matches.some(m =>
+        m.id === id || (m.home === home && m.away === away && m.competition === _plComp));
+      if (exists) return;
+      state.matches.push({
+        id: id, home: home, away: away, date: date,
+        competition: _plComp, matchday: md,
+        resultHome: null, resultAway: null
+      });
+      _plChanged = true;
+    });
+    state.premierleague2627seeded = true;
+    if (_plChanged) save();
+  }
+
+  // ===== Champions League 26-27 – nur der Wettbewerb, Spiele folgen nach der Auslosung =====
+  if (!state.championsleague2627seeded) {
+    const _clComp = 'Champions League 26-27';
+    if (!Array.isArray(state.competitions)) state.competitions = [];
+    if (!state.competitions.find(c => c.name === _clComp)) {
+      state.competitions.push({ name: _clComp, icon: '💙' });
+      state.championsleague2627seeded = true;
+      save();
+    } else {
+      state.championsleague2627seeded = true;
+    }
+  }
+
+  // ===== Europa League 26-27 – nur der Wettbewerb, Spiele folgen nach der Auslosung =====
+  if (!state.europaleague2627seeded) {
+    const _uelComp = 'Europa League 26-27';
+    if (!Array.isArray(state.competitions)) state.competitions = [];
+    if (!state.competitions.find(c => c.name === _uelComp)) {
+      state.competitions.push({ name: _uelComp, icon: '🧡' });
+      state.europaleague2627seeded = true;
+      save();
+    } else {
+      state.europaleague2627seeded = true;
+    }
+  }
 }
 
 // ===================== NAV =====================
@@ -1350,6 +1759,7 @@ function showPage(name, btn) {
   document.getElementById('page-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
   closeDrawer();
+  updateSeasonBackground();
   if (name === 'chat') {
     renderChatMessages(true);
     renderChatMatchInfo();
@@ -1789,17 +2199,82 @@ const IOC_CODES = {
   'demokratische republik kongo':'COD','dr kongo':'COD','kongo-brazzaville':'CGO',
 };
 
+// ===================== VEREINE (Bundesliga & Co.) =====================
+// Kürzel + Wappen-Emoji für Vereinsmannschaften. Analog zu IOC_CODES/COUNTRY_FLAGS,
+// damit Ligaspiele genauso kompakt dargestellt werden wie Länderspiele.
+const CLUB_CODES = {
+  'fc bayern münchen':'FCB', 'bayern münchen':'FCB', 'fc bayern':'FCB',
+  'borussia dortmund':'BVB', 'dortmund':'BVB',
+  'bayer 04 leverkusen':'B04', 'bayer leverkusen':'B04', 'leverkusen':'B04',
+  'rb leipzig':'RBL', 'leipzig':'RBL',
+  'eintracht frankfurt':'SGE', 'frankfurt':'SGE',
+  'vfb stuttgart':'VFB', 'stuttgart':'VFB',
+  'borussia mönchengladbach':'BMG', 'mönchengladbach':'BMG', 'gladbach':'BMG',
+  'sc freiburg':'SCF', 'freiburg':'SCF',
+  'sv werder bremen':'SVW', 'werder bremen':'SVW', 'bremen':'SVW',
+  'tsg hoffenheim':'TSG', 'tsg 1899 hoffenheim':'TSG', 'hoffenheim':'TSG',
+  '1. fc köln':'KOE', 'fc köln':'KOE', 'köln':'KOE',
+  '1. fsv mainz 05':'M05', 'fsv mainz 05':'M05', 'mainz 05':'M05', 'mainz':'M05',
+  '1. fc union berlin':'FCU', 'union berlin':'FCU',
+  'fc augsburg':'FCA', 'augsburg':'FCA',
+  'hamburger sv':'HSV', 'hamburg':'HSV',
+  'fc schalke 04':'S04', 'schalke 04':'S04', 'schalke':'S04',
+  'sv 07 elversberg':'SVE', 'sv elversberg':'SVE', 'elversberg':'SVE',
+  'sc paderborn 07':'SCP', 'sc paderborn':'SCP', 'paderborn':'SCP',
+  // ---- Premier League ----
+  'arsenal':'ARS', 'fc arsenal':'ARS',
+  'aston villa':'AVL',
+  'afc bournemouth':'BOU', 'bournemouth':'BOU',
+  'brentford':'BRE', 'fc brentford':'BRE',
+  'brighton & hove albion':'BHA', 'brighton and hove albion':'BHA', 'brighton':'BHA',
+  'chelsea':'CHE', 'fc chelsea':'CHE',
+  'coventry city':'COV', 'coventry':'COV',
+  'crystal palace':'CRY',
+  'everton':'EVE', 'fc everton':'EVE',
+  'fulham':'FUL', 'fc fulham':'FUL',
+  'hull city':'HUL', 'hull':'HUL',
+  'ipswich town':'IPS', 'ipswich':'IPS',
+  'leeds united':'LEE', 'leeds':'LEE',
+  'liverpool':'LIV', 'fc liverpool':'LIV',
+  'manchester city':'MCI', 'man city':'MCI',
+  'manchester united':'MUN', 'man utd':'MUN', 'man united':'MUN',
+  'newcastle united':'NEW', 'newcastle':'NEW',
+  'nottingham forest':'NFO', "nott'm forest":'NFO', 'nottingham':'NFO',
+  'tottenham hotspur':'TOT', 'tottenham':'TOT', 'spurs':'TOT',
+  'sunderland':'SUN', 'afc sunderland':'SUN',
+};
+// Wappen-Emojis – aktuell NICHT in der Anzeige verwendet (Mirko wollte Vereine ohne Emoji).
+// Bleibt erhalten, falls es doch wieder gewünscht wird.
+const CLUB_BADGES = {
+  'FCB':'🔴', 'BVB':'🟡', 'B04':'🟥', 'RBL':'🐂', 'SGE':'🦅', 'VFB':'🐎',
+  'BMG':'🟢', 'SCF':'🌲', 'SVW':'🟩', 'TSG':'💙', 'KOE':'🐐', 'M05':'🃏',
+  'FCU':'⚒️', 'FCA':'⚪', 'HSV':'🔷', 'S04':'🔵', 'SVE':'🖤', 'SCP':'🟦',
+};
+function getClubCode(name) {
+  return CLUB_CODES[(name||'').toLowerCase()] || null;
+}
+function getClubBadge(name) {
+  const c = getClubCode(name);
+  return c ? (CLUB_BADGES[c] || null) : null;
+}
+
 function getIOCCode(name) {
+  const club = getClubCode(name);
+  if (club) return club;
   return IOC_CODES[(name||'').toLowerCase()] || name.substring(0,3).toUpperCase();
 }
 
 function flagTeam(name) {
+  // Vereinsmannschaften bewusst OHNE Emoji – nur der Klarname
+  if (getClubCode(name)) return name;
   const flag = COUNTRY_FLAGS[name.toLowerCase()];
   return flag ? flag + ' ' + name : name;
 }
 function flagShort(name, len) {
-  const flag = COUNTRY_FLAGS[(name||'').toLowerCase()];
   const code = getIOCCode(name);
+  // Vereinsmannschaften: nur das Kürzel, kein Emoji
+  if (getClubCode(name)) return code;
+  const flag = COUNTRY_FLAGS[(name||'').toLowerCase()];
   return flag ? flag + code : code;
 }
 
@@ -1812,10 +2287,33 @@ function getCompIcon(name) {
   return c ? c.icon : '🏆';
 }
 
+// Firebase erlaubt in Schluesseln kein  .  #  $  /  [  ]
+// competitionScores nutzt den Wettbewerbsnamen als Schluessel -> hier entschaerfen.
+function hasForbiddenKeyChars(name) {
+  return /[.#$/\[\]]/.test(String(name == null ? '' : name));
+}
+function compKey(name) {
+  return String(name == null ? '' : name).replace(/[.#$/\[\]]/g, '-');
+}
+// Liest competitionScores rueckwaertskompatibel: neue Eintraege liegen unter compKey(),
+// aeltere (vor v240) noch unter dem Rohnamen.
+function getCompScores(weekEntry, compName) {
+  const cs = weekEntry && weekEntry.competitionScores;
+  if (!cs) return null;
+  return cs[compKey(compName)] || cs[compName] || null;
+}
+
 function addCompetition() {
   const name = document.getElementById('newCompName').value.trim();
   const icon = document.getElementById('newCompIcon').value.trim() || defaultCompIcon(name);
   if (!name) return;
+  if (hasForbiddenKeyChars(name)) {
+    const vorschlag = compKey(name);
+    if (!confirm('Der Name enthaelt Zeichen, die die Datenbank nicht erlaubt ( . # $ / [ ] ).\n\n'
+        + 'Stattdessen "' + vorschlag + '" verwenden?')) return;
+    document.getElementById('newCompName').value = vorschlag;
+    return addCompetition();
+  }
   if (state.competitions.find(c => c.name === name)) { alert('Wettbewerb existiert bereits.'); return; }
   state.competitions.push({name, icon});
   save();
@@ -2116,10 +2614,10 @@ function closeDetailModal() {
 
 function renderDetailChart(m) {
   const cats = [
-    { key:'exact',     label:'🎯 Genau',     pts:3, color:'#22c55e' },
-    { key:'diff',      label:'✌️ Differenz', pts:2, color:'#a78bfa' },
-    { key:'tendency',  label:'👍 Tendenz',   pts:1, color:'#60a5fa' },
-    { key:'miss',      label:'❌ Falsch',    pts:0, color:'#f87171' },
+    { key:'exact',     label:'🎯 Genau',     pts:PTS.EXACT,    color:'#22c55e' },
+    { key:'diff',      label:'✌️ Differenz', pts:PTS.DIFF,     color:'#a78bfa' },
+    { key:'tendency',  label:'👍 Tendenz',   pts:PTS.TENDENCY, color:'#60a5fa' },
+    { key:'miss',      label:'❌ Falsch',    pts:PTS.MISS,     color:'#f87171' },
   ];
   const counts = { exact:0, diff:0, tendency:0, miss:0, none:0 };
   const playerRows = [];
@@ -2128,12 +2626,12 @@ function renderDetailChart(m) {
     const tip = (state.tips[m.id]||{})[p];
     if (!tip || tip.home == null) { counts.none++; return; }
     const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-    if (pts===3) counts.exact++;
-    else if (pts===2) counts.diff++;
-    else if (pts===1) counts.tendency++;
+    if (pts===PTS.EXACT) counts.exact++;
+    else if (pts===PTS.DIFF) counts.diff++;
+    else if (pts===PTS.TENDENCY) counts.tendency++;
     else counts.miss++;
     const cat = cats.find(c=>c.pts===pts);
-    playerRows.push({ name:p, tip, pts, color:cat.color, tipClass: pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss' });
+    playerRows.push({ name:p, tip, pts, color:cat.color, tipClass: pts===PTS.EXACT?'tip-exact':pts===PTS.DIFF?'tip-diff':pts===PTS.TENDENCY?'tip-tendency':'tip-miss' });
   });
 
   const tipped = counts.exact + counts.diff + counts.tendency + counts.miss;
@@ -2385,7 +2883,7 @@ function renderSpiele() {
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           ${multBadge}
-          ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}</span>` : ''}
+          ${m.competition ? `<span class="competition-badge">${getCompIcon(m.competition)} ${m.competition}${m.group ? ' · Gruppe '+m.group : ''}${m.matchday ? ' · '+m.matchday+'. Spieltag' : ''}</span>` : ''}
           ${m.isLive ? '<span style="font-size:0.75rem;color:#f87171;font-weight:700">Live</span>' : done ? '<span style="font-size:0.75rem;color:var(--green-light)">✓ Ergebnis</span>' : locked ? '<span style="font-size:0.75rem;color:#f87171">Läuft</span>' : '<span style="font-size:0.75rem;color:#60a5fa">Offen</span>'}
         </div>
       </div>
@@ -2519,7 +3017,7 @@ function renderTipps() {
         <div class="tip-match-info">
           <div>
             <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}${m.matchday?' · '+m.matchday+'. Spieltag':''}</div>
             ${!locked && countdown ? `<div style="font-size:0.72rem;color:${countdown.includes('Min')?'#f59e0b':'#60a5fa'};margin-top:3px;font-weight:600">${countdown}</div>` : ''}
           </div>
           <div id="tip_status_${m.id}" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -2528,7 +3026,7 @@ function renderTipps() {
           </div>
         </div>
         <div class="tip-inputs">
-          <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
+          <span class="tip-team-label">${homeFlag||getIOCCode(m.home)}</span>
           <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
             value="${tip.home!==undefined?tip.home:''}"
             ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onchange="autoSaveTip('${m.id}','${esc(player)}')" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('tip_a_${m.id}').focus();}"`} />
@@ -2536,7 +3034,7 @@ function renderTipps() {
           <input class="score-input" id="tip_a_${m.id}" type="number" min="0" max="99" placeholder="?"
             value="${tip.away!==undefined?tip.away:''}"
             ${locked ? 'disabled style="opacity:0.5;cursor:not-allowed"' : `onchange="autoSaveTip('${m.id}','${esc(player)}')" onkeydown="if(event.key==='Enter'){event.preventDefault();autoSaveTip('${m.id}','${esc(player)}');}"`} />
-          <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
+          <span class="tip-team-label">${awayFlag||getIOCCode(m.away)}</span>
         </div>
       </div>`;
     });
@@ -2576,7 +3074,7 @@ function renderTipps() {
             <div class="tip-match-info">
               <div>
                 <div style="font-weight:600;font-size:0.95rem">${flagTeam(m.home)} vs ${flagTeam(m.away)}</div>
-                <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}</div>
+                <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${d}${m.competition?' · '+m.competition:''}${m.matchday?' · '+m.matchday+'. Spieltag':''}</div>
                 <div style="font-size:0.72rem;color:var(--green);margin-top:3px;font-weight:600">✅ Ergebnis: ${result}</div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -2584,7 +3082,7 @@ function renderTipps() {
               </div>
             </div>
             <div class="tip-inputs">
-              <span class="tip-team-label">${homeFlag||m.home.substring(0,3)}</span>
+              <span class="tip-team-label">${homeFlag||getIOCCode(m.home)}</span>
               <input class="score-input" id="tip_h_${m.id}" type="number" min="0" max="99" placeholder="?"
                 value="${tip.home!==undefined?tip.home:''}"
                 onchange="autoSaveTip('${m.id}','${esc(player)}')"
@@ -2594,7 +3092,7 @@ function renderTipps() {
                 value="${tip.away!==undefined?tip.away:''}"
                 onchange="autoSaveTip('${m.id}','${esc(player)}')"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();autoSaveTip('${m.id}','${esc(player)}');}" />
-              <span class="tip-team-label">${awayFlag||m.away.substring(0,3)}</span>
+              <span class="tip-team-label">${awayFlag||getIOCCode(m.away)}</span>
             </div>
           </div>`;
         });
@@ -2669,12 +3167,15 @@ function saveAllTips() {
 }
 
 // ===================== POINTS =====================
+// Punktesystem – zentral. Änderungen hier wirken überall.
+const PTS = { EXACT: 6, DIFF: 4, TENDENCY: 2, MISS: 0 };
+
 function calcPoints(tipH, tipA, resH, resA) {
   if (tipH===undefined||resH===null) return null;
-  if (tipH===resH && tipA===resA) return 3;
-  if ((tipH-tipA)===(resH-resA)) return 2;
-  if (Math.sign(tipH-tipA)===Math.sign(resH-resA)) return 1;
-  return 0;
+  if (tipH===resH && tipA===resA) return PTS.EXACT;
+  if ((tipH-tipA)===(resH-resA)) return PTS.DIFF;
+  if (Math.sign(tipH-tipA)===Math.sign(resH-resA)) return PTS.TENDENCY;
+  return PTS.MISS;
 }
 
 function getPlayerStats(player) {
@@ -2689,9 +3190,9 @@ function getPlayerStats(player) {
     if (p===null) return;
     const mult = (m.multiplier != null ? m.multiplier : 1);
     played++; pts += p * mult;
-    if (p===3) exact++;
-    else if (p===2) diff++;
-    else if (p===1) tendency++;
+    if (p===PTS.EXACT) exact++;
+    else if (p===PTS.DIFF) diff++;
+    else if (p===PTS.TENDENCY) tendency++;
     else miss++;
   });
   return {pts, exact, diff, tendency, miss, played};
@@ -2708,6 +3209,7 @@ function toggleRanglisteEdit() {
 }
 
 function renderRangliste() {
+  updateSeasonBackground();
   const el = document.getElementById('ranglisteContent'); if (!el) return;
   const isAdmin = currentUser && currentUser.isAdmin;
   const editBtn = document.getElementById('ranglisteEditBtn');
@@ -2920,27 +3422,27 @@ function renderUebersicht() {
         if (!hasResult) return `<td ${editAttr}><span style="color:var(--green-light);font-size:1rem">✓</span></td>`;
         const ts = `${tip.home}:${tip.away}`;
         const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
-        if (pts===3) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
-        if (pts===2) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
-        if (pts===1) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
+        if (pts===PTS.EXACT) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
+        if (pts===PTS.DIFF) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
+        if (pts===PTS.TENDENCY) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
         return `<td ${editAttr}><span class="tip-miss">${ts}</span></td>`;
       }
       if (!tip) return `<td ${editAttr}><span class="tip-pending">${isAdmin&&uebersichtEditMode?'＋':'—'}</span></td>`;
       const ts = `${tip.home}:${tip.away}`;
       if (!hasResult) return `<td ${editAttr}><span class="tip-noresult">${ts}</span></td>`;
       const pts = calcPoints(tip.home,tip.away,m.resultHome,m.resultAway);
-      if (pts===3) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
-      if (pts===2) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
-      if (pts===1) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
+      if (pts===PTS.EXACT) return `<td ${editAttr}><span class="tip-exact">${ts}</span></td>`;
+      if (pts===PTS.DIFF) return `<td ${editAttr}><span class="tip-diff">${ts}</span></td>`;
+      if (pts===PTS.TENDENCY) return `<td ${editAttr}><span class="tip-tendency">${ts}</span></td>`;
       return `<td ${editAttr}><span class="tip-miss">${ts}</span></td>`;
     }).join('');
     const s = getPlayerStats(p);
     return `<tr><td class="left">${p}</td>${cells}<td class="right"><strong style="color:var(--green-light)">${s.pts}</strong></td></tr>`;
   }).join('');
   const legend = document.getElementById('uebersichtLegend');
-  if (legend) legend.innerHTML = `<span class="tip-exact">3 Pkt Ergebnis</span>
-    <span class="tip-diff">2 Pkt Differenz</span>
-    <span class="tip-tendency">1 Pkt Sieger</span>
+  if (legend) legend.innerHTML = `<span class="tip-exact">${PTS.EXACT} Pkt Ergebnis</span>
+    <span class="tip-diff">${PTS.DIFF} Pkt Differenz</span>
+    <span class="tip-tendency">${PTS.TENDENCY} Pkt Sieger</span>
     <span class="tip-miss">0 Pkt</span>
     <span class="tip-noresult">Offen</span>`;
   el.innerHTML = `<table class="overview-table"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
@@ -2983,7 +3485,7 @@ function openArchiveTips(weekIdx, playerName) {
       tipDisplay = `${tip.home}:${tip.away}`;
       if (hasResult) {
         pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-        const cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
+        const cls = pts===PTS.EXACT?'tip-exact':pts===PTS.DIFF?'tip-diff':pts===PTS.TENDENCY?'tip-tendency':'tip-miss';
         tipDisplay = `<span class="${cls}">${tip.home}:${tip.away}</span>`;
         ptsBadge = `<span class="${cls}" style="font-weight:700">${pts}</span>`;
       } else {
@@ -3167,7 +3669,7 @@ function renderArchiv() {
       const ts = `${tip.home}:${tip.away}`;
       if (!hasResult) return `<td ${editAttr}><span class="tip-noresult">${ts}</span></td>`;
       const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-      const cls = pts===3?'tip-exact':pts===2?'tip-diff':pts===1?'tip-tendency':'tip-miss';
+      const cls = pts===PTS.EXACT?'tip-exact':pts===PTS.DIFF?'tip-diff':pts===PTS.TENDENCY?'tip-tendency':'tip-miss';
       return `<td ${editAttr}><span class="${cls}">${ts}</span></td>`;
     }).join('');
     return `<tr style="${isFiltered?'outline:2px solid var(--green);outline-offset:-2px;background:rgba(22,163,74,0.06)!important':''}">
@@ -3541,9 +4043,9 @@ function recalcArchivScores(weekIdx) {
       if (!scoreMap[p]) scoreMap[p] = {name:p, pts:0, exact:0, diff:0, tendency:0, miss:0, played:0};
       scoreMap[p].pts += pts;
       scoreMap[p].played++;
-      if (basePts===3) scoreMap[p].exact++;
-      else if (basePts===2) scoreMap[p].diff++;
-      else if (basePts===1) scoreMap[p].tendency++;
+      if (basePts===PTS.EXACT) scoreMap[p].exact++;
+      else if (basePts===PTS.DIFF) scoreMap[p].diff++;
+      else if (basePts===PTS.TENDENCY) scoreMap[p].tendency++;
       else scoreMap[p].miss++;
     });
   });
@@ -3650,7 +4152,7 @@ function renderMeisterschaften() {
 
   // From archived weeks
   state.weekHistory.forEach(w => {
-    const cs = w.competitionScores && w.competitionScores[selectedMeisterComp];
+    const cs = getCompScores(w, selectedMeisterComp);
     if (!cs) return;
     const sorted = [...cs].sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
     cs.forEach(s => {
@@ -3874,16 +4376,75 @@ function isWmComp() {
 
 function updateWmBackground() {
   const canvas = document.getElementById('wmBgCanvas');
+  const blCanvas = document.getElementById('blBgCanvas');
   const page = document.getElementById('page-meisterschaften');
-  if (!canvas) return;
-  if (isWmComp()) {
-    canvas.classList.add('active');
-    if (page) page.classList.add('wm-glass');
-    startWmAnimation(canvas);
-  } else {
-    canvas.classList.remove('active');
-    if (page) page.classList.remove('wm-glass');
-    stopWmAnimation();
+
+  // --- WM: Gold ---
+  if (canvas) {
+    if (isWmComp()) {
+      canvas.classList.add('active');
+      if (page) page.classList.add('wm-glass');
+      startWmAnimation(canvas);
+    } else {
+      canvas.classList.remove('active');
+      if (page) page.classList.remove('wm-glass');
+      stopWmAnimation();
+    }
+  }
+
+  // --- Bundesliga: Schwarz-Rot ---
+  if (blCanvas) {
+    if (isBlComp()) {
+      blCanvas.classList.add('active');
+      if (page) page.classList.add('bl-glass');
+      startBlAnimation(blCanvas);
+    } else {
+      blCanvas.classList.remove('active');
+      if (page) page.classList.remove('bl-glass');
+      stopBlAnimation();
+    }
+  }
+
+  // --- Premier League: Violett-Cyan ---
+  const plCanvas = document.getElementById('plBgCanvas');
+  if (plCanvas) {
+    if (isPlComp()) {
+      plCanvas.classList.add('active');
+      if (page) page.classList.add('pl-glass');
+      startPlAnimation(plCanvas);
+    } else {
+      plCanvas.classList.remove('active');
+      if (page) page.classList.remove('pl-glass');
+      stopPlAnimation();
+    }
+  }
+
+  // --- Champions League: Nachtblau mit Neon-Segmenten ---
+  const clCanvas = document.getElementById('clBgCanvas');
+  if (clCanvas) {
+    if (isClComp()) {
+      clCanvas.classList.add('active');
+      if (page) page.classList.add('cl-glass');
+      startClAnimation(clCanvas);
+    } else {
+      clCanvas.classList.remove('active');
+      if (page) page.classList.remove('cl-glass');
+      stopClAnimation();
+    }
+  }
+
+  // --- Europa League: Orange-Schwarz ---
+  const uelCanvas = document.getElementById('uelBgCanvas');
+  if (uelCanvas) {
+    if (isUelComp()) {
+      uelCanvas.classList.add('active');
+      if (page) page.classList.add('uel-glass');
+      startUelAnimation(uelCanvas);
+    } else {
+      uelCanvas.classList.remove('active');
+      if (page) page.classList.remove('uel-glass');
+      stopUelAnimation();
+    }
   }
 }
 
@@ -4187,6 +4748,963 @@ function startWmAnimation(canvas) {
   draw();
 }
 
+// ===================== BUNDESLIGA BACKGROUND ANIMATION =====================
+let blAnimFrame = null;
+
+function isBlComp() {
+  return !!(selectedMeisterComp && selectedMeisterComp.toLowerCase().includes('bundesliga'));
+}
+
+function stopBlAnimation() {
+  if (blAnimFrame) { cancelAnimationFrame(blAnimFrame); blAnimFrame = null; }
+}
+
+function startBlAnimation(canvas) {
+  stopBlAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Aufsteigende Glut-Funken – steigen aus dem Feuer am unteren Rand auf
+  function newEmber(startAnywhere) {
+    // Startpunkt bevorzugt in der unteren Bildhaelfte, seitlich gestreut zur Mitte hin
+    const bias = Math.random();
+    const x = 0.5 + (Math.random() - 0.5) * (0.55 + bias * 0.6);
+    return {
+      x: Math.min(Math.max(x, 0.01), 0.99),
+      y: startAnywhere ? (0.35 + Math.random() * 0.7) : (1.0 + Math.random() * 0.06),
+      size: 0.5 + Math.random() * 2.0,
+      speedY: -(0.0007 + Math.random() * 0.0022),
+      drift: (Math.random() - 0.5) * 0.00035,
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.012 + Math.random() * 0.03,
+      swayAmp: 0.0004 + Math.random() * 0.0011,
+      opacity: 0.35 + Math.random() * 0.6,
+      flicker: Math.random() * Math.PI * 2,
+      flickerSpeed: 0.05 + Math.random() * 0.10,
+      hot: Math.random(),          // 0 = eher rot, 1 = eher gelb/heiss
+    };
+  }
+  const embers = Array.from({length: 150}, () => newEmber(true));
+
+  // Puls-Ringe (Anstoss-Wellen)
+  function newPulse() {
+    return {
+      x: 0.1 + Math.random() * 0.8,
+      y: 0.15 + Math.random() * 0.7,
+      r: 0,
+      maxR: 120 + Math.random() * 190,
+      alpha: 0.7 + Math.random() * 0.3,
+      speed: 0.9 + Math.random() * 1.1,
+    };
+  }
+  const pulses = [];
+  let pulseTimer = 0;
+  let pulseInterval = 40 + Math.random() * 50;
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || (window.innerWidth - 220);
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function draw() {
+    if (!isBlComp()) { blAnimFrame = null; return; }
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis: nahezu Schwarz mit rotem Stich ===
+    ctx.fillStyle = 'rgba(6,1,3,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    const pulseVal = 0.5 + 0.5 * Math.sin(T * 0.55);
+
+    // === Stadion-Andeutung: konzentrische Raenge ===
+    ctx.save();
+    ctx.translate(w * 0.5, h * 0.52);
+    for (let i = 0; i < 6; i++) {
+      const rx = w * (0.20 + i * 0.115);
+      const ry = h * (0.11 + i * 0.068);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(225,35,45,${0.42 - i * 0.048 + pulseVal * 0.09})`;
+      ctx.lineWidth = i === 0 ? 1.8 : 1.1;
+      ctx.stroke();
+    }
+    // Radiale Streben zwischen den Raengen
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * w * 0.21, Math.sin(a) * h * 0.12);
+      ctx.lineTo(Math.cos(a) * w * 0.77, Math.sin(a) * h * 0.45);
+      ctx.strokeStyle = `rgba(185,25,35,${0.11 + pulseVal * 0.04})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // === Feuer am unteren Rand: flackerndes Glutbett ===
+    // Mehrere ueberlagerte Herde mit eigener Flackerfrequenz -> unruhiges Feuer
+    const fireH = h * 0.26;
+    for (let i = 0; i < 7; i++) {
+      const fx = (i + 0.5) / 7;
+      const flick = 0.78 + 0.30 * Math.sin(T * (1.7 + i * 0.45) + i * 2.1)
+                         * Math.sin(T * (0.9 + i * 0.23) + i);
+      const rad = fireH * (0.55 + 0.45 * flick);
+      const cx = w * (fx + Math.sin(T * 0.5 + i) * 0.02);
+      const g = ctx.createRadialGradient(cx, h * 1.02, 0, cx, h * 1.02, rad);
+      g.addColorStop(0,    `rgba(255,128,32,${0.40 * flick})`);
+      g.addColorStop(0.18, `rgba(230,48,20,${0.23 * flick})`);
+      g.addColorStop(0.45, `rgba(155,15,18,${0.10 * flick})`);
+      g.addColorStop(1,    'rgba(70,4,8,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, h - fireH * 1.6, w, fireH * 1.6);
+    }
+    // Heisser Kern direkt am unteren Rand
+    const emberBed = ctx.createLinearGradient(0, h, 0, h - fireH * 0.34);
+    const bedFlick = 0.75 + 0.25 * Math.sin(T * 2.3) * Math.sin(T * 1.1);
+    emberBed.addColorStop(0,   `rgba(255,150,50,${0.38 * bedFlick})`);
+    emberBed.addColorStop(0.25,`rgba(228,48,20,${0.17 * bedFlick})`);
+    emberBed.addColorStop(1,   'rgba(110,8,10,0)');
+    ctx.fillStyle = emberBed;
+    ctx.fillRect(0, h - fireH * 0.34, w, fireH * 0.34);
+
+    // === Rotes Flutlicht von unten ===
+    const flood = ctx.createRadialGradient(w*0.5, h*1.06, h*0.02, w*0.5, h*0.86, h*0.85);
+    flood.addColorStop(0,   'rgba(200,20,34,0.30)');
+    flood.addColorStop(0.4, 'rgba(120,10,20,0.15)');
+    flood.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = flood;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Pulsierender roter Kern in der Mitte ===
+    const core = ctx.createRadialGradient(w*0.5, h*0.42, 0, w*0.5, h*0.42, w*0.55);
+    core.addColorStop(0,   `rgba(205,22,38,${0.17 + pulseVal * 0.10})`);
+    core.addColorStop(0.5, `rgba(125,12,22,${0.08 + pulseVal * 0.05})`);
+    core.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = core;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Rote Lichtstreifen (Flutlicht-Kegel) ===
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI + T * 0.05;
+      const cx = w * 0.5 + Math.cos(T * 0.11 + i) * w * 0.07;
+      const cy = h * 0.34 + Math.sin(T * 0.09 + i) * h * 0.06;
+      const len = Math.max(w, h) * 1.1;
+      const beam = ctx.createLinearGradient(
+        cx + Math.cos(angle) * len, cy + Math.sin(angle) * len,
+        cx - Math.cos(angle) * len, cy - Math.sin(angle) * len);
+      const bAlpha = 0.085 + pulseVal * 0.07;
+      beam.addColorStop(0,    'rgba(200,30,40,0)');
+      beam.addColorStop(0.45, 'rgba(200,30,40,0)');
+      beam.addColorStop(0.5,  `rgba(235,45,55,${bAlpha})`);
+      beam.addColorStop(0.55, 'rgba(200,30,40,0)');
+      beam.addColorStop(1,    'rgba(200,30,40,0)');
+      ctx.fillStyle = beam;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // === Glut-Funken (steigen auf, kuehlen aus, taumeln seitlich) ===
+    ctx.globalCompositeOperation = 'lighter';   // Funken addieren sich -> echtes Gluehen
+    for (let i = 0; i < embers.length; i++) {
+      const p = embers[i];
+      p.flicker += p.flickerSpeed;
+      p.sway += p.swaySpeed;
+      p.y += p.speedY;
+      p.x += p.drift + Math.sin(p.sway) * p.swayAmp;
+      if (p.y < -0.04 || p.x < -0.05 || p.x > 1.05) { embers[i] = newEmber(false); continue; }
+
+      // Wie weit ist der Funke schon aufgestiegen? 0 = unten (heiss), 1 = oben (kalt)
+      const rise = Math.min(Math.max(1 - p.y, 0), 1);
+      const cool = Math.pow(1 - rise, 1.35);       // Helligkeit nimmt nach oben deutlich ab
+      const fl = 0.45 + 0.55 * Math.abs(Math.sin(p.flicker));
+      const alpha = p.opacity * fl * cool;
+      if (alpha <= 0.012) continue;
+
+      const px = p.x * w, py = p.y * h;
+      const sz = p.size * (0.55 + cool * 0.65);
+
+      // Farbe: unten gelb-orange, oben tiefrot
+      const rC = 255;
+      const gC = Math.round((90 + p.hot * 110) * cool + 20);
+      const bC = Math.round((30 + p.hot * 40) * cool * cool);
+
+      const g = ctx.createRadialGradient(px, py, 0, px, py, sz * 7);
+      g.addColorStop(0,   `rgba(${rC},${gC + 60},${bC + 40},${alpha * 0.55})`);
+      g.addColorStop(0.3, `rgba(${rC},${gC},${bC},${alpha * 0.26})`);
+      g.addColorStop(1,   'rgba(150,10,12,0)');
+      ctx.beginPath();
+      ctx.arc(px, py, sz * 7, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      // heller Kern
+      ctx.beginPath();
+      ctx.arc(px, py, sz, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,${Math.min(gC + 110, 255)},${Math.min(bC + 90, 220)},${Math.min(alpha * 1.5, 1)})`;
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // === Puls-Ringe ===
+    pulseTimer++;
+    if (pulseTimer >= pulseInterval) {
+      pulseTimer = 0;
+      pulseInterval = 40 + Math.random() * 50;
+      if (pulses.length < 4) pulses.push(newPulse());
+    }
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const rp = pulses[i];
+      rp.r += rp.speed;
+      const prog = rp.r / rp.maxR;
+      const a = rp.alpha * (1 - prog) * 0.30;
+      if (prog >= 1) { pulses.splice(i, 1); continue; }
+      ctx.beginPath();
+      ctx.arc(rp.x * w, rp.y * h, rp.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(225,40,50,${a})`;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    // === Vignette: Raender ins Schwarz ziehen ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.44, Math.min(w,h)*0.10, w*0.5, h*0.46, Math.max(w,h)*0.72);
+    vig.addColorStop(0,   'rgba(2,0,1,0)');
+    vig.addColorStop(0.62,'rgba(2,0,1,0.28)');
+    vig.addColorStop(1,   'rgba(2,0,1,0.80)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+    // schmaler Glutsaum ganz unten, damit die Vignette das Feuer nicht schluckt
+    const unveil = ctx.createLinearGradient(0, h, 0, h - h * 0.13);
+    unveil.addColorStop(0, 'rgba(255,95,30,0.10)');
+    unveil.addColorStop(1, 'rgba(255,95,30,0)');
+    ctx.fillStyle = unveil;
+    ctx.fillRect(0, h - h * 0.13, w, h * 0.13);
+
+    time++;
+    blAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ===================== PREMIER LEAGUE BACKGROUND ANIMATION =====================
+let plAnimFrame = null;
+
+function isPlComp() {
+  return !!(selectedMeisterComp && selectedMeisterComp.toLowerCase().includes('premier'));
+}
+
+function stopPlAnimation() {
+  if (plAnimFrame) { cancelAnimationFrame(plAnimFrame); plAnimFrame = null; }
+}
+
+function startPlAnimation(canvas) {
+  stopPlAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Ruhiger Untergrund: perspektivische Rasenbahnen
+  const LANES = 9;
+  const lanes = Array.from({length: LANES}, (_, i) => ({
+    yBase: 0.30 + i * 0.085,
+    phase: i * 0.72,
+    thick: 0.045,
+    alpha: 0.028 + ((i * 19) % 7) / 1000,
+  }));
+
+  // Ballflugbahnen – leuchtende Boegen, die durchs Bild ziehen
+  function newShot(startAnywhere) {
+    const fromLeft = Math.random() < 0.62;
+    return {
+      t:      startAnywhere ? Math.random() * 0.8 : 0,
+      speed:  0.0022 + Math.random() * 0.0032,
+      x0:     fromLeft ? -0.08 : 1.08,
+      x1:     fromLeft ? 1.08 : -0.08,
+      y0:     0.55 + Math.random() * 0.45,
+      y1:     0.10 + Math.random() * 0.45,
+      arc:    0.18 + Math.random() * 0.26,     // Hoehe des Bogens
+      cyan:   Math.random() < 0.5,
+      width:  1.4 + Math.random() * 1.8,
+      len:    0.16 + Math.random() * 0.16,     // Laenge des Schweifs
+    };
+  }
+  const shots = Array.from({length: 7}, () => newShot(true));
+
+  // Schnellere Funkenpartikel
+  function newSpark(startAnywhere) {
+    return {
+      x: startAnywhere ? Math.random() : -0.03,
+      y: Math.random(),
+      vx: 0.0016 + Math.random() * 0.0034,
+      vy: -(0.0002 + Math.random() * 0.0008),
+      size: 0.7 + Math.random() * 1.5,
+      opacity: 0.25 + Math.random() * 0.45,
+      cyan: Math.random() < 0.5,
+    };
+  }
+  const sparks = Array.from({length: 55}, () => newSpark(true));
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || (window.innerWidth - 220);
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function laneY(t, ph, h) {
+    return Math.sin(t * 2.2 + ph) * h * 0.045 + Math.sin(t * 5.1 + ph * 1.5) * h * 0.016;
+  }
+
+  // Position auf der Flugbahn bei Fortschritt u (0..1)
+  function shotPos(s, u, w, h) {
+    const x = (s.x0 + (s.x1 - s.x0) * u) * w;
+    const yLin = s.y0 + (s.y1 - s.y0) * u;
+    const y = (yLin - Math.sin(u * Math.PI) * s.arc) * h;
+    return [x, y];
+  }
+
+  function draw() {
+    if (!isPlComp()) { plAnimFrame = null; return; }
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis + Farbverlauf Violett -> Cyan ===
+    ctx.fillStyle = 'rgba(10,4,26,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    const pulse = 0.5 + 0.5 * Math.sin(T * 0.4);
+    const bg = ctx.createLinearGradient(0, h, w, 0);
+    bg.addColorStop(0,    `rgba(120,28,180,${0.32 + pulse * 0.06})`);
+    bg.addColorStop(0.55, 'rgba(58,42,175,0.21)');
+    bg.addColorStop(1,    `rgba(18,120,195,${0.28 + (1 - pulse) * 0.06})`);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Rasenbahnen (ruhiger Untergrund, etwas zuegiger als zuvor) ===
+    ctx.globalCompositeOperation = 'lighter';
+    lanes.forEach((ln, i) => {
+      const ph = ln.phase + T * 0.28;
+      const yB = h * ln.yBase;
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 12) ctx.lineTo(x, yB + laneY(x / w, ph, h));
+      for (let x = w; x >= 0; x -= 12) ctx.lineTo(x, yB + h * ln.thick + laneY(x / w, ph, h));
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, 0, w, 0);
+      const a = ln.alpha + 0.014 * Math.sin(T * 0.9 + i);
+      g.addColorStop(0,   `rgba(185,70,240,${a})`);
+      g.addColorStop(0.5, `rgba(105,110,245,${a * 1.1})`);
+      g.addColorStop(1,   `rgba(40,205,245,${a * 0.9})`);
+      ctx.fillStyle = g;
+      ctx.fill();
+    });
+
+    // === Ballflugbahnen ===
+    for (let i = 0; i < shots.length; i++) {
+      const s = shots[i];
+      s.t += s.speed;
+      if (s.t > 1.25) { shots[i] = newShot(false); continue; }
+
+      const col = s.cyan ? '95,215,250' : '195,120,255';
+      const head = Math.min(s.t, 1);
+      const fade = s.t > 1 ? Math.max(0, 1 - (s.t - 1) / 0.25) : 1;
+
+      // Schweif als Kette kurzer Segmente mit abnehmender Deckkraft
+      const STEPS = 22;
+      for (let k = 0; k < STEPS; k++) {
+        const u1 = head - (k / STEPS) * s.len;
+        const u2 = head - ((k + 1) / STEPS) * s.len;
+        if (u2 < 0) break;
+        const [x1, y1] = shotPos(s, u1, w, h);
+        const [x2, y2] = shotPos(s, u2, w, h);
+        const a = (1 - k / STEPS) * 0.55 * fade;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = `rgba(${col},${a})`;
+        ctx.lineWidth = s.width * (1 - k / STEPS * 0.6);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // leuchtender Kopf
+      if (head <= 1) {
+        const [hx, hy] = shotPos(s, head, w, h);
+        const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, 22);
+        g.addColorStop(0, `rgba(${col},${0.55 * fade})`);
+        g.addColorStop(1, `rgba(${col},0)`);
+        ctx.beginPath(); ctx.arc(hx, hy, 22, 0, Math.PI * 2);
+        ctx.fillStyle = g; ctx.fill();
+        ctx.beginPath(); ctx.arc(hx, hy, 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(245,250,255,${0.9 * fade})`; ctx.fill();
+      }
+    }
+
+    // === Funken, die quer durchs Bild ziehen ===
+    for (let i = 0; i < sparks.length; i++) {
+      const p = sparks[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x > 1.04 || p.y < -0.04) { sparks[i] = newSpark(false); continue; }
+      const px = p.x * w, py = p.y * h;
+      const col = p.cyan ? '110,220,250' : '200,130,255';
+      const g = ctx.createRadialGradient(px, py, 0, px, py, p.size * 7);
+      g.addColorStop(0, `rgba(${col},${p.opacity * 0.5})`);
+      g.addColorStop(1, `rgba(${col},0)`);
+      ctx.beginPath(); ctx.arc(px, py, p.size * 7, 0, Math.PI * 2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(240,248,255,${p.opacity})`; ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // === Vignette ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.46, Math.min(w,h)*0.16, w*0.5, h*0.5, Math.max(w,h)*0.76);
+    vig.addColorStop(0,   'rgba(5,2,12,0)');
+    vig.addColorStop(0.65,'rgba(5,2,12,0.20)');
+    vig.addColorStop(1,   'rgba(5,2,12,0.80)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    time++;
+    plAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ===================== CHAMPIONS LEAGUE BACKGROUND ANIMATION =====================
+let clAnimFrame = null;
+
+function isClComp() {
+  return !!(selectedMeisterComp && selectedMeisterComp.toLowerCase().includes('champions'));
+}
+
+function stopClAnimation() {
+  if (clAnimFrame) { cancelAnimationFrame(clAnimFrame); clAnimFrame = null; }
+}
+
+function startClAnimation(canvas) {
+  stopClAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Grosse Ball-Segmente (Fuenfecke / Sechsecke / Sterne) als Neon-Umrisse
+  const shapes = [
+    { kind:'star',    cx:0.30, cy:0.42, r:0.46, rot:-0.12, rotSpeed: 0.010, drift:0.016, phase:0.0, lw:2.4, glow:1.0 },
+    { kind:'pent',    cx:0.16, cy:0.55, r:0.40, rot: 0.55, rotSpeed:-0.008, drift:0.013, phase:1.1, lw:1.7, glow:0.75 },
+    { kind:'hex',     cx:0.62, cy:0.38, r:0.34, rot: 0.20, rotSpeed: 0.009, drift:0.011, phase:2.2, lw:1.5, glow:0.6 },
+    { kind:'star',    cx:0.82, cy:0.30, r:0.42, rot: 0.35, rotSpeed:-0.011, drift:0.014, phase:3.0, lw:2.0, glow:0.9 },
+    { kind:'pent',    cx:0.95, cy:0.60, r:0.38, rot:-0.30, rotSpeed: 0.007, drift:0.012, phase:4.1, lw:1.6, glow:0.7 },
+    { kind:'hex',     cx:0.46, cy:0.66, r:0.30, rot: 0.10, rotSpeed:-0.006, drift:0.010, phase:5.3, lw:1.3, glow:0.5 },
+  ];
+
+  // Sterne im Hintergrund
+  const stars = Array.from({length: 70}, () => ({
+    x: Math.random(),
+    y: Math.random() * 0.85,
+    size: 0.5 + Math.random() * 1.2,
+    opacity: 0.15 + Math.random() * 0.5,
+    twinkle: Math.random() * Math.PI * 2,
+    twinkleSpeed: 0.015 + Math.random() * 0.035,
+  }));
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || (window.innerWidth - 220);
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Punkte einer Form liefern (Einheitskreis, Radius 1)
+  function shapePoints(kind) {
+    const pts = [];
+    if (kind === 'star') {
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        const rr = (i % 2 === 0) ? 1 : 0.42;
+        pts.push([Math.cos(a) * rr, Math.sin(a) * rr]);
+      }
+    } else {
+      const n = kind === 'pent' ? 5 : 6;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+        pts.push([Math.cos(a), Math.sin(a)]);
+      }
+    }
+    return pts;
+  }
+
+  function draw() {
+    if (!isClComp()) { clAnimFrame = null; return; }
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+    const R = Math.min(w, h);
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis: tiefes Nachtblau ===
+    ctx.fillStyle = 'rgba(4,8,32,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    const pulse = 0.5 + 0.5 * Math.sin(T * 0.45);
+
+    // Blauer Schein oben links, Magenta unten rechts
+    const gBlue = ctx.createRadialGradient(w*0.28, h*0.34, 0, w*0.28, h*0.34, Math.max(w,h)*0.78);
+    gBlue.addColorStop(0, `rgba(20,60,190,${0.34 + pulse*0.08})`);
+    gBlue.addColorStop(0.5, 'rgba(10,25,110,0.16)');
+    gBlue.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gBlue;
+    ctx.fillRect(0, 0, w, h);
+
+    const gMag = ctx.createRadialGradient(w*0.92, h*1.02, 0, w*0.92, h*1.02, Math.max(w,h)*0.62);
+    gMag.addColorStop(0, `rgba(190,35,215,${0.26 + (1-pulse)*0.08})`);
+    gMag.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gMag;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Sterne ===
+    ctx.globalCompositeOperation = 'lighter';
+    stars.forEach(s => {
+      s.twinkle += s.twinkleSpeed;
+      const a = s.opacity * (0.4 + 0.6 * Math.abs(Math.sin(s.twinkle)));
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,230,255,${a})`;
+      ctx.fill();
+    });
+
+    // === Neon-Umrisse der Ball-Segmente ===
+    shapes.forEach(sh => {
+      const rot = sh.rot + T * sh.rotSpeed;
+      const cx  = (sh.cx + Math.sin(T * 0.09 + sh.phase) * sh.drift) * w;
+      const cy  = (sh.cy + Math.cos(T * 0.07 + sh.phase) * sh.drift) * h;
+      const rad = sh.r * R;
+      const pts = shapePoints(sh.kind).map(([px, py]) => {
+        const c = Math.cos(rot), s2 = Math.sin(rot);
+        return [cx + (px * c - py * s2) * rad, cy + (px * s2 + py * c) * rad];
+      });
+
+      // Farbe nach horizontaler Lage: links cyan-blau, rechts magenta
+      const t = Math.min(Math.max(cx / w, 0), 1);
+      const rC = Math.round(60 + t * 170);
+      const gC = Math.round(190 - t * 140);
+      const bC = 255;
+      const shimmer = 0.72 + 0.28 * Math.sin(T * 1.1 + sh.phase);
+      const alpha = (0.30 + 0.34 * sh.glow) * shimmer;
+
+      ctx.beginPath();
+      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(${rC},${gC},${bC},${alpha})`;
+      ctx.lineWidth = sh.lw;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = `rgba(${rC},${gC},${bC},${0.9 * sh.glow})`;
+      ctx.shadowBlur = 18 * sh.glow;
+      ctx.stroke();
+      // zweiter, hellerer Durchgang fuer den Neon-Kern
+      ctx.strokeStyle = `rgba(${Math.min(rC+90,255)},${Math.min(gC+50,255)},255,${alpha * 0.55})`;
+      ctx.lineWidth = sh.lw * 0.42;
+      ctx.shadowBlur = 8 * sh.glow;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Bodenreflex unter der Form
+      const lowest = pts.reduce((m, p) => p[1] > m[1] ? p : m, pts[0]);
+      if (lowest[1] > h * 0.35 && lowest[1] < h * 1.25) {
+        const rg = ctx.createRadialGradient(lowest[0], h * 0.97, 0, lowest[0], h * 0.97, rad * 0.7);
+        rg.addColorStop(0, `rgba(${rC},${gC},${bC},${0.16 * shimmer})`);
+        rg.addColorStop(1, `rgba(${rC},${gC},${bC},0)`);
+        ctx.beginPath();
+        ctx.ellipse(lowest[0], h * 0.97, rad * 0.7, h * 0.10, 0, 0, Math.PI * 2);
+        ctx.fillStyle = rg;
+        ctx.fill();
+      }
+    });
+    ctx.globalCompositeOperation = 'source-over';
+
+    // === Glanzband am Boden (spiegelnder Untergrund) ===
+    const floor = ctx.createLinearGradient(0, h, 0, h * 0.80);
+    floor.addColorStop(0,   `rgba(70,130,255,${0.13 + pulse * 0.04})`);
+    floor.addColorStop(0.5, 'rgba(40,70,190,0.05)');
+    floor.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = floor;
+    ctx.fillRect(0, h * 0.80, w, h * 0.20);
+
+    // === Vignette ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.46, Math.min(w,h)*0.14, w*0.5, h*0.5, Math.max(w,h)*0.74);
+    vig.addColorStop(0,   'rgba(2,5,20,0)');
+    vig.addColorStop(0.6, 'rgba(2,5,20,0.30)');
+    vig.addColorStop(1,   'rgba(2,5,20,0.86)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    time++;
+    clAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ===================== EUROPA LEAGUE BACKGROUND ANIMATION =====================
+let uelAnimFrame = null;
+
+function isUelComp() {
+  return !!(selectedMeisterComp && selectedMeisterComp.toLowerCase().includes('europa'));
+}
+
+function stopUelAnimation() {
+  if (uelAnimFrame) { cancelAnimationFrame(uelAnimFrame); uelAnimFrame = null; }
+}
+
+function startUelAnimation(canvas) {
+  stopUelAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Zickzack-Faecher links und rechts, die zur Mitte laufen
+  const FAN = 18;          // Linien je Faecher
+  const STEPS = 11;        // Zickzack-Segmente je Linie
+
+  // Aufsteigende Glutpartikel (dezent)
+  function newMote(startAnywhere) {
+    return {
+      x: Math.random(),
+      y: startAnywhere ? Math.random() : 1.03,
+      size: 0.5 + Math.random() * 1.3,
+      vy: -(0.0005 + Math.random() * 0.0013),
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.015 + Math.random() * 0.03,
+      swayAmp: 0.0004 + Math.random() * 0.0009,
+      opacity: 0.20 + Math.random() * 0.40,
+      flicker: Math.random() * Math.PI * 2,
+      flickerSpeed: 0.04 + Math.random() * 0.06,
+    };
+  }
+  const motes = Array.from({length: 40}, () => newMote(true));
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || (window.innerWidth - 220);
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Ein Faecher: side = -1 (von links) oder +1 (von rechts)
+  function drawFan(w, h, T, side, yTop, yBot, depth) {
+    for (let i = 0; i < FAN; i++) {
+      const t0 = i / (FAN - 1);
+      const phase = T * 0.55 + i * 0.42 + (side > 0 ? 2.1 : 0);
+
+      const sx = side < 0 ? -0.06 * w : 1.06 * w;
+      const sy = h * (yTop + t0 * (yBot - yTop));
+      // Zielpunkte faechern sich auf, statt in einem Knoten zusammenzulaufen
+      const spreadY = (t0 - 0.5) * 0.30;
+      const ex = w * (0.5 - side * (0.02 + t0 * 0.16));
+      const ey = h * (0.50 + spreadY + Math.sin(T * 0.28 + i * 0.2) * 0.014);
+
+      // Zickzack senkrecht zur Laufrichtung, nach innen auslaufend
+      const amp = h * (0.055 + 0.030 * Math.sin(T * 0.5 + i * 0.7)) * depth;
+
+      ctx.beginPath();
+      for (let k = 0; k <= STEPS; k++) {
+        const u = k / STEPS;
+        const x = sx + (ex - sx) * u;
+        let   y = sy + (ey - sy) * u;
+        const zig = (k % 2 === 0 ? 1 : -1) * (0.22 + 0.78 * (1 - u)) * amp * (0.55 + 0.45 * Math.sin(phase));
+        y += zig;
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+
+      // Farbverlauf: aussen tiefrot, zur Mitte hin leuchtend orange
+      const g = ctx.createLinearGradient(sx, sy, ex, ey);
+      const a = (0.58 + 0.34 * Math.sin(T * 0.7 + i * 0.5)) * depth;
+      g.addColorStop(0,   `rgba(215,55,15,${a * 0.45})`);
+      g.addColorStop(0.45,`rgba(250,120,25,${a * 0.9})`);
+      g.addColorStop(1,   `rgba(255,190,80,${a})`);
+      ctx.lineJoin = 'miter';
+      const lw = (0.9 + 1.5 * depth) * (0.6 + 0.4 * (1 - t0));
+      // breiter, schwacher Strich erzeugt den Schein – guenstiger als shadowBlur
+      ctx.strokeStyle = `rgba(255,130,35,${a * 0.20})`;
+      ctx.lineWidth = lw * 3.4;
+      ctx.stroke();
+      // heller Kern
+      ctx.strokeStyle = g;
+      ctx.lineWidth = lw;
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    if (!isUelComp()) { uelAnimFrame = null; return; }
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis: Schwarz mit dunkelrotem Kern ===
+    ctx.fillStyle = 'rgba(14,4,3,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    const pulse = 0.5 + 0.5 * Math.sin(T * 0.45);
+
+    const deepRed = ctx.createRadialGradient(w*0.5, h*0.50, 0, w*0.5, h*0.50, Math.max(w,h)*0.66);
+    deepRed.addColorStop(0,   `rgba(200,35,15,${0.62 + pulse*0.10})`);
+    deepRed.addColorStop(0.45,`rgba(130,20,10,${0.36 + pulse*0.06})`);
+    deepRed.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = deepRed;
+    ctx.fillRect(0, 0, w, h);
+
+    // Heller Kern in der Bildmitte (dort steht im Original der Pokal)
+    const hot = ctx.createRadialGradient(w*0.5, h*0.60, 0, w*0.5, h*0.60, Math.min(w,h)*0.34);
+    hot.addColorStop(0,   `rgba(255,160,55,${0.24 + pulse*0.08})`);
+    hot.addColorStop(0.5, `rgba(230,85,20,${0.12 + pulse*0.04})`);
+    hot.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = hot;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.globalCompositeOperation = 'lighter';
+
+    // === Zickzack-Faecher: hintere Ebene, dann vordere ===
+    drawFan(w, h, T, -1, 0.04, 0.86, 1.00);
+    drawFan(w, h, T, +1, 0.02, 0.80, 0.92);
+
+    // === Glutpartikel ===
+    for (let i = 0; i < motes.length; i++) {
+      const p = motes[i];
+      p.flicker += p.flickerSpeed;
+      p.sway += p.swaySpeed;
+      p.y += p.vy;
+      p.x += Math.sin(p.sway) * p.swayAmp;
+      if (p.y < -0.04) { motes[i] = newMote(false); continue; }
+      const rise = Math.min(Math.max(1 - p.y, 0), 1);
+      const cool = Math.pow(1 - rise, 1.1);
+      const a = p.opacity * (0.45 + 0.55 * Math.abs(Math.sin(p.flicker))) * cool;
+      if (a <= 0.015) continue;
+      const px = p.x * w, py = p.y * h;
+      const sz = p.size * (0.6 + cool * 0.6);
+      const g = ctx.createRadialGradient(px, py, 0, px, py, sz * 7);
+      g.addColorStop(0, `rgba(255,${Math.round(150 + 70*cool)},60,${a * 0.5})`);
+      g.addColorStop(1, 'rgba(200,60,10,0)');
+      ctx.beginPath(); ctx.arc(px, py, sz * 7, 0, Math.PI * 2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,220,170,${Math.min(a * 1.3, 1)})`; ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // === Spiegelnder Boden ===
+    const floor = ctx.createLinearGradient(0, h, 0, h * 0.72);
+    floor.addColorStop(0,   `rgba(255,120,30,${0.20 + pulse * 0.05})`);
+    floor.addColorStop(0.45,'rgba(160,30,10,0.05)');
+    floor.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = floor;
+    ctx.fillRect(0, h * 0.72, w, h * 0.28);
+
+    // === Vignette ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.50, Math.min(w,h)*0.16, w*0.5, h*0.5, Math.max(w,h)*0.76);
+    vig.addColorStop(0,   'rgba(3,1,1,0)');
+    vig.addColorStop(0.68,'rgba(3,1,1,0.16)');
+    vig.addColorStop(1,   'rgba(3,1,1,0.74)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    time++;
+    uelAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ===================== SAISON BACKGROUND ANIMATION =====================
+// Punkteverlaufs-Kurven: mehrere Linien steigen, kreuzen sich und ueberholen
+// einander – wie ein Ranglistenkampf ueber die Saison.
+let seAnimFrame = null;
+
+function isSeasonPageActive() {
+  const p = document.getElementById('page-rangliste');
+  return !!(p && p.classList.contains('active'));
+}
+
+function stopSeAnimation() {
+  if (seAnimFrame) { cancelAnimationFrame(seAnimFrame); seAnimFrame = null; }
+}
+
+function updateSeasonBackground() {
+  const canvas = document.getElementById('seBgCanvas');
+  const page = document.getElementById('page-rangliste');
+  if (!canvas) return;
+  if (isSeasonPageActive()) {
+    canvas.classList.add('active');
+    if (page) page.classList.add('se-glass');
+    startSeAnimation(canvas);
+  } else {
+    canvas.classList.remove('active');
+    if (page) page.classList.remove('se-glass');
+    stopSeAnimation();
+  }
+}
+
+function startSeAnimation(canvas) {
+  stopSeAnimation();
+  const ctx = canvas.getContext('2d');
+  let time = 0;
+
+  // Farben der Kurven – Gold fuer die Spitze, dann kuehler nach hinten
+  const CURVES = [
+    { col:'250,205,80',  base:0.30, amp:0.10, speed:0.18, phase:0.0, lw:2.2, glow:1.0  },
+    { col:'190,200,225', base:0.40, amp:0.09, speed:0.15, phase:1.3, lw:1.7, glow:0.7  },
+    { col:'205,145,80',  base:0.50, amp:0.11, speed:0.21, phase:2.4, lw:1.6, glow:0.65 },
+    { col:'90,200,140',  base:0.60, amp:0.08, speed:0.13, phase:3.6, lw:1.4, glow:0.5  },
+    { col:'95,165,235',  base:0.70, amp:0.10, speed:0.17, phase:4.7, lw:1.3, glow:0.45 },
+    { col:'170,140,235', base:0.79, amp:0.07, speed:0.11, phase:5.9, lw:1.2, glow:0.4  },
+  ];
+
+  // Aufsteigende Lichtpunkte
+  const motes = Array.from({length: 40}, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    size: 0.6 + Math.random() * 1.3,
+    speedY: -(0.00008 + Math.random() * 0.00020),
+    opacity: 0.15 + Math.random() * 0.40,
+    twinkle: Math.random() * Math.PI * 2,
+    twinkleSpeed: 0.015 + Math.random() * 0.03,
+    gold: Math.random() < 0.4,
+  }));
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  || (window.innerWidth - 220);
+    canvas.height = canvas.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Hoehe einer Kurve an Position t (0..1)
+  function curveY(c, t, T, h) {
+    const y = c.base
+      + Math.sin(t * 3.4 + T * c.speed + c.phase) * c.amp
+      + Math.sin(t * 7.1 + T * c.speed * 1.6 + c.phase * 2) * c.amp * 0.38;
+    return y * h;
+  }
+
+  function draw() {
+    if (!isSeasonPageActive()) { seAnimFrame = null; return; }
+    const w = canvas.width, h = canvas.height;
+    const T = time * 0.001;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // === Basis: tiefes Marineblau, passend zum Header ===
+    ctx.fillStyle = 'rgba(5,10,24,1)';
+    ctx.fillRect(0, 0, w, h);
+
+    const pulse = 0.5 + 0.5 * Math.sin(T * 0.4);
+
+    // Warmer Schein oben (Pokal-Licht), kuehler Grund unten
+    const gTop = ctx.createRadialGradient(w*0.5, h*0.02, 0, w*0.5, h*0.12, Math.max(w,h)*0.62);
+    gTop.addColorStop(0, `rgba(215,170,65,${0.22 + pulse*0.07})`);
+    gTop.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gTop;
+    ctx.fillRect(0, 0, w, h);
+
+    const gBot = ctx.createRadialGradient(w*0.5, h*1.05, 0, w*0.5, h*0.9, Math.max(w,h)*0.7);
+    gBot.addColorStop(0, `rgba(28,80,180,${0.26 + (1-pulse)*0.07})`);
+    gBot.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gBot;
+    ctx.fillRect(0, 0, w, h);
+
+    // === Feines Raster (Diagramm-Anmutung) ===
+    ctx.strokeStyle = 'rgba(120,160,220,0.07)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+      const y = (i / 8) * h;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let i = 1; i < 12; i++) {
+      const x = (i / 12) * w;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+
+    // === Punkteverlaufs-Kurven ===
+    ctx.globalCompositeOperation = 'lighter';
+    const SEG = 60;
+    CURVES.forEach(c => {
+      const pts = [];
+      for (let i = 0; i <= SEG; i++) {
+        const t = i / SEG;
+        pts.push([t * w, curveY(c, t, T, h)]);
+      }
+
+      // weiche Flaeche unter der Kurve
+      const area = ctx.createLinearGradient(0, 0, 0, h);
+      area.addColorStop(0, `rgba(${c.col},${0.085 * c.glow})`);
+      area.addColorStop(1, `rgba(${c.col},0)`);
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      pts.forEach(p => ctx.lineTo(p[0], p[1]));
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fillStyle = area;
+      ctx.fill();
+
+      // Linie
+      ctx.beginPath();
+      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+      ctx.strokeStyle = `rgba(${c.col},${0.48 + 0.40 * c.glow})`;
+      ctx.lineWidth = c.lw;
+      ctx.shadowColor = `rgba(${c.col},${0.8 * c.glow})`;
+      ctx.shadowBlur = 20 * c.glow;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // wandernder Lichtpunkt auf der Kurve
+      const ht = (T * 0.05 + c.phase * 0.13) % 1;
+      const hx = ht * w, hy = curveY(c, ht, T, h);
+      const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, 16 * c.glow + 6);
+      hg.addColorStop(0, `rgba(${c.col},${0.55 * c.glow})`);
+      hg.addColorStop(1, `rgba(${c.col},0)`);
+      ctx.beginPath();
+      ctx.arc(hx, hy, 16 * c.glow + 6, 0, Math.PI * 2);
+      ctx.fillStyle = hg;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(hx, hy, 1.6 + c.glow, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * c.glow})`;
+      ctx.fill();
+    });
+
+    // === Schwebende Lichtpunkte ===
+    motes.forEach(p => {
+      p.twinkle += p.twinkleSpeed;
+      p.y += p.speedY;
+      if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+      const a = p.opacity * (0.4 + 0.6 * Math.abs(Math.sin(p.twinkle)));
+      const px = p.x * w, py = p.y * h;
+      const col = p.gold ? '250,210,110' : '150,190,240';
+      const g = ctx.createRadialGradient(px, py, 0, px, py, p.size * 6);
+      g.addColorStop(0, `rgba(${col},${a * 0.5})`);
+      g.addColorStop(1, `rgba(${col},0)`);
+      ctx.beginPath(); ctx.arc(px, py, p.size * 6, 0, Math.PI * 2);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(240,248,255,${a})`; ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+
+    // === Vignette ===
+    const vig = ctx.createRadialGradient(w*0.5, h*0.46, Math.min(w,h)*0.14, w*0.5, h*0.5, Math.max(w,h)*0.74);
+    vig.addColorStop(0,   'rgba(3,6,16,0)');
+    vig.addColorStop(0.65,'rgba(3,6,16,0.26)');
+    vig.addColorStop(1,   'rgba(3,6,16,0.82)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, w, h);
+
+    time++;
+    seAnimFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
 // ===================== WEEK CLOSE =====================
 function openCloseWeekModal() {
   const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
@@ -4195,6 +5713,14 @@ function openCloseWeekModal() {
   const preview = document.getElementById('modalPreview');
   preview.innerHTML = `<div class="winner-line">🏆 Saisonmeister: ${winner ? winner.name + ' ('+winner.pts+' Pkt)' : '—'}</div>` +
     stats.map((s,i)=>`<div style="margin-bottom:4px">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '} ${s.name}: ${s.pts} Pkt</div>`).join('');
+  const _fin = state.matches.filter(m => m.resultHome != null).length;
+  const _open = state.matches.length - _fin;
+  const errEl0 = document.getElementById('closeWeekError');
+  if (errEl0) { errEl0.style.display = 'none'; errEl0.textContent = ''; }
+  const splitEl = document.getElementById('closeWeekSplit');
+  if (splitEl) splitEl.innerHTML =
+    `📦 <b>${_fin}</b> beendete Spiele werden archiviert` +
+    (_open ? ` · ➡️ <b>${_open}</b> offene Spiele wandern in die neue Saison` : '');
   document.getElementById('closeWeekModal').classList.add('open');
 }
 
@@ -4213,38 +5739,77 @@ function getCompetitionStats(compName) {
       if (pt === null) return;
       const mult = (m.multiplier != null ? m.multiplier : 1);
       played++; pts += pt * mult;
-      if (pt===3) exact++; else if (pt===2) diff++; else if (pt===1) tendency++; else miss++;
+      if (pt===PTS.EXACT) exact++; else if (pt===PTS.DIFF) diff++; else if (pt===PTS.TENDENCY) tendency++; else miss++;
     });
     return {name:p, pts, exact, diff, tendency, miss, played};
   });
 }
 
+let _closingWeek = false;
 function closeWeek() {
-  const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
-    .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
-  const now = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  if (_closingWeek) return;          // Doppelklick-Schutz
+  _closingWeek = true;
+  const errEl = document.getElementById('closeWeekError');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  try {
+    // ── Defensive Guards: Firebase liefert Arrays teils als Objekte zurück ──
+    if (!Array.isArray(state.players))     state.players     = Object.values(state.players || {});
+    if (!Array.isArray(state.matches))     state.matches     = Object.values(state.matches || {});
+    if (!Array.isArray(state.competitions))state.competitions= Object.values(state.competitions || {});
+    if (!Array.isArray(state.weekHistory)) state.weekHistory = Object.values(state.weekHistory || {});
+    if (!state.tips || typeof state.tips !== 'object') state.tips = {};
 
-  // Build per-competition scores snapshot
-  const competitionScores = {};
-  state.competitions.forEach(c => {
-    competitionScores[c.name] = getCompetitionStats(c.name);
-  });
+    const stats = state.players.map(p=>({name:p,...getPlayerStats(p)}))
+      .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+    const now = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
 
-  state.weekHistory.push({
-    week: state.currentWeek,
-    label: state.tournament,
-    date: now,
-    scores: stats.map(s=>({name:s.name, pts:s.pts, exact:s.exact, diff:s.diff, tendency:s.tendency, miss:s.miss, played:s.played})),
-    competitionScores,
-    matches: JSON.parse(JSON.stringify(state.matches)),
-    tips: JSON.parse(JSON.stringify(state.tips))
-  });
-  state.currentWeek++;
-  state.matches = [];
-  // Tips bleiben erhalten – nicht löschen
-  save();
-  closeModal();
-  renderAll();
+    // Build per-competition scores snapshot
+    const competitionScores = {};
+    state.competitions.forEach(c => {
+      if (c && c.name) competitionScores[compKey(c.name)] = getCompetitionStats(c.name);
+    });
+
+    // Nur BEENDETE Spiele werden archiviert. Spiele ohne Ergebnis gehören noch
+    // nicht in die Vergangenheit – sie wandern samt Tipps in die neue Saison.
+    const finishedMatches = state.matches.filter(m => m && m.resultHome != null);
+    const openMatches     = state.matches.filter(m => m && m.resultHome == null);
+
+    // Tipp-Snapshot fürs Archiv: nur die Tipps zu den archivierten Spielen
+    const archivedTips = {};
+    finishedMatches.forEach(m => {
+      const t = state.tips[m.id];
+      if (t) archivedTips[m.id] = JSON.parse(JSON.stringify(t));
+    });
+
+    const entry = {
+      week: state.currentWeek,
+      label: state.tournament || 'Tippspiel',
+      date: now,
+      scores: stats.map(s=>({name:s.name, pts:s.pts||0, exact:s.exact||0, diff:s.diff||0, tendency:s.tendency||0, miss:s.miss||0, played:s.played||0})),
+      competitionScores,
+      matches: JSON.parse(JSON.stringify(finishedMatches)),
+      tips: archivedTips
+    };
+
+    state.weekHistory.push(entry);
+    state.currentWeek = (state.currentWeek || 1) + 1;
+    state.matches = openMatches;
+    // Tips bleiben komplett erhalten – nichts wird gelöscht
+
+    save();
+    closeModal();
+    renderAll();
+  } catch (err) {
+    console.error('Saisonabschluss fehlgeschlagen:', err);
+    if (errEl) {
+      errEl.style.display = '';
+      errEl.textContent = '⚠️ Abschluss fehlgeschlagen: ' + (err && err.message ? err.message : err);
+    } else {
+      alert('Saisonabschluss fehlgeschlagen: ' + (err && err.message ? err.message : err));
+    }
+  } finally {
+    _closingWeek = false;
+  }
 }
 
 // ===================== RESET =====================
@@ -4362,6 +5927,10 @@ function doLogin() {
   document.body.style.overflow = '';
   applyAccessControl();
   updateHeaderUser();
+  // Startseite nach dem Login: Saison-Wertung
+  if (!(currentUser && currentUser.isAdmin && (state.passwords['__admin__'] || '') === '')) {
+    showPage('rangliste', document.querySelector('[data-page="rangliste"]'));
+  }
   renderAll();
   startAutoLiveTimer();
   showChatWelcome();
@@ -4418,11 +5987,11 @@ function doLogout() {
   const hdr = document.querySelector('header');
   if (hdr) hdr.style.background = '';
   currentUser = null;
-  // Go back to rangliste
+  // Startseite ist die Saison-Wertung
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-meisterschaften').classList.add('active');
+  document.getElementById('page-rangliste').classList.add('active');
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  const rb = document.querySelector('[data-page="meisterschaften"]');
+  const rb = document.querySelector('[data-page="rangliste"]');
   if (rb) rb.classList.add('active');
   document.getElementById('login_nm_field').value = '';
   document.getElementById('loginPassword').value = '';
@@ -5045,7 +6614,7 @@ function openPlayerStats(name, competition, fromGeschichte) {
     if (!tip) return;
     const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
     if (pts===null) return;
-    if (pts===3) exact++; else if (pts===2) diff++; else if (pts===1) tendency++; else miss++;
+    if (pts===PTS.EXACT) exact++; else if (pts===PTS.DIFF) diff++; else if (pts===PTS.TENDENCY) tendency++; else miss++;
     [m.home, m.away].forEach(team => {
       if (!teamStats[team]) teamStats[team] = {tipped:0, pts:0};
       teamStats[team].tipped++;
@@ -5129,7 +6698,7 @@ function openPlayerStats(name, competition, fromGeschichte) {
     const rows = recentTipped.map((m, i) => {
       const tip = (state.tips[m.id]||{})[name];
       const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
-      const tipClass = pts===3 ? 'tip-exact' : pts===2 ? 'tip-diff' : pts===1 ? 'tip-tendency' : 'tip-miss';
+      const tipClass = pts===PTS.EXACT ? 'tip-exact' : pts===PTS.DIFF ? 'tip-diff' : pts===PTS.TENDENCY ? 'tip-tendency' : 'tip-miss';
       const d = m.date ? new Date(m.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
       const homeFlag = COUNTRY_FLAGS[(m.home||'').toLowerCase()]||'⚽';
       const awayFlag = COUNTRY_FLAGS[(m.away||'').toLowerCase()]||'⚽';
@@ -5343,7 +6912,7 @@ function renderStatistik() {
     const pts = calcPoints(tip.home, tip.away, m.resultHome, m.resultAway);
     if (pts===null) return;
     tippedMatches.push({m, pts, tip});
-    if (pts===3) exact++; else if (pts===2) diff++; else if (pts===1) tendency++; else miss++;
+    if (pts===PTS.EXACT) exact++; else if (pts===PTS.DIFF) diff++; else if (pts===PTS.TENDENCY) tendency++; else miss++;
     [m.home, m.away].forEach(team => {
       if (!teamStats[team]) teamStats[team] = {tipped:0, pts:0};
       teamStats[team].tipped++;
@@ -5414,7 +6983,7 @@ function renderStatistik() {
     const iW=W-PL-PR, iH=H-PT-PB;
     const barW = Math.min(22, iW/last20.length - 3);
     const xStep = iW / last20.length;
-    const ptColor = p => p===3?'#22c55e':p===2?'#a78bfa':p===1?'#60a5fa':'#f87171';
+    const ptColor = p => p===PTS.EXACT?'#22c55e':p===PTS.DIFF?'#a78bfa':p===PTS.TENDENCY?'#60a5fa':'#f87171';
     const bars = last20.map((x,i) => {
       const bH = (x.pts / 3) * iH;
       const bX = PL + i * xStep + (xStep-barW)/2;
@@ -5443,13 +7012,13 @@ function renderStatistik() {
   // ---- Streak-Analyse ----
   const streakHtml = (() => {
     if (tippedMatches.length === 0) return `<div class="stat-card"><h2>🔥 Serien</h2><div class="empty" style="padding:6px 0">Noch keine Daten.</div></div>`;
-    // Treffer = pts >= 1; Genau = pts === 3
+    // Treffer = mindestens Tendenz getroffen; Genau = exaktes Ergebnis
     let curHit=0, maxHit=0, curExact=0, maxExact=0;
     let curMiss=0, maxMiss=0;
     let curHitStart=null, maxHitStart=null, maxHitEnd=null;
     tippedMatches.forEach(({m,pts}) => {
-      if (pts >= 1) { curHit++; curMiss=0; if(curHit>maxHit){maxHit=curHit;} } else { curHit=0; curMiss++; if(curMiss>maxMiss) maxMiss=curMiss; }
-      if (pts === 3) { curExact++; if(curExact>maxExact) maxExact=curExact; } else curExact=0;
+      if (pts >= PTS.TENDENCY) { curHit++; curMiss=0; if(curHit>maxHit){maxHit=curHit;} } else { curHit=0; curMiss++; if(curMiss>maxMiss) maxMiss=curMiss; }
+      if (pts === PTS.EXACT) { curExact++; if(curExact>maxExact) maxExact=curExact; } else curExact=0;
     });
     const lastPts = tippedMatches[tippedMatches.length-1]?.pts;
     const streakItems = [
@@ -5771,8 +7340,8 @@ function renderStatistik() {
     const last8 = tippedMatches.slice(-8).reverse();
     if (!last8.length) return '';
     const rows=last8.map(({m,pts,tip})=>{
-      const ptsColor=pts===3?'#22c55e':pts===2?'#a78bfa':pts===1?'#60a5fa':'#f87171';
-      const ptsLabel=pts===3?'🎯 3':pts===2?'✌️ 2':pts===1?'👍 1':'❌ 0';
+      const ptsColor=pts===PTS.EXACT?'#22c55e':pts===PTS.DIFF?'#a78bfa':pts===PTS.TENDENCY?'#60a5fa':'#f87171';
+      const ptsLabel=pts===PTS.EXACT?('🎯 '+PTS.EXACT):pts===PTS.DIFF?('✌️ '+PTS.DIFF):pts===PTS.TENDENCY?('👍 '+PTS.TENDENCY):'❌ 0';
       return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
         <div style="flex:1;font-size:0.82rem">${flagTeam(m.home)} <span style="color:var(--muted)">vs</span> ${flagTeam(m.away)}</div>
         <div style="font-size:0.78rem;color:var(--muted);min-width:36px;text-align:center">${m.resultHome}:${m.resultAway}</div>
